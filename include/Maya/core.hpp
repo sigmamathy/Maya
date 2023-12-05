@@ -23,6 +23,9 @@
 // gcc or clang: __OPTIMIZE__
 #endif
 
+#define MAYA_BOUNDARY_ERROR				0x1
+#define MAYA_DIVISION_BY_ZERO_ERROR		0x2
+
 #include <string>
 #include <string_view>
 #include <cmath>

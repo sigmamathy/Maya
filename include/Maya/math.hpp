@@ -9,7 +9,7 @@ template<class Ty, int Dim>
 class MayaVector
 {
 	// Common functions that applied to all variation of vectors
-#define MAYA_VECTOR_COMMON	public:											\
+#define MAYA_VECTOR_COMMON(dim)	public:										\
 																			\
 	/* Value uninitialized construction */									\
 	constexpr MayaVector(void) = default;									\
@@ -17,18 +17,23 @@ class MayaVector
 	/* Value fill construction */											\
 	explicit constexpr MayaVector(Ty value);								\
 																			\
+	/* Copy constructor */													\
+	template<class Ty2>														\
+	constexpr MayaVector(MayaVector<Ty2, dim> const&);						\
+																			\
 	/* Access modifier */													\
 	constexpr Ty& operator[](int i);										\
 																			\
 	/* Constant access */													\
 	constexpr Ty const& operator[](int i) const;							\
 																			\
-	/* Returns the norm (aka magnitude) of a vector */						\
+	/* Calculate the norm (aka magnitude) of a vector */					\
 	std::common_type_t<Ty, float> Norm() const;
 
 // ---------------------------- End --------------------------- //
 	static_assert(Dim > 0);
-	MAYA_VECTOR_COMMON
+	MAYA_VECTOR_COMMON(Dim)
+
 	// Construct with Dim number of arguments
 	template<class... Tys> requires (Dim != 1 && sizeof...(Tys) == Dim && (std::is_convertible_v<Tys, Ty> && ...))
 		constexpr MayaVector(Tys... args);
@@ -45,7 +50,7 @@ class MayaVector<Ty, 2>
 public:
 	Ty x, y;
 	constexpr MayaVector(Ty x, Ty y);
-	MAYA_VECTOR_COMMON
+	MAYA_VECTOR_COMMON(2)
 };
 
 // 3D vector variation (x, y, z)
@@ -55,7 +60,7 @@ class MayaVector<Ty, 3>
 public:
 	Ty x, y, z;
 	constexpr MayaVector(Ty x, Ty y, Ty z);
-	MAYA_VECTOR_COMMON
+	MAYA_VECTOR_COMMON(3)
 };
 
 // 4D vector variation (x, y, z, w)
@@ -65,7 +70,7 @@ class MayaVector<Ty, 4>
 public:
 	Ty x, y, z, w;
 	constexpr MayaVector(Ty x, Ty y, Ty z, Ty w);
-	MAYA_VECTOR_COMMON
+	MAYA_VECTOR_COMMON(4)
 };
 
 // -------------------- Typedefs ---------------------- //
@@ -98,12 +103,19 @@ constexpr MayaVector<Ty, Dim>::MayaVector(Tys... args)
 {
 }
 
+template<class Ty, int Dim> template<class Ty2>
+constexpr MayaVector<Ty, Dim>::MayaVector(MayaVector<Ty2, Dim> const& vec)
+{
+	for (int i = 0; i < Dim; i++)
+		elems[i] = static_cast<Ty>(vec[i]);
+}
+
 template<class Ty, int Dim>
 constexpr Ty& MayaVector<Ty, Dim>::operator[](int i)
 {
 #if MAYA_DEBUG
 	if (i < 0 || i > Dim - 1)
-		throw 1;
+		throw MAYA_BOUNDARY_ERROR;
 #endif
 	return elems[i];
 }
@@ -113,7 +125,7 @@ constexpr Ty const& MayaVector<Ty, Dim>::operator[](int i) const
 {
 #if MAYA_DEBUG
 	if (i < 0 || i > Dim - 1)
-		throw 1;
+		throw MAYA_BOUNDARY_ERROR;
 #endif
 	return elems[i];
 }
@@ -135,10 +147,19 @@ template<class Ty> constexpr MayaVector<Ty, 2>::MayaVector(Ty value) : x(value),
 template<class Ty> constexpr MayaVector<Ty, 3>::MayaVector(Ty value) : x(value), y(value), z(value) {}
 template<class Ty> constexpr MayaVector<Ty, 4>::MayaVector(Ty value) : x(value), y(value), z(value), w(value) {}
 
+template<class Ty> template<class Ty2> constexpr MayaVector<Ty, 2>::MayaVector(MayaVector<Ty2, 2> const& vec)
+	: x(static_cast<Ty>(vec.x)), y(static_cast<Ty>(vec.y)) {}
+
+template<class Ty> template<class Ty2> constexpr MayaVector<Ty, 3>::MayaVector(MayaVector<Ty2, 3> const& vec)
+	: x(static_cast<Ty>(vec.x)), y(static_cast<Ty>(vec.y)), z(static_cast<Ty>(vec.z)) {}
+
+template<class Ty> template<class Ty2> constexpr MayaVector<Ty, 4>::MayaVector(MayaVector<Ty2, 4> const& vec)
+	: x(static_cast<Ty>(vec.x)), y(static_cast<Ty>(vec.y)), z(static_cast<Ty>(vec.z)), w(static_cast<Ty>(vec.w)) {}
+
 #if MAYA_DEBUG
 #define MAYA_TEMP_DEFINE_VECTOR_OPERATOR_BRACKETS(dim, ...)\
-	template<class Ty> constexpr Ty& MayaVector<Ty, dim>::operator[](int i) { if (i < 0 || i > dim - 1) throw 1; __VA_ARGS__; }\
-	template<class Ty> constexpr Ty const& MayaVector<Ty, dim>::operator[](int i) const { if (i < 0 || i > dim - 1) throw 1; __VA_ARGS__; }
+	template<class Ty> constexpr Ty& MayaVector<Ty, dim>::operator[](int i) { if (i < 0 || i > dim - 1) throw MAYA_BOUNDARY_ERROR; __VA_ARGS__; }\
+	template<class Ty> constexpr Ty const& MayaVector<Ty, dim>::operator[](int i) const { if (i < 0 || i > dim - 1) throw MAYA_BOUNDARY_ERROR; __VA_ARGS__; }
 #else
 #define MAYA_TEMP_DEFINE_VECTOR_OPERATOR_BRACKETS(dim, ...)\
 	template<class Ty> constexpr Ty& MayaVector<Ty, dim>::operator[](int i) { __VA_ARGS__; }\
@@ -226,6 +247,65 @@ constexpr auto operator/(MayaVector<Ty, Dim> const& vec, ScTy scale)
 	return res;
 }
 
+// Concatenate two vectors into a larger vector
+template<class Ty1, int Dim1, class Ty2, int Dim2>
+constexpr auto MayaConcat(MayaVector<Ty1, Dim1> const& vec1, MayaVector<Ty2, Dim2> const& vec2)
+{
+	MayaVector<std::common_type_t<Ty1, Ty2>, Dim1 + Dim2> res;
+	int n = 0;
+	for (int i = 0; i < Dim1; i++) res[n++] = vec1[i];
+	for (int i = 0; i < Dim2; i++) res[n++] = vec2[i];
+	return res;
+}
+
+// Dot product operation
+template<class Ty1, class Ty2, int Dim>
+constexpr auto MayaDot(MayaVector<Ty1, Dim> const& vec1, MayaVector<Ty2, Dim> const& vec2)
+{
+	decltype(vec1[0] * vec2[0]) res = 0;
+	for (int i = 0; i < Dim; i++)
+		res += vec1[i] * vec2[i];
+	return res;
+}
+
+// Cross product operation
+template<class Ty1, class Ty2>
+constexpr auto MayaCross(MayaVector<Ty1, 3> const& vec1, MayaVector<Ty2, 3> const& vec2)
+{
+	return MayaVector<decltype(vec1[0] * vec2[0]), 3>
+	{
+		vec1[1] * vec2[2] - vec1[2] * vec2[1],
+		vec1[2] * vec2[0] - vec1[0] * vec2[2],
+		vec1[0] * vec2[1] - vec1[1] * vec2[0]
+	};
+}
+
+// Cross product operation on 2D (special case)
+template<class Ty1, class Ty2>
+constexpr auto MayaCross2D(MayaVector<Ty1, 2> const& vec1, MayaVector<Ty2, 2> const& vec2)
+{
+	return vec1[0] * vec2[1] - vec1[1] * vec2[0];
+}
+
+// Vector normalization
+template<class Ty, int Dim>
+constexpr auto MayaNormalize(MayaVector<Ty, Dim> const& vec)
+{
+	using common_type = std::common_type_t<Ty, float>;
+	Ty sum = 0;
+	for (int i = 0; i < Dim; i++)
+		sum += vec[i] * vec[i];
+#if MAYA_DEBUG
+	if (!sum)
+		throw MAYA_DIVISION_BY_ZERO_ERROR;
+#endif
+	auto invsqrt = 1.0f / std::sqrt(static_cast<common_type>(sum));
+	MayaVector<common_type, Dim> res;
+	for (int i = 0; i < Dim; i++)
+		res[i] = vec[i] * invsqrt;
+	return res;
+}
+
 // General template for Matrix (Mathematics)
 // Ty: must be an arithmetic type
 // Rw & Cn: must be > 0
@@ -240,8 +320,17 @@ public:
 	explicit constexpr MayaMatrix(Ty value);
 
 	// Construct with Rw * Cn number of arguments
-	template<class... Tys> requires (sizeof...(Tys) == Rw * Cn && (std::is_convertible_v<Tys, Ty> && ...))
-		constexpr MayaMatrix(Tys... args);
+	template<class... Tys>
+		requires (sizeof...(Tys) == Rw * Cn && (std::is_convertible_v<Tys, Ty> && ...) && (std::is_arithmetic_v<Tys> && ...))
+	constexpr MayaMatrix(Tys... args);
+
+	// Construct with Rw * Cn number of arguments
+	template<class... Tys> requires (sizeof...(Tys) == Cn)
+	constexpr MayaMatrix(MayaVector<Tys, Rw> const&... columns);
+
+	// Copy constructor
+	template<class Ty2>
+	constexpr MayaMatrix(MayaMatrix<Ty2, Rw, Cn> const& mat);
 
 	// Access modifiers
 	constexpr MayaVector<Ty, Rw>& operator[](int i);
@@ -312,7 +401,7 @@ constexpr MayaMatrix<Ty, Rw, Cn>::MayaMatrix(Ty value)
 }
 
 template<class Ty, int Rw, int Cn> template<class... Tys>
-	requires (sizeof...(Tys) == Rw * Cn && (std::is_convertible_v<Tys, Ty> && ...))
+	requires (sizeof...(Tys) == Rw * Cn && (std::is_convertible_v<Tys, Ty> && ...) && (std::is_arithmetic_v<Tys> && ...))
 constexpr MayaMatrix<Ty, Rw, Cn>::MayaMatrix(Tys... args)
 {
 	std::array<Ty, Rw * Cn> const largs = { static_cast<Ty>(args)... };
@@ -322,15 +411,36 @@ constexpr MayaMatrix<Ty, Rw, Cn>::MayaMatrix(Tys... args)
 			column_vectors[i][j] = largs[n++];
 }
 
+template<class Ty, int Rw, int Cn> template<class... Tys> requires (sizeof...(Tys) == Cn)
+constexpr MayaMatrix<Ty, Rw, Cn>::MayaMatrix(MayaVector<Tys, Rw> const&... columns)
+	: column_vectors { static_cast<MayaVector<Ty, Rw>>(columns)...}
+{
+}
+
+template<class Ty, int Rw, int Cn> template<class Ty2>
+constexpr MayaMatrix<Ty, Rw, Cn>::MayaMatrix(MayaMatrix<Ty2, Rw, Cn> const& mat)
+{
+	for (int i = 0; i < Cn; i++)
+		column_vectors[i] = mat.column_vectors[i];
+}
+
 template<class Ty, int Rw, int Cn>
 constexpr MayaVector<Ty, Rw>& MayaMatrix<Ty, Rw, Cn>::operator[](int i)
 {
+#if MAYA_DEBUG
+	if (i < 0 || i > Cn - 1)
+		throw MAYA_BOUNDARY_ERROR;
+#endif
 	return column_vectors[i];
 }
 
 template<class Ty, int Rw, int Cn>
 constexpr MayaVector<Ty, Rw> const& MayaMatrix<Ty, Rw, Cn>::operator[](int i) const
 {
+#if MAYA_DEBUG
+	if (i < 0 || i > Cn - 1)
+		throw MAYA_BOUNDARY_ERROR;
+#endif
 	return column_vectors[i];
 }
 
@@ -427,5 +537,16 @@ constexpr auto operator*(MayaMatrix<Ty1, Rw1, Dim> const& mat, MayaVector<Ty2, D
 	for (int j = 0; j < Rw1; j++)
 		for (int i = 0; i < Dim; i++)
 			res[j] += mat[i][j] * vec[i];
+	return res;
+}
+
+// Matrix transpose operation
+template<class Ty, int Rw, int Cn>
+constexpr auto MayaTranspose(MayaMatrix<Ty, Rw, Cn> const& mat)
+{
+	MayaMatrix<Ty, Cn, Rw> res;
+	for (int j = 0; j < Rw; j++)
+		for (int i = 0; i < Cn; i++)
+			res[j][i] = mat[i][j];
 	return res;
 }
