@@ -29,6 +29,8 @@ struct MayaCPUInfo
 	int number_of_cores;
 };
 
+// Information about user's RAM
+// all storage size use KiB as the default unit
 struct MayaRAMInfo
 {
 	unsigned size;
