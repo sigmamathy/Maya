@@ -17,14 +17,24 @@
 #endif
 
 #ifndef MAYA_DEBUG // if not predefined
-#define MAYA_DEBUG (defined (_MSC_VER) && defined (_DEBUG))\
-					|| ((defined (__GNUC__) || defined (__clang__)) && defined (__OPTIMIZE__))
+#if (defined (_MSC_VER) && defined (_DEBUG)) || ((defined (__GNUC__) || defined (__clang__)) && defined (__OPTIMIZE__))
+#define MAYA_DEBUG 1
+#else
+#define MAYA_DEBUG 0
+#endif
 // msvc: _DEBUG
 // gcc or clang: __OPTIMIZE__
 #endif
 
-#define MAYA_BOUNDARY_ERROR				0x1
-#define MAYA_DIVISION_BY_ZERO_ERROR		0x2
+#if defined (_WIN32) // windows
+#define MAYA_PLATFORM_WINDOWS 1
+#elif defined (__APPLE__) // macos
+#define MAYA_PLATFORM_MACOS 1
+#elif defined (__linux__) // linux
+#define MAYA_PLATFORM_LINUX 1
+#else // otherwise
+#error unknown platform detected, only Windows, MacOS and Linux are supported
+#endif
 
 #include <string>
 #include <string_view>
@@ -40,6 +50,20 @@
 #include <stdexcept>
 #include <memory>
 
+// Debug information provided internally
+struct MayaDebugError {
+	int code;
+	std::string details;
+};
+
+// For internal usage
+#define MAYA_ERROR(x, str) throw MayaDebugError { x, "[" #x "] " + static_cast<std::string>(str) }
+
+// Error types
+#define MAYA_BOUNDARY_ERROR				0x1
+#define MAYA_DIVISION_BY_ZERO_ERROR		0x2
+#define MAYA_MISSING_LIBRARY_ERROR		0x3
+
 // Initialize Maya (external) libraries as needed.
 // Most features required this initialization and is advised to call this function
 // at the start of the application. Make sure to call MayaTerminateLibrary before
@@ -52,3 +76,9 @@ void MayaInitLibrary(void);
 // allocated resources. Calling this function multiple times could activate
 // undefined behaviour.
 void MayaTerminateLibrary(void);
+
+// Returns true if MayaLibraryInit is called.
+// The general purpose of this function is to debug internally and provide
+// useful debug information. Not a function that should be considered in an
+// application.
+bool MayaIsLibraryInitialized(void);

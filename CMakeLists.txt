@@ -17,7 +17,7 @@ if (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     endif()
 endif()
 
-add_library(${PROJECT_NAME} "src/core.cpp")
+add_library(${PROJECT_NAME} "src/core.cpp" "src/deviceinfo.cpp")
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 
