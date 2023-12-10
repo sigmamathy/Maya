@@ -2,6 +2,7 @@
 
 #if MAYA_PLATFORM_WINDOWS
 #include <Windows.h>
+#include <intrin.h>
 #elif MAYA_PLATFORM_MACOS
 #include <sys/types.h>
 #include <sys/sysctl.h>
@@ -9,8 +10,8 @@
 #include <sys/sysinfo.h>
 #endif
 
+#include <cstring>
 #include <GLFW/glfw3.h>
-#include <intrin.h>
 
 static std::vector<MayaMonitorsInfo::components> monitors_info_cache;
 
@@ -29,7 +30,7 @@ void MayaGetDeviceInfo(MayaMonitorsInfo& info)
 		for (int i = 0; i < count; i++)
 		{
 			auto* vid = glfwGetVideoMode(ms[i]);
-			monitors_info_cache.emplace_back (
+			monitors_info_cache.emplace_back(
 				i, glfwGetMonitorName(ms[i]),
 				MayaIvec2(vid->width, vid->height), ms[i]
 			);
@@ -39,6 +40,16 @@ void MayaGetDeviceInfo(MayaMonitorsInfo& info)
 	info.monitors = &monitors_info_cache;
 	info.count = static_cast<int>(monitors_info_cache.size());
 }
+
+#if MAYA_PLATFORM_MACOS || MAYA_PLATFORM_LINUX // __cpuid is not defined for Linux nor MacOS
+// explicit definition required
+static void __cpuid(int* ar, int code)
+{
+	asm volatile ("cpuid"
+		: "=a" (ar[0]), "=b" (ar[1]), "=c" (ar[2]), "=d" (ar[3])
+		: "a" (code));
+}
+#endif
 
 void MayaGetDeviceInfo(MayaCPUInfo& info)
 {

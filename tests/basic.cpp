@@ -6,9 +6,10 @@
 int main()
 {
 	MayaInitLibrary();
-	MayaRAMInfo info;
+
+	MayaCPUInfo info;
 	MayaGetDeviceInfo(info);
-	std::cout << info.size << " " << '\n';
+	std::cout << info.brand << " " << info.number_of_cores << '\n';
 
 	MayaTerminateLibrary();
 }
