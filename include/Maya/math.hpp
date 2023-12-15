@@ -73,6 +73,8 @@ public:
 	MAYA_VECTOR_COMMON(4)
 };
 
+#undef MAYA_VECTOR_COMMON
+
 // -------------------- Typedefs ---------------------- //
 
 using MayaIvec2 = MayaVector<int, 2>;

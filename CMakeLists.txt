@@ -17,15 +17,21 @@ if (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     endif()
 endif()
 
-add_library(${PROJECT_NAME} "src/core.cpp" "src/deviceinfo.cpp")
+add_library(${PROJECT_NAME} "3rdparty/glad/glad.c"
+    "src/core.cpp" "src/deviceinfo.cpp" "src/saveio.cpp" "src/window.cpp")
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
+
+if (MSVC)
+    add_compile_options(/wd4819)
+endif()
 
 add_subdirectory("3rdparty/glfw")
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC "include"
     PUBLIC "3rdparty/glfw/include"
+    PUBLIC "3rdparty/glad/include"
 )
 
 target_link_libraries(${PROJECT_NAME}

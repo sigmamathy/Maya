@@ -49,6 +49,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <memory>
+#include <variant>
 
 // Debug information provided internally
 struct MayaDebugError {
@@ -63,6 +64,7 @@ struct MayaDebugError {
 #define MAYA_BOUNDARY_ERROR				0x1
 #define MAYA_DIVISION_BY_ZERO_ERROR		0x2
 #define MAYA_MISSING_LIBRARY_ERROR		0x3
+#define MAYA_MISSING_FILE_ERROR			0x4
 
 // Initialize Maya (external) libraries as needed.
 // Most features required this initialization and is advised to call this function
