@@ -141,6 +141,7 @@ void MayaWindow::AssignWindowEventCallbackToListeners()
 	glfwSetWindowSizeCallback(window,
 	[](GLFWwindow* window, int width, int height) {
 		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
+		data->size = { width, height };
 		MayaWindowResizedEvent e(MayaIvec2(width, height));
 		for (auto& fn : data->event_listeners)
 			fn(MayaWindow(data), e);
@@ -149,6 +150,7 @@ void MayaWindow::AssignWindowEventCallbackToListeners()
 	glfwSetWindowPosCallback(window,
 	[](GLFWwindow* window, int x, int y) {
 		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
+		data->position = { x, y };
 		MayaWindowMovedEvent e(MayaIvec2(x, y));
 		for (auto& fn : data->event_listeners)
 			fn(MayaWindow(data), e);
@@ -249,13 +251,6 @@ MayaIvec2 MayaWindow::GetPosition() const
 	return s->position;
 }
 
-MayaViewport::MayaViewport(MayaWindow window)
-	: window(window)
-{
-	position = { 0, 0 };
-	size = window.GetSize();
-}
-
 // Vertex shader source code
 const char* vertexShaderSource = R"(
     #version 330 core
@@ -279,11 +274,26 @@ const char* fragmentShaderSource = R"(
     }
 )";
 
+static MayaViewport* current_viewport = nullptr;
+
+MayaViewport::MayaViewport(MayaWindow window)
+	: window(window), parent(nullptr)
+{
+	exact_position = { 0, 0 };
+	exact_size = window.GetSize();
+}
+
+MayaViewport::MayaViewport(MayaViewport* viewport)
+	: window(window), parent(viewport)
+{
+	exact_position = viewport->exact_position;
+	exact_size = viewport->exact_size;
+}
 
 void MayaViewport::ClearColor(MayaFvec4 color)
 {
-	glViewport(position.x, position.y, size.x, size.y);
-	
+	UseThisViewport();
+
 	// Create and compile the vertex shader
 	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
@@ -347,8 +357,160 @@ void MayaViewport::ClearColor(MayaFvec4 color)
 	glDeleteProgram(shaderProgram);
 }
 
-void MayaViewport::SetBounds(MayaIvec4 bounds)
+void MayaViewport::UseThisViewport()
 {
-	position = { bounds.x, bounds.y };
-	size = { bounds.z, bounds.w };
+	ComputeViewportBounds();
+	current_viewport = this;
+	glViewport(exact_position.x, exact_position.y, exact_size.x, exact_size.y);
+}
+
+MayaIvec2 MayaViewport::GetParentExactPosition() const
+{
+	return parent ? parent->exact_position : MayaIvec2(0);
+}
+
+MayaIvec2 MayaViewport::GetParentExactSize() const
+{
+	return parent ? parent->exact_size : window.GetSize();
+}
+
+MayaFloatingViewport::MayaFloatingViewport(MayaWindow window)
+	: MayaViewport(window)
+{
+	local_position = { 0, 0 };
+	local_size = exact_size;
+	dock = NoDock;
+	align = AlignTopLeft;
+}
+
+MayaFloatingViewport::MayaFloatingViewport(MayaViewport* viewport)
+	: MayaViewport(viewport)
+{
+	local_position = { 0, 0 };
+	local_size = exact_size;
+	dock = NoDock;
+	align = AlignTopLeft;
+}
+
+static void SwitchBetweenBLAndOtherDirection(MayaFloatingViewport::AlignDirecton align, MayaIvec2 ps,
+											MayaIvec2& out, MayaIvec2 inp, MayaIvec2 ins)
+{
+	switch (align)
+	{
+	using enum MayaFloatingViewport::AlignDirecton;
+		case AlignTopLeft:
+			out.x = inp.x;
+			out.y = ps.y - inp.y - ins.y;
+			break;
+		case AlignTopRight:
+			out.x = ps.x - inp.x - ins.x;
+			out.y = ps.y - inp.y - ins.y;
+			break;
+		case AlignBottomLeft:
+			out.x = inp.x;
+			out.y = inp.y;
+			break;
+		case AlignBottomRight:
+			out.x = ps.x - inp.x - ins.x;
+			out.y = inp.y;
+			break;
+	}
+}
+
+void MayaFloatingViewport::SetAlignDirection(AlignDirecton dir)
+{
+	auto const ps = GetParentExactSize();
+	MayaIvec2 tmp;
+	SwitchBetweenBLAndOtherDirection(align, ps, tmp, local_position, local_size);
+	SwitchBetweenBLAndOtherDirection(dir, ps, local_position, tmp, local_size);
+	align = dir;
+}
+
+MayaFloatingViewport::AlignDirecton MayaFloatingViewport::GetAlignDirection() const
+{
+	return align;
+}
+
+void MayaFloatingViewport::SetPosition(MayaIvec2 position)
+{
+	dock = NoDock;
+	local_position = position;
+}
+
+void MayaFloatingViewport::SetSize(MayaIvec2 size)
+{
+	dock = NoDock;
+	local_size = size;
+}
+
+void MayaFloatingViewport::SetBounds(MayaIvec4 bounds)
+{
+	dock = NoDock;
+	local_size = { bounds.z, bounds.w };
+	local_position = { bounds.x, bounds.y };
+	ComputeViewportBounds();
+}
+
+MayaIvec2 MayaFloatingViewport::GetPosition() const
+{
+	return local_position;
+}
+
+MayaIvec2 MayaFloatingViewport::GetSize() const
+{
+	return local_size;
+}
+
+MayaIvec4 MayaFloatingViewport::GetBounds() const
+{
+	return MayaConcat(local_position, local_size);
+}
+
+void MayaFloatingViewport::SetDockDirection(DockDirection dir)
+{
+	dock = dir;
+	ComputeViewportBounds();
+}
+
+MayaFloatingViewport::DockDirection MayaFloatingViewport::GetDockDirection() const
+{
+	return dock;
+}
+
+void MayaFloatingViewport::SetDockThickness(int thickness)
+{
+	if (dock == DockLeft || dock == DockRight)
+		local_size.x = thickness;
+	else if (dock == DockTop || dock == DockBottom)
+		local_size.y = thickness;
+	ComputeViewportBounds();
+}
+
+void MayaFloatingViewport::ComputeViewportBounds()
+{
+	auto const pp = GetParentExactPosition();
+	auto const ps = GetParentExactSize();
+
+	switch (dock) {
+		case DockLeft:
+			SwitchBetweenBLAndOtherDirection(align, ps, local_position, { 0, 0 }, local_size);
+			local_size.y = ps.y;
+			break;
+		case DockRight:
+			SwitchBetweenBLAndOtherDirection(align, ps, local_position, { ps.x - local_size.x, 0 }, local_size);
+			local_size.y = ps.y;
+			break;
+		case DockTop:
+			SwitchBetweenBLAndOtherDirection(align, ps, local_position, { 0, ps.y - local_size.y }, local_size);
+			local_size.x = ps.x;
+			break;
+		case DockBottom:
+			SwitchBetweenBLAndOtherDirection(align, ps, local_position, { 0, 0 }, local_size);
+			local_size.x = ps.x;
+			break;
+	}
+
+	SwitchBetweenBLAndOtherDirection(align, ps, exact_position, local_position, local_size);
+	exact_position = exact_position + pp;
+	exact_size = local_size;
 }

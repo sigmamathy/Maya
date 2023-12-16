@@ -140,12 +140,77 @@ class MayaViewport
 {
 public:
 	MayaViewport(MayaWindow window);
+	MayaViewport(MayaViewport* viewport);
 
 	void ClearColor(MayaFvec4 color);
 
+protected:
+	MayaIvec2 GetParentExactPosition() const;
+	MayaIvec2 GetParentExactSize() const;
+
+	void UseThisViewport();
+
+	virtual void ComputeViewportBounds() = 0;
+
+	MayaWindow window;
+	MayaViewport* parent;
+	MayaIvec2 exact_position, exact_size;
+};
+
+class MayaFloatingViewport : public MayaViewport
+{
+public:
+	enum AlignDirecton {
+		AlignTopLeft, AlignTopRight, AlignBottomLeft, AlignBottomRight
+	};
+
+	enum DockDirection {
+		NoDock, DockLeft, DockRight, DockTop, DockBottom
+	};
+
+public:
+	MayaFloatingViewport(MayaWindow window);
+
+	MayaFloatingViewport(MayaViewport* viewport);
+
+	// Set viewport align direction
+	void SetAlignDirection(AlignDirecton dir);
+
+	// Get current align direction
+	AlignDirecton GetAlignDirection() const;
+
+	// Set viewport position, immediately undock viewport
+	void SetPosition(MayaIvec2 position);
+
+	// Set viewport size, immediately undock viewport
+	void SetSize(MayaIvec2 size);
+
+	// Equivalent to SetPosition + SetSize
 	void SetBounds(MayaIvec4 bounds);
 
+	// Get current viewport position
+	MayaIvec2 GetPosition() const;
+
+	// Get current viewport size
+	MayaIvec2 GetSize() const;
+
+	// Equivalent to GetPosition + GetSize
+	MayaIvec4 GetBounds() const;
+
+	// Dock the viewport to a certain direction
+	void SetDockDirection(DockDirection dir);
+	
+	// Get dock direction
+	DockDirection GetDockDirection() const;
+
+	// Set docked viewport thickness
+	// No effect when GetDockDirection() == NoDock
+	void SetDockThickness(int thickness);
+
 private:
-	MayaWindow window;
-	MayaIvec2 position, size;
+	void ComputeViewportBounds() override;
+
+	MayaIvec2 local_position, local_size;
+	AlignDirecton align;
+	DockDirection dock;
 };

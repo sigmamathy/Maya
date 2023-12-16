@@ -14,11 +14,17 @@ int main()
 		MayaWindow w1;
 		w1.Init(p1);
 
-		MayaViewport v1(w1);
-		v1.SetBounds(MayaIvec4(0, 0, 500, 500));
+		MayaFloatingViewport v1(w1);
+		v1.SetDockDirection(v1.DockBottom);
+		v1.SetDockThickness(200);
 
-		MayaViewport v2(w1);
-		v2.SetBounds(MayaIvec4(500, 0, 500, 500));
+		MayaFloatingViewport v2(&v1);
+		v2.SetBounds(MayaIvec4(50, 50, 100, 100));
+
+		w1.AddEventListener<MayaKeyEvent>([&](MayaWindow window, MayaKeyEvent const& e) {
+			if (e.down && e.keycode == MayaKeyLeft)
+				v1.SetDockThickness(v1.GetSize().y + 20);
+		});
 
 		w1.AddEventListener<MayaUpdateEvent>([&](MayaWindow window, MayaUpdateEvent const& e) {
 			v1.ClearColor(MayaFvec4(1.0f, 0.0f, 0.0f, 1.0f));
