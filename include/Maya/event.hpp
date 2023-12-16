@@ -154,17 +154,7 @@ class MayaEvent
 public:
 	// Returns an event ID implemented by child
 	virtual int GetEventID() const = 0;
-
-	template<class Ty> requires std::is_base_of_v<MayaEvent, Ty>
-	void Dispatch(std::function<void(Ty const&)> const& func);
 };
-
-template<class Ty> requires std::is_base_of_v<MayaEvent, Ty>
-void MayaEvent::Dispatch(std::function<void(Ty const&)> const& func)
-{
-	if (GetEventID() == Ty::EventID)
-		func(*static_cast<Ty const*>(this));
-}
 
 #define MAYA_DEFINE_EVENT_ID(x) static constexpr int EventID = x; inline int GetEventID() const override { return x; }
 
@@ -206,7 +196,7 @@ struct MayaMouseMovedEvent : public MayaEvent
 struct MayaMouseScrolledEvent : public MayaEvent
 {
 	MAYA_DEFINE_EVENT_ID(0x10);
-	MayaMouseScrolledEvent(MayaIvec2 position) : offset(offset) {}
+	MayaMouseScrolledEvent(MayaIvec2 offset) : offset(offset) {}
 	MayaIvec2 offset; // mouse offset
 };
 

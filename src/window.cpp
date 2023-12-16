@@ -3,6 +3,12 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#if MAYA_DEBUG
+#define MAYA_TEMP_WCHECK(fn) if (!IsReachable()) MAYA_DERR(MAYA_EMPTY_REFERENCE_ERROR, fn ": Window has empty reference.") 
+#else
+#define MAYA_TEMP_WCHECK(fn)
+#endif
+
 std::vector<std::shared_ptr<MayaWindow::DataManager>> MayaWindow::window_instances;
 
 MayaWindow::DataManager::~DataManager()
@@ -14,81 +20,6 @@ MayaWindow::DataManager::~DataManager()
 MayaWindow::MayaWindow(MayaWindowParameters const& param)
 {
 	Init(param);
-}
-
-static void CreateWindowEventCallback(GLFWwindow* window)
-{
-	using WindowData = MayaWindow::DataManager;
-
-	glfwSetKeyCallback(window,
-	[](GLFWwindow* window, int key, int scancode, int act, int modes) {
-		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
-		if (act != GLFW_REPEAT) {
-			MayaKeyEvent e(MayaKeyCode(key), act == GLFW_PRESS);
-			for (auto& fn : data.event_listeners)
-				fn(e);
-		}
-	});
-
-	glfwSetMouseButtonCallback(window,
-	[](GLFWwindow* window, int button, int act, int modes) {
-		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
-		if (act != GLFW_REPEAT) {
-			MayaMouseEvent e(MayaMouseButton(button), act == GLFW_PRESS);
-			for (auto& fn : data.event_listeners)
-				fn(e);
-		}
-	});
-
-	glfwSetCursorPosCallback(window,
-	[](GLFWwindow* window, double x, double y) {
-		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
-		MayaMouseMovedEvent e(MayaIvec2(static_cast<int>(x), static_cast<int>(y)));
-		for (auto& fn : data.event_listeners)
-			fn(e);
-	});
-
-	glfwSetScrollCallback(window,
-	[](GLFWwindow* window, double x, double y) {
-		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
-		MayaMouseScrolledEvent e(MayaIvec2(static_cast<int>(x), static_cast<int>(y)));
-		for (auto& fn : data.event_listeners)
-			fn(e);
-	});
-
-	glfwSetWindowFocusCallback(window,
-	[](GLFWwindow* window, int focus) {
-		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
-		MayaWindowFocusedEvent e(focus);
-		for (auto& fn : data.event_listeners)
-			fn(e);
-	});
-
-	glfwSetWindowCloseCallback(window,
-	[](GLFWwindow* window) {
-		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
-		if (data.is_exit_on_close)
-			data.is_closed = true;
-		MayaWindowClosedEvent e;
-		for (auto& fn : data.event_listeners)
-			fn(e);
-	});
-
-	glfwSetWindowSizeCallback(window,
-	[](GLFWwindow* window, int width, int height) {
-		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
-		MayaWindowResizedEvent e(MayaIvec2(width, height));
-		for (auto& fn : data.event_listeners)
-			fn(e);
-	});
-
-	glfwSetWindowPosCallback(window,
-	[](GLFWwindow* window, int x, int y) {
-		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
-		MayaWindowMovedEvent e(MayaIvec2(x, y));
-		for (auto& fn : data.event_listeners)
-			fn(e);
-	});
 }
 
 void MayaWindow::Init(MayaWindowParameters const& param)
@@ -139,13 +70,95 @@ void MayaWindow::Init(MayaWindowParameters const& param)
 		glfwSetWindowPos(ptr, px, py);
 	d.position = { px, py };
 
-	glfwSetWindowUserPointer(ptr, &d);
-	CreateWindowEventCallback(ptr);
+	glfwSetWindowUserPointer(ptr, &window_instances.back());
+	AssignWindowEventCallbackToListeners();
 }
+
+MayaWindow::MayaWindow(std::weak_ptr<DataManager> manager)
+	: data_manager(manager)
+{
+}
+
+void MayaWindow::AssignWindowEventCallbackToListeners()
+{
+	using WindowData = std::shared_ptr<MayaWindow::DataManager>;
+	GLFWwindow* window = static_cast<GLFWwindow*>(data_manager.lock()->internal_pointer);
+
+	glfwSetKeyCallback(window,
+	[](GLFWwindow* window, int key, int scancode, int act, int modes) {
+		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
+		if (act != GLFW_REPEAT) {
+			MayaKeyEvent e(MayaKeyCode(key), act == GLFW_PRESS);
+			for (auto& fn : data->event_listeners)
+				fn(MayaWindow(data), e);
+		}
+	});
+
+	glfwSetMouseButtonCallback(window,
+	[](GLFWwindow* window, int button, int act, int modes) {
+		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
+		if (act != GLFW_REPEAT) {
+			MayaMouseEvent e(MayaMouseButton(button), act == GLFW_PRESS);
+			for (auto& fn : data->event_listeners)
+				fn(MayaWindow(data), e);
+		}
+	});
+
+	glfwSetCursorPosCallback(window,
+	[](GLFWwindow* window, double x, double y) {
+		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
+		MayaMouseMovedEvent e(MayaIvec2(static_cast<int>(x), static_cast<int>(y)));
+		for (auto& fn : data->event_listeners)
+			fn(MayaWindow(data), e);
+	});
+
+	glfwSetScrollCallback(window,
+	[](GLFWwindow* window, double x, double y) {
+		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
+		MayaMouseScrolledEvent e(MayaIvec2(static_cast<int>(x), static_cast<int>(y)));
+		for (auto& fn : data->event_listeners)
+			fn(MayaWindow(data), e);
+	});
+
+	glfwSetWindowFocusCallback(window,
+	[](GLFWwindow* window, int focus) {
+		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
+		MayaWindowFocusedEvent e(focus);
+		for (auto& fn : data->event_listeners)
+			fn(MayaWindow(data), e);
+	});
+
+	glfwSetWindowCloseCallback(window,
+	[](GLFWwindow* window) {
+		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
+		if (data->is_exit_on_close)
+			data->is_closed = true;
+		MayaWindowClosedEvent e;
+		for (auto& fn : data->event_listeners)
+			fn(MayaWindow(data), e);
+	});
+
+	glfwSetWindowSizeCallback(window,
+	[](GLFWwindow* window, int width, int height) {
+		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
+		MayaWindowResizedEvent e(MayaIvec2(width, height));
+		for (auto& fn : data->event_listeners)
+			fn(MayaWindow(data), e);
+	});
+
+	glfwSetWindowPosCallback(window,
+	[](GLFWwindow* window, int x, int y) {
+		auto& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
+		MayaWindowMovedEvent e(MayaIvec2(x, y));
+		for (auto& fn : data->event_listeners)
+			fn(MayaWindow(data), e);
+	});
+}
+
 
 void MayaWindow::RunEverything()
 {
-	float start_t = glfwGetTime();
+	float start_t = static_cast<float>(glfwGetTime());
 	for (;;)
 	{
 		bool exit = true;
@@ -158,14 +171,15 @@ void MayaWindow::RunEverything()
 		if (exit)
 			break;
 
-		float elapsed = glfwGetTime() - start_t;
-		start_t = glfwGetTime();
+		float elapsed = static_cast<float>(glfwGetTime()) - start_t;
+		start_t = static_cast<float>(glfwGetTime());
 		MayaUpdateEvent e(elapsed);
 
 		for (auto d: window_instances) {
 			if (!d->is_closed) {
+				glClear(GL_COLOR_BUFFER_BIT);
 				for (auto& fn : d->event_listeners)
-					fn(e);
+					fn(MayaWindow(d), e);
 				glfwSwapBuffers(static_cast<GLFWwindow*>(d->internal_pointer));
 			}
 		}
@@ -176,12 +190,165 @@ void MayaWindow::RunEverything()
 
 void MayaWindow::Close()
 {
+	MAYA_TEMP_WCHECK("MayaWindow::Close()");
 	auto s = data_manager.lock();
 	s->is_closed = true;
 }
 
-bool MayaWindow::isClosed() const
+bool MayaWindow::IsClosed() const
 {
+	MAYA_TEMP_WCHECK("MayaWindow::IsClosed()");
 	auto s = data_manager.lock();
 	return s->is_closed;
+}
+
+bool MayaWindow::IsReachable() const
+{
+	return !data_manager.expired();
+}
+
+void MayaWindow::SetSize(MayaIvec2 size)
+{
+	MAYA_TEMP_WCHECK("MayaWindow::SetSize(MayaIvec2)");
+	auto s = data_manager.lock();
+	s->size = size;
+}
+
+void MayaWindow::SetTitle(std::string const& title)
+{
+	MAYA_TEMP_WCHECK("MayaWindow::SetTitle(std::string const&)");
+	auto s = data_manager.lock();
+	s->title = title;
+}
+
+void MayaWindow::SetPosition(MayaIvec2 position)
+{
+	MAYA_TEMP_WCHECK("MayaWindow::SetPosition(MayaIvec2)");
+	auto s = data_manager.lock();
+	s->position = position;
+}
+
+MayaIvec2 MayaWindow::GetSize() const
+{
+	MAYA_TEMP_WCHECK("MayaWindow::GetSize()");
+	auto s = data_manager.lock();
+	return s->size;
+}
+
+std::string MayaWindow::GetTitle() const
+{
+	MAYA_TEMP_WCHECK("MayaWindow::GetTitle()");
+	auto s = data_manager.lock();
+	return s->title;
+}
+
+MayaIvec2 MayaWindow::GetPosition() const
+{
+	MAYA_TEMP_WCHECK("MayaWindow::GetPosition()");
+	auto s = data_manager.lock();
+	return s->position;
+}
+
+MayaViewport::MayaViewport(MayaWindow window)
+	: window(window)
+{
+	position = { 0, 0 };
+	size = window.GetSize();
+}
+
+// Vertex shader source code
+const char* vertexShaderSource = R"(
+    #version 330 core
+    layout (location = 0) in vec2 position;
+
+    void main()
+    {
+        gl_Position = vec4(position, 0.0, 1.0);
+    }
+)";
+
+// Fragment shader source code
+const char* fragmentShaderSource = R"(
+    #version 330 core
+    out vec4 fragColor;
+	uniform vec4 color;
+
+    void main()
+    {
+        fragColor = color;
+    }
+)";
+
+
+void MayaViewport::ClearColor(MayaFvec4 color)
+{
+	glViewport(position.x, position.y, size.x, size.y);
+	
+	// Create and compile the vertex shader
+	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+	glCompileShader(vertexShader);
+
+	// Create and compile the fragment shader
+	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+	glCompileShader(fragmentShader);
+
+	// Create the shader program and link the shaders
+	GLuint shaderProgram = glCreateProgram();
+	glAttachShader(shaderProgram, vertexShader);
+	glAttachShader(shaderProgram, fragmentShader);
+	glLinkProgram(shaderProgram);
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
+
+	// Create and bind the vertex array object (VAO)
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
+	// Create the vertex buffer object (VBO) and copy the vertex data
+	GLuint vbo;
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	float vertices[] = {
+		-1.0f, -1.0f,
+		 1.0f, -1.0f,
+		 -1.0f, 1.0f,
+		 1.0f,  1.0f,
+		-1.0f,  1.0f,
+		1.0f, -1.0f
+	};
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	// Specify the vertex attributes
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glUseProgram(shaderProgram);
+
+	glUniform4f(glGetUniformLocation(shaderProgram, "color"), color.x, color.y, color.z, color.w);
+
+	// Bind the VAO
+	glBindVertexArray(vao);
+
+	// Draw the square
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	// Unbind the VAO
+	glBindVertexArray(0);
+
+	glDeleteBuffers(1, &vbo);
+	glDeleteVertexArrays(1, &vao);
+	glDeleteProgram(shaderProgram);
+}
+
+void MayaViewport::SetBounds(MayaIvec4 bounds)
+{
+	position = { bounds.x, bounds.y };
+	size = { bounds.z, bounds.w };
 }

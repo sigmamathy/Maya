@@ -19,7 +19,7 @@ void MayaGetDeviceInfo(MayaMonitorsInfo& info)
 {
 #if MAYA_DEBUG
 	if (!MayaIsLibraryInitialized())
-		MAYA_ERROR(MAYA_MISSING_LIBRARY_ERROR,
+		MAYA_DERR(MAYA_MISSING_LIBRARY_ERROR,
 			"MayaGetDeviceInfo(MayaMonitorsInfo&): Required library is not initialized.");
 #endif
 	static bool first_call = false;

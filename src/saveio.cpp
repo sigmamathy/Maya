@@ -45,7 +45,7 @@ void MayaSaveIO::Import(MayaSaveSlot& slot)
     int mode = GetFileMode(filepath.c_str());
 #if MAYA_DEBUG
     if (mode == -1) 
-        MAYA_ERROR(MAYA_MISSING_FILE_ERROR,
+        MAYA_DERR(MAYA_MISSING_FILE_ERROR,
             "MayaSaveIO::Import(MayaSaveSlot&): Required file cannot be found.");
 #endif
     if (mode == -2)

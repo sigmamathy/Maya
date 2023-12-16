@@ -51,20 +51,22 @@
 #include <memory>
 #include <variant>
 
-// Debug information provided internally
-struct MayaDebugError {
+// Error information provided internally
+struct MayaErrorInfo {
 	int code;
 	std::string details;
+	bool is_debug;
 };
 
-// For internal usage
-#define MAYA_ERROR(x, str) throw MayaDebugError { x, "[" #x "] " + static_cast<std::string>(str) }
+// For internal usage (debug use)
+#define MAYA_DERR(x, str) throw MayaErrorInfo { x, "Debug Error [" #x "] " + static_cast<std::string>(str), true }
 
 // Error types
 #define MAYA_BOUNDARY_ERROR				0x1
 #define MAYA_DIVISION_BY_ZERO_ERROR		0x2
 #define MAYA_MISSING_LIBRARY_ERROR		0x3
 #define MAYA_MISSING_FILE_ERROR			0x4
+#define MAYA_EMPTY_REFERENCE_ERROR		0x5
 
 // Initialize Maya (external) libraries as needed.
 // Most features required this initialization and is advised to call this function

@@ -117,7 +117,7 @@ constexpr Ty& MayaVector<Ty, Dim>::operator[](int i)
 {
 #if MAYA_DEBUG
 	if (i < 0 || i > Dim - 1)
-		MAYA_ERROR(MAYA_BOUNDARY_ERROR,
+		MAYA_DERR(MAYA_BOUNDARY_ERROR,
 			"MayaVector::operator[](int): Array index out of bounds.");
 #endif
 	return elems[i];
@@ -128,7 +128,7 @@ constexpr Ty const& MayaVector<Ty, Dim>::operator[](int i) const
 {
 #if MAYA_DEBUG
 	if (i < 0 || i > Dim - 1)
-		MAYA_ERROR(MAYA_BOUNDARY_ERROR,
+		MAYA_DERR(MAYA_BOUNDARY_ERROR,
 			"MayaVector::operator[](int): Array index out of bounds.");
 #endif
 	return elems[i];
@@ -163,9 +163,9 @@ template<class Ty> template<class Ty2> constexpr MayaVector<Ty, 4>::MayaVector(M
 #if MAYA_DEBUG
 #define MAYA_TEMP_DEFINE_VECTOR_OPERATOR_BRACKETS(dim, ...)\
 	template<class Ty> constexpr Ty& MayaVector<Ty, dim>::operator[](int i) {\
-			if (i < 0 || i > dim - 1) MAYA_ERROR(MAYA_BOUNDARY_ERROR, "MayaVector::operator[](int): Array index out of bounds."); __VA_ARGS__; }\
+			if (i < 0 || i > dim - 1) MAYA_DERR(MAYA_BOUNDARY_ERROR, "MayaVector::operator[](int): Array index out of bounds."); __VA_ARGS__; }\
 	template<class Ty> constexpr Ty const& MayaVector<Ty, dim>::operator[](int i) const {\
-			if (i < 0 || i > dim - 1) MAYA_ERROR(MAYA_BOUNDARY_ERROR, "MayaVector::operator[](int): Array index out of bounds."); __VA_ARGS__; }
+			if (i < 0 || i > dim - 1) MAYA_DERR(MAYA_BOUNDARY_ERROR, "MayaVector::operator[](int): Array index out of bounds."); __VA_ARGS__; }
 #else
 #define MAYA_TEMP_DEFINE_VECTOR_OPERATOR_BRACKETS(dim, ...)\
 	template<class Ty> constexpr Ty& MayaVector<Ty, dim>::operator[](int i) { __VA_ARGS__; }\
@@ -303,7 +303,7 @@ constexpr auto MayaNormalize(MayaVector<Ty, Dim> const& vec)
 		sum += vec[i] * vec[i];
 #if MAYA_DEBUG
 	if (!sum)
-		MAYA_ERROR(MAYA_DIVISION_BY_ZERO_ERROR,
+		MAYA_DERR(MAYA_DIVISION_BY_ZERO_ERROR,
 			"MayaNormalize(MayaVector const&): The required vector has norm equal to zero.");
 #endif
 	auto invsqrt = 1.0f / std::sqrt(static_cast<common_type>(sum));
@@ -436,7 +436,7 @@ constexpr MayaVector<Ty, Rw>& MayaMatrix<Ty, Rw, Cn>::operator[](int i)
 {
 #if MAYA_DEBUG
 	if (i < 0 || i > Cn - 1)
-		MAYA_ERROR(MAYA_BOUNDARY_ERROR,
+		MAYA_DERR(MAYA_BOUNDARY_ERROR,
 			"MayaMatrix::operator[](int): Array index out of bounds.");
 #endif
 	return column_vectors[i];
@@ -447,7 +447,7 @@ constexpr MayaVector<Ty, Rw> const& MayaMatrix<Ty, Rw, Cn>::operator[](int i) co
 {
 #if MAYA_DEBUG
 	if (i < 0 || i > Cn - 1)
-		MAYA_ERROR(MAYA_BOUNDARY_ERROR,
+		MAYA_DERR(MAYA_BOUNDARY_ERROR,
 			"MayaMatrix::operator[](int): Array index out of bounds.");
 #endif
 	return column_vectors[i];
