@@ -18,7 +18,7 @@ if (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
 endif()
 
 add_library(${PROJECT_NAME} "3rdparty/glad/glad.c"
-    "src/core.cpp" "src/deviceinfo.cpp" "src/saveio.cpp" "src/window.cpp")
+    "src/core.cpp" "src/deviceinfo.cpp"  "src/window.cpp")
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 

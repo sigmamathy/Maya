@@ -1,4 +1,5 @@
 #include <Maya/core.hpp>
+#include <Maya/window.hpp>
 #include <GLFW/glfw3.h>
 
 static bool is_library_initialized = false;
@@ -15,6 +16,8 @@ void MayaInitLibrary(void)
 void MayaTerminateLibrary(void)
 {
 	is_library_initialized = false;
+	extern std::vector<std::shared_ptr<MayaWindowPtr::Reference>> MayaInternal_window_instances;
+	MayaInternal_window_instances.clear();
 	glfwTerminate();
 }
 

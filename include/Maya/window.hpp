@@ -39,21 +39,18 @@ struct MayaWindowParameters
 // Handles window creation and management.
 // Note that object only holds a weak pointer to the actual window.
 // Copying this object does not duplicate itself.
-class MayaWindow
+class MayaWindowPtr
 {
 public:
 	// Uninitialized.
-	MayaWindow() = default;
+	MayaWindowPtr() = default;
 
-	// Same functionality as Init.
-	MayaWindow(MayaWindowParameters const& param);
-
-	// Initialize window object using the given information.
-	void Init(MayaWindowParameters const& param);
+	// Uninitialized.
+	MayaWindowPtr(std::nullptr_t);
 
 	// Add an event listener to the window to track information.
 	template<class Ty> requires std::is_base_of_v<MayaEvent, Ty>
-	void AddEventListener(std::function<void(MayaWindow, Ty const&)> const& listener);
+	void AddEventListener(std::function<void(MayaWindowPtr, Ty const&)> const& listener);
 
 	// Execute all initialized window at once (not async).
 	// Ended only when all windows are either detached or closed.
@@ -68,6 +65,9 @@ public:
 
 	// Check whether the underlying object is destroyed.
 	bool IsReachable() const;
+
+	// Check whether two window pointers refer to the same object.
+	bool operator==(MayaWindowPtr wptr) const;
 
 	// Modify window size
 	void SetSize(MayaIvec2 size);
@@ -89,44 +89,51 @@ public:
 
 public:
 	// Window data with RAII management
-	struct DataManager final
+	struct Reference final
 	{
 		std::string title;
 		MayaIvec2 size, position;
 		bool is_closed;
 		bool is_exit_on_close, is_detached;
-		std::vector<std::function<void(MayaWindow, MayaEvent const&)>> event_listeners;
+		std::vector<std::function<void(MayaWindowPtr, MayaEvent const&)>> event_listeners;
 	// ----------- internal ----------- //
 		void* internal_pointer;
 	
 		// Free allocated memory
-		~DataManager();
+		~Reference();
 	};
 
 private:
-	// Construct this with existing window, does not duplicate a window.
-	MayaWindow(std::weak_ptr<DataManager> manager);
-
 	// Assign callbacks
 	void AssignWindowEventCallbackToListeners();
 
-	// Stores the actual instance of window.
-	static std::vector<std::shared_ptr<DataManager>> window_instances;
-
 	// A pointer that points to the window instance.
-	std::weak_ptr<DataManager> data_manager;
+	std::weak_ptr<Reference> refptr;
+
+	friend MayaWindowPtr MayaCreateWindow(MayaWindowParameters const&);
+	friend MayaWindowPtr MayaRecreateWindow(MayaWindowPtr wptr, MayaWindowParameters const& param);
 };
 
+// Register a default window into the system and returns the desired pointer.
+MayaWindowPtr MayaCreateWindow();
+
+// Register a window into the system and returns the desired pointer.
+MayaWindowPtr MayaCreateWindow(MayaWindowParameters const& param);
+
+// Reload the window with different initial conditions.
+// All resources and event callbacks remains.
+MayaWindowPtr MayaRecreateWindow(MayaWindowPtr wptr, MayaWindowParameters const& param);
+
 template<class Ty> requires std::is_base_of_v<MayaEvent, Ty>
-void MayaWindow::AddEventListener(std::function<void(MayaWindow, Ty const&)> const& listener)
+void MayaWindowPtr::AddEventListener(std::function<void(MayaWindowPtr, Ty const&)> const& listener)
 {
 #if MAYA_DEBUG
 	if (!IsReachable())
 		MAYA_DERR(MAYA_EMPTY_REFERENCE_ERROR,
-			"MayaWindow::AddEventListener(std::function<void(MayaWindow, Ty const&)> const&): Window has empty reference.");
+			"MayaWindowPtr::AddEventListener(std::function<void(MayaWindowPtr, Ty const&)> const&): Window has empty reference.");
 #endif
-	auto s = data_manager.lock();
-	s->event_listeners.push_back([=](MayaWindow window, MayaEvent const& e) -> void {
+	auto s = refptr.lock();
+	s->event_listeners.push_back([=](MayaWindowPtr window, MayaEvent const& e) -> void {
 		if constexpr (!std::is_same_v<Ty, MayaEvent>) {
 			if (e.GetEventID() == Ty::EventID)
 				listener(window, *static_cast<Ty const*>(&e));
@@ -135,82 +142,3 @@ void MayaWindow::AddEventListener(std::function<void(MayaWindow, Ty const&)> con
 		}
 	});
 }
-
-class MayaViewport
-{
-public:
-	MayaViewport(MayaWindow window);
-	MayaViewport(MayaViewport* viewport);
-
-	void ClearColor(MayaFvec4 color);
-
-protected:
-	MayaIvec2 GetParentExactPosition() const;
-	MayaIvec2 GetParentExactSize() const;
-
-	void UseThisViewport();
-
-	virtual void ComputeViewportBounds() = 0;
-
-	MayaWindow window;
-	MayaViewport* parent;
-	MayaIvec2 exact_position, exact_size;
-};
-
-class MayaFloatingViewport : public MayaViewport
-{
-public:
-	enum AlignDirecton {
-		AlignTopLeft, AlignTopRight, AlignBottomLeft, AlignBottomRight
-	};
-
-	enum DockDirection {
-		NoDock, DockLeft, DockRight, DockTop, DockBottom
-	};
-
-public:
-	MayaFloatingViewport(MayaWindow window);
-
-	MayaFloatingViewport(MayaViewport* viewport);
-
-	// Set viewport align direction
-	void SetAlignDirection(AlignDirecton dir);
-
-	// Get current align direction
-	AlignDirecton GetAlignDirection() const;
-
-	// Set viewport position, immediately undock viewport
-	void SetPosition(MayaIvec2 position);
-
-	// Set viewport size, immediately undock viewport
-	void SetSize(MayaIvec2 size);
-
-	// Equivalent to SetPosition + SetSize
-	void SetBounds(MayaIvec4 bounds);
-
-	// Get current viewport position
-	MayaIvec2 GetPosition() const;
-
-	// Get current viewport size
-	MayaIvec2 GetSize() const;
-
-	// Equivalent to GetPosition + GetSize
-	MayaIvec4 GetBounds() const;
-
-	// Dock the viewport to a certain direction
-	void SetDockDirection(DockDirection dir);
-	
-	// Get dock direction
-	DockDirection GetDockDirection() const;
-
-	// Set docked viewport thickness
-	// No effect when GetDockDirection() == NoDock
-	void SetDockThickness(int thickness);
-
-private:
-	void ComputeViewportBounds() override;
-
-	MayaIvec2 local_position, local_size;
-	AlignDirecton align;
-	DockDirection dock;
-};
