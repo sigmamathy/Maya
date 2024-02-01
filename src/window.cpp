@@ -138,6 +138,7 @@ MayaWindow::~MayaWindow()
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	glfwDestroyWindow(window);
+	tmp();
 }
 
 void MayaWindow::SetEventCallback(MayaEventCallbackCR callback)

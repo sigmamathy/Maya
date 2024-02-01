@@ -8,8 +8,18 @@ set(CMAKE_TOOLCHAIN_FILE "C:/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE FILEP
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
 
-add_library(${PROJECT_NAME} "src/core.cpp" "tests/basic.cpp" "src/window.cpp" "src/deviceinfo.cpp" "src/shader.cpp" "src/vertexarray.cpp" "src/renderer.cpp")
+add_library(${PROJECT_NAME}
+    "src/core.cpp"
+    "src/window.cpp"
+    "src/deviceinfo.cpp"
+    "src/shader.cpp"
+    "src/vertexarray.cpp"
+    "src/renderer.cpp"
+)
+
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
+add_compile_definitions(MAYA_PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+
 target_include_directories(${PROJECT_NAME} PUBLIC "include")
 target_link_libraries(${PROJECT_NAME} glfw glad::glad)
 
