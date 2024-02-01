@@ -55,6 +55,7 @@
 
 #define MAYA_TYPEDEF0(x, y) using x = y; using x##R = y&; using x##CR = y const&
 #define MAYA_TYPEDEF1(x, y) template<class Ty> using x = y; template<class Ty> using x##R = y&; template<class Ty> using x##CR = y const&
+#define MAYA_TYPEDEF2(x, ...) template<class Ty1, class Ty2> using x = __VA_ARGS__; template<class Ty1, class Ty2> using x##R = __VA_ARGS__&; template<class Ty1, class Ty2> using x##CR = __VA_ARGS__ const&
 #define MAYA_TYPEDEFPTR(x) class x; MAYA_TYPEDEF0(x##Uptr, MayaUptr<x>); MAYA_TYPEDEF0(x##Sptr, MayaSptr<x>); MAYA_TYPEDEF0(x##Wptr, MayaWptr<x>)
 
 MAYA_TYPEDEF0(MayaString,		std::string);
@@ -62,16 +63,20 @@ MAYA_TYPEDEF0(MayaString,		std::string);
 MAYA_TYPEDEF1(MayaUptr,			std::unique_ptr<Ty>);
 MAYA_TYPEDEF1(MayaSptr,			std::shared_ptr<Ty>);
 MAYA_TYPEDEF1(MayaWptr,			std::weak_ptr<Ty>);
+MAYA_TYPEDEF1(MayaArrayList,	std::vector<Ty>);
 MAYA_TYPEDEF1(MayaFunction,		std::function<Ty>);
 
+MAYA_TYPEDEF2(MayaHashMap,		std::unordered_map<Ty1, Ty2>);
+
 // Error types
-#define MAYA_NO_ERROR					0x0
-#define MAYA_BOUNDARY_ERROR				0x1
-#define MAYA_DIVISION_BY_ZERO_ERROR		0x2
-#define MAYA_MISSING_LIBRARY_ERROR		0x3
-#define MAYA_MISSING_FILE_ERROR			0x4
-#define MAYA_EMPTY_REFERENCE_ERROR		0x5
-#define MAYA_SHADER_COMPILE_ERROR		0x6
+#define MAYA_NO_ERROR							0x0
+#define MAYA_BOUNDARY_ERROR						0x1
+#define MAYA_DIVISION_BY_ZERO_ERROR				0x2
+#define MAYA_MISSING_LIBRARY_ERROR				0x3
+#define MAYA_MISSING_FILE_ERROR					0x4
+#define MAYA_EMPTY_REFERENCE_ERROR				0x5
+#define MAYA_SHADER_COMPILE_ERROR				0x6
+#define MAYA_INVALID_GRAPHICS_CONTEXT_ERROR		0x7
 
 struct MayaErrorStatus
 {
@@ -89,6 +94,13 @@ MayaErrorStatus MayaPollError();
 
 void MayaSendError(MayaErrorStatus stat);
 
+struct MayaLibraryRAII {
+	MayaLibraryRAII();
+	~MayaLibraryRAII();
+	MayaLibraryRAII(MayaLibraryRAII const&) = delete;
+	MayaLibraryRAII& operator=(MayaLibraryRAII const&) = delete;
+};
+
 // Initialize Maya (external) libraries as needed.
 void MayaInitLibrary(void);
 
@@ -99,3 +111,5 @@ void MayaTerminateLibrary(void);
 bool MayaIsLibraryInitialized(void);
 
 double MayaGetCurrentTimeSinceInit(void);
+
+void tmp();

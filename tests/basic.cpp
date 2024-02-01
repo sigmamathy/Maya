@@ -1,10 +1,16 @@
 #include <maya/core.hpp>
 #include <maya/window.hpp>
-#include <maya/shader.hpp>
+#include <maya/renderer.hpp>
+
+static float vertices[] = {
+	0.5f, 0.5f,
+	-0.5f, 0.5f,
+	-0.5f, -0.5f
+};
 
 int main()
 {
-	MayaInitLibrary();
+	MayaLibraryRAII _;
 	MayaSetErrorCallback([](MayaErrorStatus& err) {
 		std::cout << err.Details << '\n';
 	});
@@ -12,15 +18,28 @@ int main()
 	MayaWindowUptr window = MayaCreateWindowUptr();
 
 	MayaShaderProgramParameters sp;
-	MayaLoadShaderFromFile(sp, "D:/Files/dev/vsproject/Maya/tests/basic");
+	MayaLoadShaderFromFile(sp, "C:/Users/sumwilson/dev/vsproject/Maya/tests/basic");
 	MayaShaderProgramUptr program = MayaCreateShaderProgramUptr(*window, sp);
+	program->SetUniform("uColor", 1.0f, 1.0f, 0.0f, 1.0f);
+
+	MayaVertexArrayUptr vao = MayaCreateVertexArrayUptr(*window);
+	vao->SetVertexCount(3);
+
+	MayaVertexLayout layout;
+	layout(0, 2);
+	layout.Data = vertices;
+	layout.Size = sizeof(vertices);
+	vao->LinkVertexBuffer(layout);
 
 	while (!window->IsTimeToClose())
 	{
+		MayaRenderer r;
+		r.Input = vao.get();
+		r.Program = program.get();
+		r.ExecuteDraw();
 		window->SwapBuffers();
 		MayaPollWindowEvents();
 	}
 
-	MayaTerminateLibrary();
 	return 0;
 }

@@ -2,7 +2,7 @@
 #include <GLFW/glfw3.h>
 
 
-void MayaGetDeviceInfo(MayaMonitorsInfo& info)
+void MayaGetDeviceInfo(MayaMonitorsInfo* info)
 {
 	MAYA_DIF (!MayaIsLibraryInitialized())
 		MAYA_SERR(MAYA_MISSING_LIBRARY_ERROR,
@@ -26,6 +26,6 @@ void MayaGetDeviceInfo(MayaMonitorsInfo& info)
 		first_called = true;
 	}
 
-	info.Monitors = monitors_info_cache.data();
-	info.Count = static_cast<int>(monitors_info_cache.size());
+	info->Monitors = monitors_info_cache.data();
+	info->Count = static_cast<int>(monitors_info_cache.size());
 }

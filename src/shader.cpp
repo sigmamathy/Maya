@@ -121,5 +121,34 @@ MayaShaderProgram::MayaShaderProgram(int program, MayaWindow* window)
 
 MayaShaderProgram::~MayaShaderProgram()
 {
+	window->UseGraphicsContext();
 	glDeleteProgram(programid);
+}
+
+unsigned Maya_s_binded_shader_program = 0;
+
+static void s_BindShaderProgram(unsigned id)
+{
+	if (id == Maya_s_binded_shader_program) return;
+	glUseProgram(id);
+	Maya_s_binded_shader_program = id;
+}
+
+int MayaShaderProgram::FindUniformLocation(MayaStringCR name)
+{
+	window->UseGraphicsContext();
+	if (uniform_location_cache.count(name))
+		return uniform_location_cache.at(name);
+	int x = glGetUniformLocation(programid, name.c_str());
+	uniform_location_cache[name] = x;
+	return x;
+}
+
+template<>
+void MayaShaderProgram::SetUniform(MayaStringCR name, float x, float y, float z, float w)
+{	
+	window->UseGraphicsContext();
+	s_BindShaderProgram(programid);
+	int loc = FindUniformLocation(name);
+	glUniform4f(loc, x, y, z, w);
 }

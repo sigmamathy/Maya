@@ -1,7 +1,8 @@
 #version 330 core
 
 out vec4 oFrag;
+uniform vec4 uColor;
 
 void main() {
-	oFrag = vec4(1, 1, 0, 1);
+	oFrag = uColor;;
 }

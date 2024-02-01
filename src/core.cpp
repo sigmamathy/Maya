@@ -31,21 +31,29 @@ void MayaSendError(MayaErrorStatus stat)
 		s_error_queue.push(stat);
 }
 
+MayaLibraryRAII::MayaLibraryRAII()
+{
+	MayaInitLibrary();
+}
+
+MayaLibraryRAII::~MayaLibraryRAII()
+{
+	MayaTerminateLibrary();
+}
+
 static bool s_library_initialized = false;
 
 void MayaInitLibrary(void)
 {
 	s_library_initialized = true;
 	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	//glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	//glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 }
 
 void MayaTerminateLibrary(void)
 {
-	while (auto e = glGetError()) std::cout << e << '\n';
-
 	s_library_initialized = false;
 	glfwTerminate();
 }
@@ -58,4 +66,9 @@ bool MayaIsLibraryInitialized(void)
 double MayaGetCurrentTimeSinceInit(void)
 {
 	return glfwGetTime();
+}
+
+void tmp()
+{
+	std::cout << glGetError();
 }

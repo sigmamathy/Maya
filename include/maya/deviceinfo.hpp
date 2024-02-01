@@ -17,4 +17,4 @@ struct MayaMonitorsInfo
 	int Count; // number of monitors
 };
 
-void MayaGetDeviceInfo(MayaMonitorsInfo& info);
+void MayaGetDeviceInfo(MayaMonitorsInfo* info);

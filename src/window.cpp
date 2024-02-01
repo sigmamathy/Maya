@@ -58,6 +58,7 @@ static void s_SetupWindowEventCallback(GLFWwindow* window)
 	glfwSetWindowSizeCallback(window,
 	[](GLFWwindow* window, int width, int height) {
 		auto& callback = *static_cast<MayaEventCallback*>(glfwGetWindowUserPointer(window));
+		glViewport(0, 0, width, height);
 		MayaWindowResizedEvent e;
 		e.Size = { width, height };
 		callback(e);
@@ -99,7 +100,7 @@ static Ty s_CreateWindowPtr(MayaWindowParameters& param)
 	else {
 		int sx = param.Size.x, sy = param.Size.y;
 		MayaMonitorsInfo info;
-		MayaGetDeviceInfo(info);
+		MayaGetDeviceInfo(&info);
 		auto m = info.Monitors[param.Monitor];
 		if (sx == -1) sx = m.Resolution.x;
 		if (sy == -1) sy = m.Resolution.y;
@@ -246,6 +247,7 @@ void MayaWindow::SetFullscreenMonitor(int monitor, MayaIvec2 size)
 	}
 
 	MayaMonitorsInfo info;
+	MayaGetDeviceInfo(&info);
 	auto& m = info.Monitors[monitor];
 	glfwSetWindowMonitor(window, static_cast<GLFWmonitor*>(m.Resptr), 0, 0,
 		size.x != -1 ? size.x : m.Resolution.x, size.y != -1 ? size.y : m.Resolution.y, GLFW_DONT_CARE);
