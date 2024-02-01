@@ -90,7 +90,7 @@ void MayaSetErrorCallback(MayaFunctionCR<void(MayaErrorStatus& stat)> callback);
 
 MayaErrorStatus MayaPollError();
 
-#define MAYA_SERR(code, det) { MayaSendError(MayaErrorStatus{code, det, MayaGetCurrentTimeSinceInit()}); }
+#define MAYA_SERR(code, det) MayaSendError(MayaErrorStatus{code, det, MayaGetCurrentTimeSinceInit()})
 
 void MayaSendError(MayaErrorStatus stat);
 

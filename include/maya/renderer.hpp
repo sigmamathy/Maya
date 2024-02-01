@@ -7,7 +7,7 @@
 class MayaRenderer
 {
 public:
-	MayaVertexArray* Input;
-	MayaShaderProgram* Program;
+	MayaVertexArray* Input = 0;
+	MayaShaderProgram* Program = 0;
 	void ExecuteDraw();
 };
