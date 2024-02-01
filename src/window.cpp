@@ -58,7 +58,6 @@ static void s_SetupWindowEventCallback(GLFWwindow* window)
 	glfwSetWindowSizeCallback(window,
 	[](GLFWwindow* window, int width, int height) {
 		auto& callback = *static_cast<MayaEventCallback*>(glfwGetWindowUserPointer(window));
-		glViewport(0, 0, width, height);
 		MayaWindowResizedEvent e;
 		e.Size = { width, height };
 		callback(e);
@@ -138,7 +137,6 @@ MayaWindow::~MayaWindow()
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	glfwDestroyWindow(window);
-	tmp();
 }
 
 void MayaWindow::SetEventCallback(MayaEventCallbackCR callback)
@@ -167,6 +165,12 @@ void MayaWindow::UseGraphicsContext()
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	glfwMakeContextCurrent(window);
+}
+
+void MayaWindow::ClearBuffers()
+{
+	UseGraphicsContext();
+	glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void MayaPollWindowEvents()

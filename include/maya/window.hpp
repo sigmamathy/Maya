@@ -57,6 +57,8 @@ public:
 
 	void UseGraphicsContext();
 
+	void ClearBuffers();
+
 	void SwapBuffers();
 
 	void SetPosition(MayaIvec2 pos);
