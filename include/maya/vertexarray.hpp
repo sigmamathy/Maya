@@ -35,9 +35,13 @@ class MayaVertexArray
 {
 public:
 
-	MayaVertexArray(int vao, MayaWindow* window);
+	MayaVertexArray(unsigned vao, MayaWindow* window);
 
 	~MayaVertexArray();
+
+	MayaVertexArray(MayaVertexArray const&) = delete;
+
+	MayaVertexArray& operator=(MayaVertexArray const&) = delete;
 
 	void SetVertexCount(int count);
 

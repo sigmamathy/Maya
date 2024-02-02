@@ -14,9 +14,6 @@ class MayaVector
 	/* Value uninitialized construction */									\
 	constexpr MayaVector(void) = default;									\
 																			\
-	/* Value fill construction */											\
-	explicit constexpr MayaVector(Ty value);								\
-																			\
 	/* Copy constructor */													\
 	template<class Ty2>														\
 	constexpr MayaVector(MayaVector<Ty2, dim> const&);						\
@@ -33,6 +30,7 @@ class MayaVector
 // ---------------------------- End --------------------------- //
 	static_assert(Dim > 0);
 	MAYA_VECTOR_COMMON(Dim)
+	explicit constexpr MayaVector(Ty value);
 
 	// Construct with Dim number of arguments
 	template<class... Tys> requires (Dim != 1 && sizeof...(Tys) == Dim && (std::is_convertible_v<Tys, Ty> && ...))
@@ -43,6 +41,16 @@ private:
 	std::array<Ty, Dim> elems;
 };
 
+// 1D vector variation (x)
+template<class Ty>
+class MayaVector<Ty, 1>
+{
+public:
+	Ty x;
+	constexpr MayaVector(Ty x);
+	MAYA_VECTOR_COMMON(1)
+};
+
 // 2D vector variation (x, y)
 template<class Ty>
 class MayaVector<Ty, 2>
@@ -50,6 +58,7 @@ class MayaVector<Ty, 2>
 public:
 	Ty x, y;
 	constexpr MayaVector(Ty x, Ty y);
+	explicit constexpr MayaVector(Ty value);
 	MAYA_VECTOR_COMMON(2)
 };
 
@@ -60,6 +69,7 @@ class MayaVector<Ty, 3>
 public:
 	Ty x, y, z;
 	constexpr MayaVector(Ty x, Ty y, Ty z);
+	explicit constexpr MayaVector(Ty value);
 	MAYA_VECTOR_COMMON(3)
 };
 
@@ -70,6 +80,7 @@ class MayaVector<Ty, 4>
 public:
 	Ty x, y, z, w;
 	constexpr MayaVector(Ty x, Ty y, Ty z, Ty w);
+	explicit constexpr MayaVector(Ty value);
 	MAYA_VECTOR_COMMON(4)
 };
 
@@ -139,6 +150,7 @@ std::common_type_t<Ty, float> MayaVector<Ty, Dim>::Norm() const
 	return std::sqrt(static_cast<std::common_type_t<Ty, float>>(sum));
 }
 
+template<class Ty> constexpr MayaVector<Ty, 1>::MayaVector(Ty x) : x(x) {}
 template<class Ty> constexpr MayaVector<Ty, 2>::MayaVector(Ty x, Ty y) : x(x), y(y) {}
 template<class Ty> constexpr MayaVector<Ty, 3>::MayaVector(Ty x, Ty y, Ty z) : x(x), y(y), z(z) {}
 template<class Ty> constexpr MayaVector<Ty, 4>::MayaVector(Ty x, Ty y, Ty z, Ty w) : x(x), y(y), z(z), w(w) {}
@@ -146,6 +158,11 @@ template<class Ty> constexpr MayaVector<Ty, 4>::MayaVector(Ty x, Ty y, Ty z, Ty 
 template<class Ty> constexpr MayaVector<Ty, 2>::MayaVector(Ty value) : x(value), y(value) {}
 template<class Ty> constexpr MayaVector<Ty, 3>::MayaVector(Ty value) : x(value), y(value), z(value) {}
 template<class Ty> constexpr MayaVector<Ty, 4>::MayaVector(Ty value) : x(value), y(value), z(value), w(value) {}
+
+template<class Ty> template<class Ty2> constexpr MayaVector<Ty, 1>::MayaVector(MayaVector<Ty2, 1> const& vec)
+	: x(static_cast<Ty>(vec.x))
+{
+}
 
 template<class Ty> template<class Ty2> constexpr MayaVector<Ty, 2>::MayaVector(MayaVector<Ty2, 2> const& vec)
 	: x(static_cast<Ty>(vec.x)), y(static_cast<Ty>(vec.y))
@@ -168,6 +185,7 @@ template<class Ty> template<class Ty2> constexpr MayaVector<Ty, 4>::MayaVector(M
 	template<class Ty> constexpr Ty const& MayaVector<Ty, dim>::operator[](int i) const {\
 			MAYA_DIF (i < 0 || i > dim - 1) MAYA_SERR(MAYA_BOUNDARY_ERROR, "MayaVector::operator[](int): Array index out of bounds."); __VA_ARGS__; }
 
+MAYA_TEMP_DEFINE_VECTOR_OPERATOR_BRACKETS(1, return x)
 MAYA_TEMP_DEFINE_VECTOR_OPERATOR_BRACKETS(2, return i ? y : x)
 MAYA_TEMP_DEFINE_VECTOR_OPERATOR_BRACKETS(3, return i ? (i == 2 ? z : y) : x)
 MAYA_TEMP_DEFINE_VECTOR_OPERATOR_BRACKETS(4, return i ? (i == 3 ? w : (i == 2 ? z : y)) : x)
@@ -175,6 +193,7 @@ MAYA_TEMP_DEFINE_VECTOR_OPERATOR_BRACKETS(4, return i ? (i == 3 ? w : (i == 2 ? 
 #define MAYA_TEMP_DEFINE_VECTOR_NORM(dim, ...)\
 	template<class Ty> std::common_type_t<Ty, float> MayaVector<Ty, dim>::Norm() const { return std::sqrt(__VA_ARGS__); }
 
+MAYA_TEMP_DEFINE_VECTOR_NORM(1, x * x)
 MAYA_TEMP_DEFINE_VECTOR_NORM(2, x * x + y * y)
 MAYA_TEMP_DEFINE_VECTOR_NORM(3, x * x + y * y + z * z)
 MAYA_TEMP_DEFINE_VECTOR_NORM(4, x * x + y * y + z * z + w * w)

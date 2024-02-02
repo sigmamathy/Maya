@@ -114,7 +114,7 @@ MayaShaderProgramSptr MayaCreateShaderProgramSptr(MayaWindow& window, MayaShader
 	return s_CreateShaderProgramPtr<MayaShaderProgramSptr>(window, param);
 }
 
-MayaShaderProgram::MayaShaderProgram(int program, MayaWindow* window)
+MayaShaderProgram::MayaShaderProgram(unsigned program, MayaWindow* window)
 	: programid(program), window(window)
 {
 }
@@ -144,11 +144,37 @@ int MayaShaderProgram::FindUniformLocation(MayaStringCR name)
 	return x;
 }
 
-template<>
-void MayaShaderProgram::SetUniform(MayaStringCR name, float x, float y, float z, float w)
-{	
-	window->UseGraphicsContext();
-	s_BindShaderProgram(programid);
-	int loc = FindUniformLocation(name);
-	glUniform4f(loc, x, y, z, w);
-}
+#define MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(ty, sz, fn)\
+	template<> void MayaShaderProgram::SetUniformVector(MayaStringCR name, MayaVector<ty, sz> const& vec)\
+	{ window->UseGraphicsContext(); s_BindShaderProgram(programid); int loc = FindUniformLocation(name); fn(loc, 1, &vec[0]); }
+
+MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(float, 1, glUniform1fv)
+MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(float, 2, glUniform2fv)
+MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(float, 3, glUniform3fv)
+MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(float, 4, glUniform4fv)
+
+MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(int, 1, glUniform1iv)
+MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(int, 2, glUniform2iv)
+MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(int, 3, glUniform3iv)
+MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(int, 4, glUniform4iv)
+
+MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(unsigned, 1, glUniform1uiv)
+MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(unsigned, 2, glUniform2uiv)
+MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(unsigned, 3, glUniform3uiv)
+MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(unsigned, 4, glUniform4uiv)
+
+#define MAYA_DEFINE_UNIFORM_MATRIX_FUNCTION(rw, cn, fn)\
+	template<> void MayaShaderProgram::SetUniformMatrix(MayaStringCR name, MayaMatrix<float, rw, cn> const& mat)\
+	{ window->UseGraphicsContext(); s_BindShaderProgram(programid); int loc = FindUniformLocation(name); fn(loc, 1, false, &mat[0][0]); }
+
+MAYA_DEFINE_UNIFORM_MATRIX_FUNCTION(2, 2, glUniformMatrix2fv)
+MAYA_DEFINE_UNIFORM_MATRIX_FUNCTION(2, 3, glUniformMatrix2x3fv)
+MAYA_DEFINE_UNIFORM_MATRIX_FUNCTION(2, 4, glUniformMatrix2x4fv)
+
+MAYA_DEFINE_UNIFORM_MATRIX_FUNCTION(3, 2, glUniformMatrix3x2fv)
+MAYA_DEFINE_UNIFORM_MATRIX_FUNCTION(3, 3, glUniformMatrix3fv)
+MAYA_DEFINE_UNIFORM_MATRIX_FUNCTION(3, 4, glUniformMatrix3x4fv)
+
+MAYA_DEFINE_UNIFORM_MATRIX_FUNCTION(4, 2, glUniformMatrix4x2fv)
+MAYA_DEFINE_UNIFORM_MATRIX_FUNCTION(4, 3, glUniformMatrix4x3fv)
+MAYA_DEFINE_UNIFORM_MATRIX_FUNCTION(4, 4, glUniformMatrix4fv)

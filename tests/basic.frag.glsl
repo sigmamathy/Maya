@@ -1,8 +1,11 @@
 #version 330 core
 
+in vec2 vTexCoord;
+
 out vec4 oFrag;
-uniform vec4 uColor;
+
+uniform sampler2D uTextureSlot0;
 
 void main() {
-	oFrag = uColor;;
+	oFrag = texture(uTextureSlot0, vTexCoord);
 }

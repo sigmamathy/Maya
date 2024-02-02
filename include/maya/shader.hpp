@@ -1,6 +1,7 @@
 #pragma once
 
 #include "./core.hpp"
+#include "./math.hpp"
 
 struct MayaShaderProgramParameters
 {
@@ -22,7 +23,7 @@ class MayaShaderProgram
 {
 public:
 
-	MayaShaderProgram(int program, MayaWindow* window);
+	MayaShaderProgram(unsigned program, MayaWindow* window);
 
 	~MayaShaderProgram();
 
@@ -30,8 +31,14 @@ public:
 
 	MayaShaderProgram& operator=(MayaShaderProgram const&) = delete;
 
-	template<class... Tys>
+	template<class Ty, class... Tys> requires (std::is_same_v<Ty, Tys> && ...)
 	void SetUniform(MayaStringCR name, Tys... args);
+
+	template<class Ty, int Sz>
+	void SetUniformVector(MayaStringCR name, MayaVector<Ty, Sz> const& vec);
+
+	template<int Rw, int Cn>
+	void SetUniformMatrix(MayaStringCR name, MayaMatrix<float, Rw, Cn> const& mat);
 
 private:
 
@@ -42,3 +49,10 @@ private:
 
 	int FindUniformLocation(MayaStringCR name);
 };
+
+template<class Ty, class... Tys> requires (std::is_same_v<Ty, Tys> && ...)
+void MayaShaderProgram::SetUniform(MayaStringCR name, Tys... args)
+{
+	MayaVector<Ty, sizeof...(Tys)> vec = { args... };
+	SetUniformVector(name, vec);
+}

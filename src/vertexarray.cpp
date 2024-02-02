@@ -31,7 +31,7 @@ MayaVertexArraySptr MayaCreateVertexArraySptr(MayaWindow& window)
 	return std::make_shared<MayaVertexArray>(vaoid, &window);
 }
 
-MayaVertexArray::MayaVertexArray(int vao, MayaWindow* window)
+MayaVertexArray::MayaVertexArray(unsigned vao, MayaWindow* window)
 	: vaoid(vao), window(window), vertex_count(0), iboid(0), indices_draw_count(0)
 {
 	vboids.reserve(1);
