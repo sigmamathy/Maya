@@ -44,11 +44,16 @@ public:
 	template<class Ty = float>
 	void LinkVertexBuffer(MayaVertexLayout& layout);
 
-private:
+	void LinkIndexBuffer(unsigned* data, unsigned size);
+
+public:
 
 	unsigned vaoid;
 	MayaWindow* window;
 	MayaArrayList<unsigned> vboids;
 	int vertex_count;
+	unsigned iboid;
+	int indices_draw_count;
+
 	friend class MayaRenderer;
 };

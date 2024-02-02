@@ -5,7 +5,13 @@
 static float vertices[] = {
 	0.5f, 0.5f,
 	-0.5f, 0.5f,
-	-0.5f, -0.5f
+	-0.5f, -0.5f,
+	0.5f, -0.5f
+};
+
+static unsigned indices[] = {
+	0, 1, 2,
+	2, 3, 0
 };
 
 int main()
@@ -21,7 +27,7 @@ int main()
 	MayaLoadShaderFromFile(sp, MAYA_PROJECT_SOURCE_DIR "/tests/basic");
 	MayaShaderProgramUptr program = MayaCreateShaderProgramUptr(*window, sp);
 	program->SetUniform("uColor", 1.0f, 1.0f, 0.0f, 1.0f);
-	
+
 	MayaVertexArrayUptr vao = MayaCreateVertexArrayUptr(*window);
 	vao->SetVertexCount(3);
 	
@@ -30,6 +36,7 @@ int main()
 	layout.Data = vertices;
 	layout.Size = sizeof(vertices);
 	vao->LinkVertexBuffer(layout);
+	vao->LinkIndexBuffer(indices, sizeof(indices));
 
 	while (!window->IsTimeToClose())
 	{

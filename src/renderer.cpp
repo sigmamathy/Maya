@@ -36,5 +36,8 @@ void MayaRenderer::ExecuteDraw()
 		Maya_s_binded_shader_program = Program->programid;
 	}
 
-	glDrawArrays(GL_TRIANGLES, 0, Input->vertex_count);
+	if (Input->iboid)
+		glDrawElements(GL_TRIANGLES, Input->indices_draw_count, GL_UNSIGNED_INT, 0);
+	else
+		glDrawArrays(GL_TRIANGLES, 0, Input->vertex_count);
 }

@@ -32,7 +32,7 @@ MayaVertexArraySptr MayaCreateVertexArraySptr(MayaWindow& window)
 }
 
 MayaVertexArray::MayaVertexArray(int vao, MayaWindow* window)
-	: vaoid(vao), window(window), vertex_count(0)
+	: vaoid(vao), window(window), vertex_count(0), iboid(0), indices_draw_count(0)
 {
 	vboids.reserve(1);
 }
@@ -43,13 +43,15 @@ MayaVertexArray::~MayaVertexArray()
 	glDeleteVertexArrays(1, &vaoid);
 	if (!vboids.empty())
 		glDeleteBuffers((GLsizei)vboids.size(), vboids.data());
+	if (iboid)
+		glDeleteBuffers(1, &iboid);
 }
 
 unsigned Maya_s_binded_vao = 0;
 
 static void s_BindVertexArray(unsigned vaoid)
 {
-	if (Maya_s_binded_vao = vaoid) return;
+	if (Maya_s_binded_vao == vaoid) return;
 	glBindVertexArray(vaoid);
 	Maya_s_binded_vao = vaoid;
 }
@@ -63,17 +65,19 @@ template<class Ty>
 void MayaVertexArray::LinkVertexBuffer(MayaVertexLayout& layout)
 {
 	window->UseGraphicsContext();
-	unsigned vboid;
+	unsigned& vboid = vboids.emplace_back();
+
 	glGenBuffers(1, &vboid);
+	glBindVertexArray(vaoid);
 	s_BindVertexArray(vaoid);
 	glBindBuffer(GL_ARRAY_BUFFER, vboid);
 	glBufferData(GL_ARRAY_BUFFER, layout.Size, layout.Data, GL_STATIC_DRAW);
-
+	
 	GLenum datatype;
 	if (std::is_same_v<Ty, float>)			datatype = GL_FLOAT;
 	else if (std::is_same_v<Ty, unsigned>)	datatype = GL_UNSIGNED_INT;
 	else if (std::is_same_v<Ty, int>)		datatype = GL_INT;
-
+	
 	for (int i = 0; i < layout.attributes.size(); i++)
 	{
 		auto& x = layout.attributes[i];
@@ -81,11 +85,24 @@ void MayaVertexArray::LinkVertexBuffer(MayaVertexLayout& layout)
 		glVertexAttribPointer(x.Location, x.Count, datatype, false,
 			layout.stride * sizeof(Ty), (void*)(x.Offset * sizeof(Ty)));
 	}
-
-	vboids.push_back(vboid);
+	
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 template void MayaVertexArray::LinkVertexBuffer<float>(MayaVertexLayout&);
 template void MayaVertexArray::LinkVertexBuffer<int>(MayaVertexLayout&);
 template void MayaVertexArray::LinkVertexBuffer<unsigned>(MayaVertexLayout&);
+
+void MayaVertexArray::LinkIndexBuffer(unsigned* data, unsigned size)
+{
+	window->UseGraphicsContext();
+	if (iboid)
+		glDeleteBuffers(1, &iboid);
+	glGenBuffers(1, &iboid);
+	s_BindVertexArray(vaoid);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboid);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+	s_BindVertexArray(0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	indices_draw_count = size / sizeof(unsigned);
+}
