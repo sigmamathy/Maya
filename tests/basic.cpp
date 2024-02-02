@@ -17,13 +17,14 @@ static unsigned indices[] = {
 
 int main()
 {
-	MayaLibraryRAII _;
+	MayaLibrarySingleton _;
 	MayaSetErrorCallback([](MayaErrorStatus& err) {
 		std::cout << err.Details << '\n';
 	});
 
 	MayaWindowUptr window = MayaCreateWindowUptr();
 	window->SetResizeAspectRatioLock(16, 9);
+	window->SetFullscreenMonitor(0);
 
 	MayaShaderProgramParameters sp;
 	MayaLoadShaderFromFile(sp, MAYA_PROJECT_SOURCE_DIR "/tests/basic");

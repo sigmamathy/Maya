@@ -79,6 +79,7 @@ MAYA_TYPEDEF2(MayaHashMap,		std::unordered_map<Ty1, Ty2>);
 #define MAYA_INVALID_GRAPHICS_CONTEXT_ERROR		0x7
 #define MAYA_IMAGE_LOAD_ERROR					0x8
 #define MAYA_SHADER_UNIFORM_NO_FOUND_ERROR		0x9
+#define MAYA_SINGLETON_ERROR					0xA
 
 struct MayaErrorStatus
 {
@@ -96,21 +97,15 @@ MayaErrorStatus MayaPollError();
 
 void MayaSendError(MayaErrorStatus stat);
 
-struct MayaLibraryRAII {
-	MayaLibraryRAII();
-	~MayaLibraryRAII();
-	MayaLibraryRAII(MayaLibraryRAII const&) = delete;
-	MayaLibraryRAII& operator=(MayaLibraryRAII const&) = delete;
+struct MayaLibrarySingleton {
+	MayaLibrarySingleton();
+	~MayaLibrarySingleton();
+	MayaLibrarySingleton(MayaLibrarySingleton const&) = delete;
+	MayaLibrarySingleton& operator=(MayaLibrarySingleton const&) = delete;
 };
 
-// Initialize Maya (external) libraries as needed.
-void MayaInitLibrary(void);
-
-// Terminate Maya (external) libraries as needed.
-void MayaTerminateLibrary(void);
-
 // Returns true if MayaInitLibrary is called.
-bool MayaIsLibraryInitialized(void);
+bool MayaIsLibraryFound(void);
 
 double MayaGetCurrentTimeSinceInit(void);
 

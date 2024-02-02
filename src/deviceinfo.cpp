@@ -4,7 +4,7 @@
 
 void MayaGetDeviceInfo(MayaMonitorsInfo* info)
 {
-	MAYA_DIF (!MayaIsLibraryInitialized())
+	MAYA_DIF (!MayaIsLibraryFound())
 		MAYA_SERR(MAYA_MISSING_LIBRARY_ERROR,
 			"MayaGetDeviceInfo(MayaMonitorsInfo&): Required library is not initialized.");
 

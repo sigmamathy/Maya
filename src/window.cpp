@@ -75,7 +75,7 @@ static void s_SetupWindowEventCallback(GLFWwindow* window)
 template<class Ty>
 static Ty s_CreateWindowPtr(MayaWindowParameters& param)
 {
-	MAYA_DIF(!MayaIsLibraryInitialized())
+	MAYA_DIF(!MayaIsLibraryFound())
 	{
 		MAYA_SERR(MAYA_MISSING_LIBRARY_ERROR, "MayaCreateWindowUptr(MayaWindowParameters&): Maya is not initialized.");
 		return nullptr;

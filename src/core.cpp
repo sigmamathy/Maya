@@ -31,20 +31,15 @@ void MayaSendError(MayaErrorStatus stat)
 		s_error_queue.push(stat);
 }
 
-MayaLibraryRAII::MayaLibraryRAII()
-{
-	MayaInitLibrary();
-}
-
-MayaLibraryRAII::~MayaLibraryRAII()
-{
-	MayaTerminateLibrary();
-}
-
 static bool s_library_initialized = false;
 
-void MayaInitLibrary(void)
+static void s_InitLibrary(void)
 {
+	MAYA_DIF(s_library_initialized) {
+		MAYA_SERR(MAYA_SINGLETON_ERROR,
+			"MayaLibrarySingleton::MayaLibrarySingleton(): Multiple instances of MayaLibrarySingleton is detected.");
+		return;
+	}
 	s_library_initialized = true;
 	glfwInit();
 	//glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -52,13 +47,23 @@ void MayaInitLibrary(void)
 	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 }
 
-void MayaTerminateLibrary(void)
+void s_TerminateLibrary(void)
 {
 	s_library_initialized = false;
 	glfwTerminate();
 }
 
-bool MayaIsLibraryInitialized(void)
+MayaLibrarySingleton::MayaLibrarySingleton()
+{
+	s_InitLibrary();
+}
+
+MayaLibrarySingleton::~MayaLibrarySingleton()
+{
+	s_TerminateLibrary();
+}
+
+bool MayaIsLibraryFound(void)
 {
 	return s_library_initialized;
 }
