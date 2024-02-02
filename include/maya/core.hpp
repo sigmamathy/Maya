@@ -78,6 +78,7 @@ MAYA_TYPEDEF2(MayaHashMap,		std::unordered_map<Ty1, Ty2>);
 #define MAYA_SHADER_COMPILE_ERROR				0x6
 #define MAYA_INVALID_GRAPHICS_CONTEXT_ERROR		0x7
 #define MAYA_IMAGE_LOAD_ERROR					0x8
+#define MAYA_SHADER_UNIFORM_NO_FOUND_ERROR		0x9
 
 struct MayaErrorStatus
 {

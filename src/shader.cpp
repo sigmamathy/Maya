@@ -141,6 +141,10 @@ int MayaShaderProgram::FindUniformLocation(MayaStringCR name)
 		return uniform_location_cache.at(name);
 	int x = glGetUniformLocation(programid, name.c_str());
 	uniform_location_cache[name] = x;
+	if (x == -1) {
+		MAYA_SERR(MAYA_SHADER_UNIFORM_NO_FOUND_ERROR,
+			"MayaShaderProgram::FindUniformLocation(MayaStringCR): The required uniform does not exists.");
+	}
 	return x;
 }
 

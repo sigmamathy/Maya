@@ -173,6 +173,19 @@ void MayaWindow::ClearBuffers()
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
+void MayaWindow::ResizeViewport(MayaIvec2 pos, MayaIvec2 size)
+{
+	UseGraphicsContext();
+	glViewport(pos.x, GetSize().y - pos.y - size.y, size.x, size.y);
+}
+
+void MayaWindow::PackViewport()
+{
+	UseGraphicsContext();
+	auto size = GetSize();
+	glViewport(0, 0, size.x, size.y);
+}
+
 void MayaPollWindowEvents()
 {
 	glfwPollEvents();
@@ -222,6 +235,12 @@ MayaIvec2 MayaWindow::GetSize() const
 MayaString MayaWindow::GetTitle() const
 {
 	return title;
+}
+
+void MayaWindow::SetResizeAspectRatioLock(int x, int y)
+{
+	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	glfwSetWindowAspectRatio(window, x, y);
 }
 
 bool MayaWindow::IsKeyPressed(MayaKeyCode keycode) const

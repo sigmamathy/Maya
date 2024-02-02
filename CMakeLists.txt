@@ -17,7 +17,7 @@ add_library(${PROJECT_NAME}
     "src/vertexarray.cpp"
     "src/renderer.cpp"
     "src/texture.cpp"
-)
+ "src/transformation.cpp")
  
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 add_compile_definitions(MAYA_PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")

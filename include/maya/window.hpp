@@ -59,6 +59,10 @@ public:
 
 	void ClearBuffers();
 
+	void ResizeViewport(MayaIvec2 pos, MayaIvec2 size);
+
+	void PackViewport();
+
 	void SwapBuffers();
 
 	void SetPosition(MayaIvec2 pos);
@@ -72,6 +76,8 @@ public:
 	MayaIvec2 GetSize() const;
 
 	MayaString GetTitle() const;
+
+	void SetResizeAspectRatioLock(int x, int y);
 
 	bool IsKeyPressed(MayaKeyCode keycode) const;
 
