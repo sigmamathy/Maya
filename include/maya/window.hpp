@@ -89,10 +89,13 @@ public:
 
 	int GetFullscreenMonitor() const;
 
+	class MayaGraphics2D& GetGraphics2D();
+
 private:
 
 	void* resptr;
 	MayaEventCallback event_callback;
 	MayaString title;
 	int monitor;
+	MayaUptr<MayaGraphics2D> graphics2d;
 };

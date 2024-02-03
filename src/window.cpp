@@ -2,6 +2,7 @@
 #include <maya/deviceinfo.hpp>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <maya/2d/graphics.hpp>
 
 static void s_SetupWindowEventCallback(GLFWwindow* window)
 {
@@ -135,6 +136,7 @@ MayaWindow::MayaWindow(void* resource_pointer, int monitor, MayaStringCR title)
 
 MayaWindow::~MayaWindow()
 {
+	graphics2d.reset();
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	glfwDestroyWindow(window);
 }
@@ -280,4 +282,11 @@ void MayaWindow::SetFullscreenMonitor(int monitor, MayaIvec2 size)
 int MayaWindow::GetFullscreenMonitor() const
 {
 	return monitor;
+}
+
+MayaGraphics2D& MayaWindow::GetGraphics2D()
+{
+	if (!graphics2d)
+		graphics2d = MayaUptr<MayaGraphics2D>(new MayaGraphics2D(this));
+	return *graphics2d;
 }

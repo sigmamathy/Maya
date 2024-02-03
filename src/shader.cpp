@@ -167,6 +167,15 @@ MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(unsigned, 2, glUniform2uiv)
 MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(unsigned, 3, glUniform3uiv)
 MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(unsigned, 4, glUniform4uiv)
 
+#define MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(sz, fn)\
+	template<> void MayaShaderProgram::SetUniformVector(MayaStringCR name, MayaVector<bool, sz> const& vec)\
+	{ window->UseGraphicsContext(); s_BindShaderProgram(programid); int loc = FindUniformLocation(name); fn(loc, 1, (int*)&vec[0]); }
+
+MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(1, glUniform1iv)
+MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(2, glUniform2iv)
+MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(3, glUniform3iv)
+MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(4, glUniform4iv)
+
 #define MAYA_DEFINE_UNIFORM_MATRIX_FUNCTION(rw, cn, fn)\
 	template<> void MayaShaderProgram::SetUniformMatrix(MayaStringCR name, MayaMatrix<float, rw, cn> const& mat)\
 	{ window->UseGraphicsContext(); s_BindShaderProgram(programid); int loc = FindUniformLocation(name); fn(loc, 1, false, &mat[0][0]); }

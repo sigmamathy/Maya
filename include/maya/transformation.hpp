@@ -24,5 +24,8 @@ MayaFmat4 MayaLookAt(MayaFvec3 position, MayaFvec3 orientation, MayaFvec3 up = M
 // Orthogonal projection matrix
 MayaFmat4 MayaOrthogonalProjection(float left, float right, float bottom, float top, float near = -1.0f, float far = 1.0f);
 
+// Orthogonal projection matrix with center origin
+MayaFmat4 MayaOrthogonalProjection(MayaFvec2 size);
+
 // Perspective projection matrix
 MayaFmat4 MayaPerspectiveProjection(float fovy, float aspect, float near, float far);

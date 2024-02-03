@@ -31,7 +31,7 @@ public:
 
 	MayaShaderProgram& operator=(MayaShaderProgram const&) = delete;
 
-	template<class Ty, class... Tys> requires (std::is_same_v<Ty, Tys> && ...)
+	template<class Ty, class... Tys> requires (std::is_convertible_v<Tys, Ty> && ...)
 	void SetUniform(MayaStringCR name, Tys... args);
 
 	template<class Ty, int Sz>
@@ -50,9 +50,9 @@ private:
 	int FindUniformLocation(MayaStringCR name);
 };
 
-template<class Ty, class... Tys> requires (std::is_same_v<Ty, Tys> && ...)
+template<class Ty, class... Tys> requires (std::is_convertible_v<Tys, Ty> && ...)
 void MayaShaderProgram::SetUniform(MayaStringCR name, Tys... args)
 {
-	MayaVector<Ty, sizeof...(Tys)> vec = { args... };
+	MayaVector<Ty, sizeof...(Tys)> vec = { static_cast<Ty>(args)... };
 	SetUniformVector(name, vec);
 }

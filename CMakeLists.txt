@@ -11,7 +11,7 @@ find_package(Freetype REQUIRED)
 add_library(${PROJECT_NAME}
     "external/glad/src/glad.c"
     "external/stb/src/stb_image.c"
-    "src/2d/graphics.cpp"
+    "src/core.cpp"
     "src/window.cpp"
     "src/deviceinfo.cpp"
     "src/shader.cpp"
@@ -20,7 +20,7 @@ add_library(${PROJECT_NAME}
     "src/texture.cpp"
     "src/transformation.cpp"
     "src/font.cpp"
- "src/2d/graphics.cpp")
+    "src/2d/graphics.cpp" "src/2d/renderer.cpp" "src/color.cpp")
  
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 add_compile_definitions(MAYA_PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
