@@ -4,9 +4,30 @@
 #include "../math.hpp"
 #include "../renderer.hpp"
 #include "../window.hpp"
+#include "../font.hpp"
 
 class MayaGraphics2D
 {
+public:
+
+	enum TextAlign {
+		TextAlignLeft = 0b1, TextAlignCenterH = 0b10, TextAlignRight = 0b11,
+		TextAlignBottom = 0b100, TextAlignCenterV = 0b1000, TextAlignTop = 0b1100,
+		TextAlignTL = TextAlignTop | TextAlignLeft,
+		TextAlignTC = TextAlignTop | TextAlignCenterH,
+		TextAlignTR = TextAlignTop | TextAlignRight,
+		TextAlignCL = TextAlignCenterV | TextAlignLeft,
+		TextAlignCC = TextAlignCenterV | TextAlignCenterH,
+		TextAlignCR = TextAlignCenterV | TextAlignRight,
+		TextAlignBL = TextAlignBottom | TextAlignLeft,
+		TextAlignBC = TextAlignBottom | TextAlignCenterH,
+		TextAlignBR = TextAlignBottom | TextAlignRight,
+	};
+
+	class Camera;
+	class Renderer;
+	class TextDisplay;
+
 public:
 
 	MayaWindow* const Window;
@@ -16,6 +37,8 @@ public:
 	void UseProjection(MayaFvec2 size);
 
 	void UseWindowProjection();
+
+	void UseCamera(Camera* camera);
 
 	void UseColor(int r, int g, int b, int a = 255);
 
@@ -31,10 +54,15 @@ public:
 
 	void DrawRect(MayaFvec2 pos, MayaFvec2 size);
 
-public:
+	void DrawOval(float x, float y, float width, float height);
 
-	class Camera;
-	class Renderer;
+	void DrawOval(MayaFvec2 pos, MayaFvec2 size);
+
+	void DrawText(MayaFont& font, MayaStringCR text, float x, float y);
+
+	void DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos = MayaFvec2(0));
+
+	void DrawText(TextDisplay& text);
 
 private:
 
@@ -49,10 +77,8 @@ private:
 private:
 
 	MayaShaderProgramUptr program;
-	MayaVertexArrayUptr squarevao;
+	MayaVertexArrayUptr squarevao, circlevao64;
+	Camera* camera;
 	MayaTexture* texture;
-
-	friend class Camera;
-	friend class Renderer;
 
 };

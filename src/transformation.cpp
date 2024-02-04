@@ -17,6 +17,8 @@ MayaFmat4 MayaTranslate(MayaFvec3 position)
 
 MayaFmat4 MayaRotate(float rad, MayaFvec3 axis)
 {
+	if (rad == 0)
+		return MayaFmat4(1);
 	axis = MayaNormalize(axis);
 	float c = std::cos(rad), s = std::sin(rad);
 	auto fun1 = [&](int i) -> float { return c + axis[i] * axis[i] * (1 - c); };

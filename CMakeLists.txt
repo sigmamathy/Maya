@@ -20,7 +20,7 @@ add_library(${PROJECT_NAME}
     "src/texture.cpp"
     "src/transformation.cpp"
     "src/font.cpp"
-    "src/2d/graphics.cpp" "src/2d/renderer.cpp" "src/color.cpp")
+    "src/2d/graphics.cpp" "src/2d/renderer.cpp" "src/color.cpp" "src/2d/camera.cpp" "src/2d/textdisplay.cpp")
  
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 add_compile_definitions(MAYA_PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")

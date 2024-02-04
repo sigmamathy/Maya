@@ -2,6 +2,8 @@
 
 #include "./core.hpp"
 
+static constexpr double MayaConstPI = 3.141592653589793;
+
 // General template for Vectors (Mathematics)
 // Ty: must be an arithmetic type
 // Dim: must be > 0 (2-4 is advised)
