@@ -8,6 +8,9 @@ public:
 
 	TextDisplay(MayaFont& font, MayaStringCR text);
 
+	MayaStringCR GetString() const;
+	unsigned GetLength() const;
+
 	void SetTextAlign(TextAlign align);
 	TextAlign GetTextAlign() const;
 

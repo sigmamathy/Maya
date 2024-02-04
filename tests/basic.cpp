@@ -40,8 +40,10 @@ int main()
 		//g2d.UseColor(0x0000FF);
 		//g2d.DrawRect(MayaIvec2(100, 0), MayaIvec2(100));
 
-		g2d.UseColor(0xFFFFFF);
+		g2d.UseColor(0xFF00FF);
 		g2d.DrawText(text);
+
+		g2d.DrawLine(-100, -100, 100, 100);
 
 		window->SwapBuffers();
 		MayaPollWindowEvents();

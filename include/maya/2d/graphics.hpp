@@ -54,6 +54,10 @@ public:
 
 	void DrawRect(MayaFvec2 pos, MayaFvec2 size);
 
+	void DrawLine(float startx, float starty, float endx, float endy);
+
+	void DrawLine(MayaFvec2 start, MayaFvec2 end);
+
 	void DrawOval(float x, float y, float width, float height);
 
 	void DrawOval(MayaFvec2 pos, MayaFvec2 size);
@@ -63,6 +67,8 @@ public:
 	void DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos = MayaFvec2(0));
 
 	void DrawText(TextDisplay& text);
+
+	void DrawText(TextDisplay& text, int start, int end);
 
 private:
 

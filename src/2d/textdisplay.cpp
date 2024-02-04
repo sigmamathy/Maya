@@ -25,6 +25,16 @@ MayaGraphics2D::TextDisplay::TextDisplay(MayaFont& font, MayaStringCR text)
 
 }
 
+MayaStringCR MayaGraphics2D::TextDisplay::GetString() const
+{
+	return string;
+}
+
+unsigned MayaGraphics2D::TextDisplay::GetLength() const
+{
+	return string.length();
+}
+
 void MayaGraphics2D::TextDisplay::SetTextAlign(TextAlign align)
 {
 	text_align = align;

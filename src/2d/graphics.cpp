@@ -188,6 +188,27 @@ void MayaGraphics2D::DrawRect(MayaFvec2 pos, MayaFvec2 size)
 	r.ExecuteDraw();
 }
 
+void MayaGraphics2D::DrawLine(float startx, float starty, float endx, float endy)
+{
+	DrawLine(MayaFvec2(startx, starty), MayaFvec2(endx, endy));
+}
+
+void MayaGraphics2D::DrawLine(MayaFvec2 start, MayaFvec2 end)
+{
+	if (start == end) return;
+	MayaFmat4 pos = MayaTranslate((start + end) / 2.0f);
+	MayaFvec2 dv = end - start;
+	MayaFmat4 scale = MayaScale(MayaFvec2(dv.Norm(), 1));
+	MayaFmat4 rot = MayaRotate(std::atan2(dv[1], dv[0]));
+	program->SetUniformMatrix("uModel", pos * rot * scale);
+	program->SetUniform<int>("uHasTexture[0]", 0);
+	MayaRenderer r;
+	r.Input = squarevao.get();
+	r.Program = program.get();
+	r.ExecuteDraw();
+	program->SetUniform<int>("uHasTexture[0]", texture ? 1 : 0);
+}
+
 void MayaGraphics2D::DrawOval(float x, float y, float width, float height)
 {
 	DrawOval(MayaFvec2(x, y), MayaFvec2(width, height));
@@ -237,11 +258,16 @@ void MayaGraphics2D::DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos)
 
 void MayaGraphics2D::DrawText(TextDisplay& text)
 {
+	DrawText(text, 0, text.GetLength());
+}
+
+void MayaGraphics2D::DrawText(TextDisplay& text, int start, int end)
+{
 	text.ComputeGlobalModel();
 	program->SetUniform<int>("uHasTexture[1]", 1);
 	if (camera && camera->require_update)
 		program->SetUniformMatrix("uView", camera->GetViewMatrix());
-	for (int i = 0; i < text.char_models.size(); i++)
+	for (int i = start; i < end; i++)
 	{
 		program->SetUniformMatrix("uModel", text.global_model * text.char_models[i]);
 		MayaRenderer r;
