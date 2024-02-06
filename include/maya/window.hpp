@@ -83,6 +83,8 @@ public:
 
 	bool IsMouseButtonPressed(MayaMouseButton button) const;
 
+	MayaFvec2 GetCursorPosition() const;
+
 	bool IsFocused() const;
 
 	void SetFullscreenMonitor(int monitor, MayaIvec2 size = {-1, -1});
@@ -91,11 +93,19 @@ public:
 
 	class MayaGraphics2D& GetGraphics2D();
 
+	class MayaGraphicsGUI& GetGraphicsGUI();
+
 private:
 
 	void* resptr;
 	MayaEventCallback event_callback;
 	MayaString title;
 	int monitor;
+
 	MayaUptr<MayaGraphics2D> graphics2d;
+	MayaUptr<MayaGraphicsGUI> graphicsgui;
+
+private:
+
+	void UpdateGraphicsGUIEventIfPresent(MayaEvent& e);
 };

@@ -43,5 +43,6 @@ MayaFmat4 MayaGraphics2D::Camera::GetViewMatrix()
 {
 	if (require_update)
 		view_matrix = MayaScale(zoom) * MayaRotate(rotation) * MayaTranslate(position);
+	require_update = false;
 	return view_matrix;
 }

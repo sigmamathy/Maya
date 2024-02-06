@@ -2,7 +2,7 @@
 #include <maya/transformation.hpp>
 
 MayaGraphics2D::TextDisplay::TextDisplay(MayaFont& font, MayaStringCR text)
-	: font(&font), string(text), text_size(0), text_align(TextAlignBL), global_model(1), require_update_global_model(0),
+	: font(&font), string(text), text_size(0), text_align(MayaTextAlignBL), global_model(1), require_update_global_model(0),
 	position(0), scale(1), rotation(0)
 {
 	char_models.reserve(text.size());
@@ -32,16 +32,16 @@ MayaStringCR MayaGraphics2D::TextDisplay::GetString() const
 
 unsigned MayaGraphics2D::TextDisplay::GetLength() const
 {
-	return string.length();
+	return (unsigned) string.length();
 }
 
-void MayaGraphics2D::TextDisplay::SetTextAlign(TextAlign align)
+void MayaGraphics2D::TextDisplay::SetTextAlign(MayaTextAlign align)
 {
 	text_align = align;
 	require_update_global_model = true;
 }
 
-MayaGraphics2D::TextAlign MayaGraphics2D::TextDisplay::GetTextAlign() const
+MayaTextAlign MayaGraphics2D::TextDisplay::GetTextAlign() const
 {
 	return text_align;
 }
@@ -86,5 +86,6 @@ void MayaGraphics2D::TextDisplay::ComputeGlobalModel()
 		d.x = -text_size.x * ((text_align & 0b11) - 1) * 0.5f;
 		d.y = -text_size.y * ((text_align >> 2) - 1) * 0.5f;
 		global_model = MayaTranslate(position) * MayaRotate(rotation) * MayaScale(scale) * MayaTranslate(d);
+		require_update_global_model = false;
 	}
 }

@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <maya/2d/graphics.hpp>
+#include <maya/gui/graphics.hpp>
 
 static void s_SetupWindowEventCallback(GLFWwindow* window)
 {
@@ -110,6 +111,8 @@ static Ty s_CreateWindowPtr(MayaWindowParameters& param)
 
 	glfwMakeContextCurrent(window);
 	gladLoadGL();
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	if constexpr (std::is_same_v<Ty, MayaWindowUptr>) return std::make_unique<MayaWindow>(window, param.Monitor, param.Title);
 	else return std::make_shared<MayaWindow>(window, param.Monitor, param.Title);
@@ -128,8 +131,8 @@ MayaWindowSptr MayaCreateWindowSptr(MayaWindowParameters& param)
 MayaWindow::MayaWindow(void* resource_pointer, int monitor, MayaStringCR title)
 	: resptr(resource_pointer), monitor(monitor), title(title)
 {
-	event_callback = [](MayaEvent&) {};
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	SetEventCallback(nullptr);
 	glfwSetWindowUserPointer(window, &event_callback);
 	s_SetupWindowEventCallback(window);
 }
@@ -137,6 +140,7 @@ MayaWindow::MayaWindow(void* resource_pointer, int monitor, MayaStringCR title)
 MayaWindow::~MayaWindow()
 {
 	graphics2d.reset();
+	graphicsgui.reset();
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	glfwDestroyWindow(window);
 }
@@ -144,9 +148,10 @@ MayaWindow::~MayaWindow()
 void MayaWindow::SetEventCallback(MayaEventCallbackCR callback)
 {
 	event_callback = [this, callback](MayaEvent& e) {
+		e.Window = this;
+		UpdateGraphicsGUIEventIfPresent(e);
 		if (!callback)
 			return;
-		e.Window = this;
 		callback(e);
 	};
 }
@@ -257,6 +262,14 @@ bool MayaWindow::IsMouseButtonPressed(MayaMouseButton button) const
 	return glfwGetMouseButton(window, button) == GLFW_PRESS;
 }
 
+MayaFvec2 MayaWindow::GetCursorPosition() const
+{
+	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	double x, y;
+	glfwGetCursorPos(window, &x, &y);
+	return { x, y };
+}
+
 bool MayaWindow::IsFocused() const
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
@@ -289,4 +302,22 @@ MayaGraphics2D& MayaWindow::GetGraphics2D()
 	if (!graphics2d)
 		graphics2d = MayaUptr<MayaGraphics2D>(new MayaGraphics2D(this));
 	return *graphics2d;
+}
+
+MayaGraphicsGUI& MayaWindow::GetGraphicsGUI()
+{
+	if (!graphicsgui)
+		graphicsgui = MayaUptr<MayaGraphicsGUI>(new MayaGraphicsGUI(this));
+	return *graphicsgui;
+}
+
+void MayaWindow::UpdateGraphicsGUIEventIfPresent(MayaEvent& e)
+{
+	if (graphicsgui) {
+		if (e.GetEventID() == MayaWindowResizedEvent::EventID)
+			graphicsgui->UpdateProjection();
+		for (auto& x : graphicsgui->components) {
+			if (x) x->ReactEvent(e);
+		}
+	}
 }

@@ -8,12 +8,6 @@
 extern unsigned Maya_s_binded_vao;
 extern unsigned Maya_s_binded_shader_program;
 
-template<class Ty, class... Tys>
-static bool s_Equals(Ty value, Tys... args)
-{
-	return ((value == args) && ...);
-}
-
 void MayaRenderer::ExecuteDraw()
 {
 	MAYA_DIF(!Input) {

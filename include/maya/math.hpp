@@ -32,7 +32,7 @@ class MayaVector
 // ---------------------------- End --------------------------- //
 	static_assert(Dim > 0);
 	MAYA_VECTOR_COMMON(Dim)
-	explicit constexpr MayaVector(Ty value);
+	explicit constexpr MayaVector(auto value);
 
 	// Construct with Dim number of arguments
 	template<class... Tys> requires (Dim != 1 && sizeof...(Tys) == Dim && (std::is_convertible_v<Tys, Ty> && ...))
@@ -49,7 +49,7 @@ class MayaVector<Ty, 1>
 {
 public:
 	Ty x;
-	constexpr MayaVector(Ty x);
+	constexpr MayaVector(auto x);
 	MAYA_VECTOR_COMMON(1)
 };
 
@@ -59,8 +59,8 @@ class MayaVector<Ty, 2>
 {
 public:
 	Ty x, y;
-	constexpr MayaVector(Ty x, Ty y);
-	explicit constexpr MayaVector(Ty value);
+	constexpr MayaVector(auto x, auto y);
+	explicit constexpr MayaVector(auto value);
 	MAYA_VECTOR_COMMON(2)
 };
 
@@ -70,8 +70,8 @@ class MayaVector<Ty, 3>
 {
 public:
 	Ty x, y, z;
-	constexpr MayaVector(Ty x, Ty y, Ty z);
-	explicit constexpr MayaVector(Ty value);
+	constexpr MayaVector(auto x, auto y, auto z);
+	explicit constexpr MayaVector(auto value);
 	MAYA_VECTOR_COMMON(3)
 };
 
@@ -81,8 +81,8 @@ class MayaVector<Ty, 4>
 {
 public:
 	Ty x, y, z, w;
-	constexpr MayaVector(Ty x, Ty y, Ty z, Ty w);
-	explicit constexpr MayaVector(Ty value);
+	constexpr MayaVector(auto x, auto y, auto z, auto w);
+	explicit constexpr MayaVector(auto value);
 	MAYA_VECTOR_COMMON(4)
 };
 
@@ -105,10 +105,10 @@ using MayaFvec4 = MayaVector<float, 4>;
 // --------------------------------- Implementation ------------------------------ //
 
 template<class Ty, int Dim>
-constexpr MayaVector<Ty, Dim>::MayaVector(Ty value)
+constexpr MayaVector<Ty, Dim>::MayaVector(auto value)
 {
 	for (int i = 0; i < Dim; i++)
-		elems[i] = value;
+		elems[i] = static_cast<Ty>(value);
 }
 
 template<class Ty, int Dim> template<class... Tys>
@@ -152,14 +152,21 @@ std::common_type_t<Ty, float> MayaVector<Ty, Dim>::Norm() const
 	return std::sqrt(static_cast<std::common_type_t<Ty, float>>(sum));
 }
 
-template<class Ty> constexpr MayaVector<Ty, 1>::MayaVector(Ty x) : x(x) {}
-template<class Ty> constexpr MayaVector<Ty, 2>::MayaVector(Ty x, Ty y) : x(x), y(y) {}
-template<class Ty> constexpr MayaVector<Ty, 3>::MayaVector(Ty x, Ty y, Ty z) : x(x), y(y), z(z) {}
-template<class Ty> constexpr MayaVector<Ty, 4>::MayaVector(Ty x, Ty y, Ty z, Ty w) : x(x), y(y), z(z), w(w) {}
+template<class Ty> constexpr MayaVector<Ty, 1>::MayaVector(auto x) 
+	: x(static_cast<Ty>(x)) {}
+template<class Ty> constexpr MayaVector<Ty, 2>::MayaVector(auto x, auto y) 
+	: x(static_cast<Ty>(x)), y(static_cast<Ty>(y)) {}
+template<class Ty> constexpr MayaVector<Ty, 3>::MayaVector(auto x, auto y, auto z) 
+	: x(static_cast<Ty>(x)), y(static_cast<Ty>(y)), z(static_cast<Ty>(z)) {}
+template<class Ty> constexpr MayaVector<Ty, 4>::MayaVector(auto x, auto y, auto z, auto w) 
+	: x(static_cast<Ty>(x)), y(static_cast<Ty>(y)), z(static_cast<Ty>(z)), w(static_cast<Ty>(w)) {}
 
-template<class Ty> constexpr MayaVector<Ty, 2>::MayaVector(Ty value) : x(value), y(value) {}
-template<class Ty> constexpr MayaVector<Ty, 3>::MayaVector(Ty value) : x(value), y(value), z(value) {}
-template<class Ty> constexpr MayaVector<Ty, 4>::MayaVector(Ty value) : x(value), y(value), z(value), w(value) {}
+template<class Ty> constexpr MayaVector<Ty, 2>::MayaVector(auto value) 
+	: x(static_cast<Ty>(value)), y(static_cast<Ty>(value)) {}
+template<class Ty> constexpr MayaVector<Ty, 3>::MayaVector(auto value) 
+	: x(static_cast<Ty>(value)), y(static_cast<Ty>(value)), z(static_cast<Ty>(value)) {}
+template<class Ty> constexpr MayaVector<Ty, 4>::MayaVector(auto value) 
+	: x(static_cast<Ty>(value)), y(static_cast<Ty>(value)), z(static_cast<Ty>(value)), w(static_cast<Ty>(value)) {}
 
 template<class Ty> template<class Ty2> constexpr MayaVector<Ty, 1>::MayaVector(MayaVector<Ty2, 1> const& vec)
 	: x(static_cast<Ty>(vec.x))

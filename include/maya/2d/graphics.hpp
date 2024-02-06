@@ -10,22 +10,7 @@ class MayaGraphics2D
 {
 public:
 
-	enum TextAlign {
-		TextAlignLeft = 0b1, TextAlignCenterH = 0b10, TextAlignRight = 0b11,
-		TextAlignBottom = 0b100, TextAlignCenterV = 0b1000, TextAlignTop = 0b1100,
-		TextAlignTL = TextAlignTop | TextAlignLeft,
-		TextAlignTC = TextAlignTop | TextAlignCenterH,
-		TextAlignTR = TextAlignTop | TextAlignRight,
-		TextAlignCL = TextAlignCenterV | TextAlignLeft,
-		TextAlignCC = TextAlignCenterV | TextAlignCenterH,
-		TextAlignCR = TextAlignCenterV | TextAlignRight,
-		TextAlignBL = TextAlignBottom | TextAlignLeft,
-		TextAlignBC = TextAlignBottom | TextAlignCenterH,
-		TextAlignBR = TextAlignBottom | TextAlignRight,
-	};
-
 	class Camera;
-	class Renderer;
 	class TextDisplay;
 
 public:

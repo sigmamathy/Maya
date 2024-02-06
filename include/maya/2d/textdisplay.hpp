@@ -11,8 +11,8 @@ public:
 	MayaStringCR GetString() const;
 	unsigned GetLength() const;
 
-	void SetTextAlign(TextAlign align);
-	TextAlign GetTextAlign() const;
+	void SetTextAlign(MayaTextAlign align);
+	MayaTextAlign GetTextAlign() const;
 
 	void SetPosition(MayaFvec2 pos);
 	void SetScale(MayaFvec2 scale);
@@ -27,7 +27,7 @@ private:
 	MayaFont* font;
 	MayaString string;
 	MayaFvec2 text_size;
-	TextAlign text_align;
+	MayaTextAlign text_align;
 
 	MayaFvec2 position;
 	MayaFvec2 scale;

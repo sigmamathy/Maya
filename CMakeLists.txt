@@ -16,11 +16,17 @@ add_library(${PROJECT_NAME}
     "src/deviceinfo.cpp"
     "src/shader.cpp"
     "src/vertexarray.cpp"
-    "src/renderer.cpp"
     "src/texture.cpp"
+    "src/renderer.cpp"
     "src/transformation.cpp"
     "src/font.cpp"
-    "src/2d/graphics.cpp" "src/2d/renderer.cpp" "src/color.cpp" "src/2d/camera.cpp" "src/2d/textdisplay.cpp")
+    "src/color.cpp" 
+    "src/2d/graphics.cpp"
+    "src/2d/camera.cpp" 
+    "src/2d/textdisplay.cpp"
+    "src/gui/graphics.cpp"
+    "src/gui/button.cpp"
+)
  
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 add_compile_definitions(MAYA_PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
