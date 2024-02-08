@@ -132,28 +132,24 @@ MayaWindow::MayaWindow(void* resource_pointer, int monitor, MayaStringCR title)
 	: resptr(resource_pointer), monitor(monitor), title(title)
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
-	SetEventCallback(nullptr);
+	event_callback = [this](MayaEvent& e) {
+		e.Window = this;
+		for (auto& call : callbacks)
+			call(e);
+	};
 	glfwSetWindowUserPointer(window, &event_callback);
 	s_SetupWindowEventCallback(window);
 }
 
 MayaWindow::~MayaWindow()
 {
-	graphics2d.reset();
-	graphicsgui.reset();
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	glfwDestroyWindow(window);
 }
 
-void MayaWindow::SetEventCallback(MayaEventCallbackCR callback)
+void MayaWindow::AddEventCallback(MayaEventCallbackCR callback)
 {
-	event_callback = [this, callback](MayaEvent& e) {
-		e.Window = this;
-		UpdateGraphicsGUIEventIfPresent(e);
-		if (!callback)
-			return;
-		callback(e);
-	};
+	callbacks.push_back(callback);
 }
 
 void MayaWindow::PleaseClose(bool close)
@@ -295,29 +291,4 @@ void MayaWindow::SetFullscreenMonitor(int monitor, MayaIvec2 size)
 int MayaWindow::GetFullscreenMonitor() const
 {
 	return monitor;
-}
-
-MayaGraphics2D& MayaWindow::GetGraphics2D()
-{
-	if (!graphics2d)
-		graphics2d = MayaUptr<MayaGraphics2D>(new MayaGraphics2D(this));
-	return *graphics2d;
-}
-
-MayaGraphicsGUI& MayaWindow::GetGraphicsGUI()
-{
-	if (!graphicsgui)
-		graphicsgui = MayaUptr<MayaGraphicsGUI>(new MayaGraphicsGUI(this));
-	return *graphicsgui;
-}
-
-void MayaWindow::UpdateGraphicsGUIEventIfPresent(MayaEvent& e)
-{
-	if (graphicsgui) {
-		if (e.GetEventID() == MayaWindowResizedEvent::EventID)
-			graphicsgui->UpdateProjection();
-		for (auto& x : graphicsgui->components) {
-			if (x) x->ReactEvent(e);
-		}
-	}
 }

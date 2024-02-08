@@ -49,7 +49,7 @@ public:
 
 	MayaWindow& operator=(MayaWindow const&) = delete;
 
-	void SetEventCallback(MayaEventCallbackCR callback);
+	void AddEventCallback(MayaEventCallbackCR callback);
 
 	void PleaseClose(bool close = true);
 
@@ -91,21 +91,11 @@ public:
 
 	int GetFullscreenMonitor() const;
 
-	class MayaGraphics2D& GetGraphics2D();
-
-	class MayaGraphicsGUI& GetGraphicsGUI();
-
 private:
 
 	void* resptr;
 	MayaEventCallback event_callback;
+	MayaArrayList<MayaEventCallback> callbacks;
 	MayaString title;
 	int monitor;
-
-	MayaUptr<MayaGraphics2D> graphics2d;
-	MayaUptr<MayaGraphicsGUI> graphicsgui;
-
-private:
-
-	void UpdateGraphicsGUIEventIfPresent(MayaEvent& e);
 };

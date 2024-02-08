@@ -15,7 +15,15 @@ public:
 
 public:
 
+	MayaGraphics2D(MayaWindow& window);
+
+	MayaGraphics2D(MayaGraphics2D const&) = delete;
+
+	MayaGraphics2D& operator=(MayaGraphics2D const&) = delete;
+
 	MayaWindow* const Window;
+
+	void UseProjection(float left, float right, float bottom, float top);
 
 	void UseProjection(float width, float height);
 
@@ -47,23 +55,13 @@ public:
 
 	void DrawOval(MayaFvec2 pos, MayaFvec2 size);
 
-	void DrawText(MayaFont& font, MayaStringCR text, float x, float y);
+	void DrawText(MayaFont* font, MayaStringCR text, float x, float y, MayaTextAlign align = MayaTextAlignBC);
 
-	void DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos = MayaFvec2(0));
+	void DrawText(MayaFont* font, MayaStringCR text, MayaFvec2 pos, MayaTextAlign align = MayaTextAlignBC);
 
 	void DrawText(TextDisplay& text);
 
 	void DrawText(TextDisplay& text, int start, int end);
-
-private:
-
-	MayaGraphics2D(MayaWindow* window);
-
-	MayaGraphics2D(MayaGraphics2D const&) = delete;
-
-	MayaGraphics2D& operator=(MayaGraphics2D const&) = delete;
-
-	friend class MayaWindow;
 
 private:
 
@@ -72,4 +70,6 @@ private:
 	Camera* camera;
 	MayaTexture* texture;
 
+	MayaFontUptr default_font;
+	MayaFont* GetDefaultFont();
 };

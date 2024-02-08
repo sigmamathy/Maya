@@ -8,7 +8,7 @@ public:
 
 	Button(MayaGraphicsGUI& gui);
 
-	virtual void Draw() override;
+	virtual void Draw(MayaGraphics2D& g2d) override;
 
 	void ReactEvent(MayaEvent& e) override;
 

@@ -5,20 +5,20 @@
 MayaGraphicsGUI::Button::Button(MayaGraphicsGUI& gui)
 	: Component(gui), pressed(false)
 {
-	position = { 50, 50 };
+	position = { 0, 0 };
 	size = { 200, 100 };
 	color0 = { 89, 97, 107, 255 };
 	color1 = { 117, 129, 143, 255 };
 	text = "Button";
 }
 
-void MayaGraphicsGUI::Button::Draw()
+void MayaGraphicsGUI::Button::Draw(MayaGraphics2D& g2d)
 {
-	UseColor(IsButtonPressed() ? color1 : color0);
-	DrawRect(position, size);
+	g2d.UseColor(IsButtonPressed() ? color1 : color0);
+	g2d.DrawRect(position + GetRelativePosition(), size);
 
-	UseColor(MayaWhite);
-	DrawText(0, text, position + size * 0.5f, MayaTextAlignCC);
+	g2d.UseColor(MayaWhite);
+	g2d.DrawText(0, text, position + GetRelativePosition(), MayaTextAlignCC);
 }
 
 void MayaGraphicsGUI::Button::ReactEvent(MayaEvent& e)
@@ -58,8 +58,11 @@ bool MayaGraphicsGUI::Button::IsButtonTouched() const
 {
 	auto* window = gui->Window;
 	MayaFvec2 cp = window->GetCursorPosition();
-	return cp.x >= position.x && cp.x <= position.x + size.x
-		&& cp.y >= position.y && cp.y <= position.y + size.y;
+	cp = cp - window->GetSize() / 2;
+	cp.y = -cp.y;
+	auto pos = position + GetRelativePosition();
+	return cp.x >= pos.x - size.x * 0.5f && cp.x <= pos.x + size.x * 0.5f
+		&& cp.y >= pos.y - size.y * 0.5f && cp.y <= pos.y + size.y * 0.5f;
 }
 
 bool MayaGraphicsGUI::Button::IsButtonPressed() const

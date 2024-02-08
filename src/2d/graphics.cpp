@@ -84,13 +84,13 @@ static MayaVertexArrayUptr s_CreateCircleVertexArray(MayaWindow& window, int pre
 	return result;
 }
 
-MayaGraphics2D::MayaGraphics2D(MayaWindow* window)
-	: Window(window), texture(nullptr), camera(nullptr)
+MayaGraphics2D::MayaGraphics2D(MayaWindow& window)
+	: Window(&window), texture(nullptr), camera(nullptr)
 {
 	MayaShaderProgramParameters param;
 	param.Vertex = s_vertex_shader;
 	param.Fragment = s_fragment_shader;
-	program = MayaCreateShaderProgramUptr(*window, param);
+	program = MayaCreateShaderProgramUptr(window, param);
 	program->SetUniformMatrix("uModel", MayaFmat4(1));
 	program->SetUniformMatrix("uView", MayaFmat4(1));
 	program->SetUniformMatrix("uProjection", MayaFmat4(1));
@@ -110,7 +110,7 @@ MayaGraphics2D::MayaGraphics2D(MayaWindow* window)
 		0.5f, -0.5f,		1, 0
 	};
 
-	squarevao = MayaCreateVertexArrayUptr(*window);
+	squarevao = MayaCreateVertexArrayUptr(window);
 	squarevao->SetVertexCount(6);
 	MayaVertexLayout layout;
 	layout (0, 2) (1, 2);
@@ -118,7 +118,13 @@ MayaGraphics2D::MayaGraphics2D(MayaWindow* window)
 	layout.Size = sizeof(square_vertices);
 	squarevao->LinkVertexBuffer(layout);
 
-	circlevao64 = s_CreateCircleVertexArray(*window, 64);
+	circlevao64 = s_CreateCircleVertexArray(window, 64);
+}
+
+void MayaGraphics2D::UseProjection(float left, float right, float bottom, float top)
+{
+	MayaFmat4 proj = MayaOrthogonalProjection(left, right, bottom, top);
+	program->SetUniformMatrix("uProjection", proj);
 }
 
 void MayaGraphics2D::UseProjection(float width, float height)
@@ -226,25 +232,46 @@ void MayaGraphics2D::DrawOval(MayaFvec2 pos, MayaFvec2 size)
 	r.ExecuteDraw();
 }
 
-void MayaGraphics2D::DrawText(MayaFont& font, MayaStringCR text, float x, float y)
+void MayaGraphics2D::DrawText(MayaFont* font, MayaStringCR text, float x, float y, MayaTextAlign align)
 {
-	return DrawText(font, text, MayaFvec2(x, y));
+	return DrawText(font, text, MayaFvec2(x, y), align);
 }
 
-void MayaGraphics2D::DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos)
+void MayaGraphics2D::DrawText(MayaFont* font, MayaStringCR text, MayaFvec2 pos, MayaTextAlign align)
 {
 	program->SetUniform<int>("uHasTexture[1]", 1);
 	if (camera && camera->require_update)
 		program->SetUniformMatrix("uView", camera->GetViewMatrix());
+
+	if (!font)
+		font = GetDefaultFont();
+	MayaFvec2 tsize(0);
+
+	if (align != MayaTextAlignBL) {
+		for (int i = 0, advance = 0; i < text.size(); i++)
+		{
+			auto& glyph = (*font)[text[i]];
+			tsize.x += glyph.Advance;
+			if (glyph.Bearing.y > tsize.y)
+				tsize.y = static_cast<float>(glyph.Bearing[1]);
+			advance += glyph.Advance;
+		}
+	}
+
 	int advance = 0;
 	for (char c : text)
 	{
-		auto& glyph = font[c];
+		auto& glyph = (*font)[c];
 		MayaFvec2 tpos = { 
 			advance + glyph.Bearing.x + glyph.Size.x * 0.5f,
 			glyph.Bearing.y - glyph.Size.y + glyph.Size.y * 0.5f
 		};
-		program->SetUniformMatrix("uModel", MayaTranslate(pos + tpos) * MayaScale(glyph.Size));
+
+		MayaFvec2 d;
+		d.x = -tsize.x * ((align & 0b11) - 1) * 0.5f;
+		d.y = -tsize.y * ((align >> 2) - 1) * 0.5f;
+
+		program->SetUniformMatrix("uModel", MayaTranslate(pos + tpos + d) * MayaScale(glyph.Size));
 		MayaRenderer r;
 		r.Input = squarevao.get();
 		r.Program = program.get();
@@ -278,4 +305,12 @@ void MayaGraphics2D::DrawText(TextDisplay& text, int start, int end)
 		r.ExecuteDraw();
 	}
 	program->SetUniform<int>("uHasTexture[1]", 0);
+}
+
+#include "./opensans.hpp"
+MayaFont* MayaGraphics2D::GetDefaultFont()
+{
+	if (!default_font)
+		default_font = MayaCreateFontUptr(*Window, s_OpenSansRegular, sizeof(s_OpenSansRegular), 40);
+	return default_font.get();
 }
