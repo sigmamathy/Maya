@@ -194,6 +194,33 @@ void MayaGraphics2D::DrawRect(MayaFvec2 pos, MayaFvec2 size)
 	r.ExecuteDraw();
 }
 
+void MayaGraphics2D::DrawRectBorder(float x, float y, float width, float height, int linewidth)
+{
+	DrawRectBorder(MayaFvec2(x, y), MayaFvec2(width, height), linewidth);
+}
+
+void MayaGraphics2D::DrawRectBorder(MayaFvec2 pos, MayaFvec2 size, int linewidth)
+{
+	if (camera && camera->require_update)
+		program->SetUniformMatrix("uView", camera->GetViewMatrix());
+	MayaRenderer r;
+	r.Input = squarevao.get();
+	r.Program = program.get();
+	r.Textures[0] = texture;
+	program->SetUniformMatrix("uModel", MayaTranslate(MayaFvec2(pos.x - size.x * 0.5f, pos.y))
+		* MayaScale(MayaFvec2(linewidth, size.y)));
+	r.ExecuteDraw();
+	program->SetUniformMatrix("uModel", MayaTranslate(MayaFvec2(pos.x + size.x * 0.5f, pos.y))
+		* MayaScale(MayaFvec2(linewidth, size.y)));
+	r.ExecuteDraw();
+	program->SetUniformMatrix("uModel", MayaTranslate(MayaFvec2(pos.x, pos.y + size.y * 0.5f))
+		* MayaScale(MayaFvec2(size.x, linewidth)));
+	r.ExecuteDraw();
+	program->SetUniformMatrix("uModel", MayaTranslate(MayaFvec2(pos.x, pos.y - size.y * 0.5f))
+		* MayaScale(MayaFvec2(size.x, linewidth)));
+	r.ExecuteDraw();
+}
+
 void MayaGraphics2D::DrawLine(float startx, float starty, float endx, float endy)
 {
 	DrawLine(MayaFvec2(startx, starty), MayaFvec2(endx, endy));
@@ -232,25 +259,22 @@ void MayaGraphics2D::DrawOval(MayaFvec2 pos, MayaFvec2 size)
 	r.ExecuteDraw();
 }
 
-void MayaGraphics2D::DrawText(MayaFont* font, MayaStringCR text, float x, float y, MayaCorner align)
+void MayaGraphics2D::DrawText(MayaFont& font, MayaStringCR text, float x, float y, MayaCorner align)
 {
 	return DrawText(font, text, MayaFvec2(x, y), align);
 }
 
-void MayaGraphics2D::DrawText(MayaFont* font, MayaStringCR text, MayaFvec2 pos, MayaCorner align)
+void MayaGraphics2D::DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos, MayaCorner align)
 {
 	program->SetUniform<int>("uHasTexture[1]", 1);
 	if (camera && camera->require_update)
 		program->SetUniformMatrix("uView", camera->GetViewMatrix());
-
-	if (!font)
-		font = GetDefaultFont();
 	MayaFvec2 tsize(0);
 
 	if (align != MayaCornerBL) {
 		for (int i = 0, advance = 0; i < text.size(); i++)
 		{
-			auto& glyph = (*font)[text[i]];
+			auto& glyph = font[text[i]];
 			tsize.x += glyph.Advance;
 			if (glyph.Bearing.y > tsize.y)
 				tsize.y = static_cast<float>(glyph.Bearing[1]);
@@ -261,7 +285,7 @@ void MayaGraphics2D::DrawText(MayaFont* font, MayaStringCR text, MayaFvec2 pos, 
 	int advance = 0;
 	for (char c : text)
 	{
-		auto& glyph = (*font)[c];
+		auto& glyph = font[c];
 		MayaFvec2 tpos = { 
 			advance + glyph.Bearing.x + glyph.Size.x * 0.5f,
 			glyph.Bearing.y - glyph.Size.y + glyph.Size.y * 0.5f
@@ -305,12 +329,4 @@ void MayaGraphics2D::DrawText(TextDisplay& text, int start, int end)
 		r.ExecuteDraw();
 	}
 	program->SetUniform<int>("uHasTexture[1]", 0);
-}
-
-#include "./opensans.hpp"
-MayaFont* MayaGraphics2D::GetDefaultFont()
-{
-	if (!default_font)
-		default_font = MayaCreateFontUptr(*Window, s_OpenSansRegular, sizeof(s_OpenSansRegular), 30);
-	return default_font.get();
 }

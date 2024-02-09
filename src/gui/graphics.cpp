@@ -1,5 +1,6 @@
 #include <maya/gui/graphics.hpp>
 #include <maya/gui/button.hpp>
+#include <maya/gui/textfield.hpp>
 #include <maya/color.hpp>
 #include <maya/transformation.hpp>
 #include <maya/font.hpp>
@@ -35,6 +36,13 @@ MayaGraphicsGUI::Button& MayaGraphicsGUI::CreateButton()
 	return *button;
 }
 
+MayaGraphicsGUI::TextField& MayaGraphicsGUI::CreateTextField()
+{
+	auto tf = new TextField(*this);
+	components.emplace_back(static_cast<Component*>(tf));
+	return *tf;
+}
+
 void MayaGraphicsGUI::Draw()
 {
 	for (int i = 0; i < components.size(); i++)
@@ -44,8 +52,18 @@ void MayaGraphicsGUI::Draw()
 	}
 }
 
+#include "./opensans.hpp"
+MayaFont& MayaGraphicsGUI::GetDefaultFont()
+{
+	if (!default_font)
+		default_font = MayaCreateFontUptr(*Window, s_OpenSansRegular, sizeof(s_OpenSansRegular), 30);
+	return *default_font;
+}
+
 MayaGraphicsGUI::Component::Component(MayaGraphicsGUI& gui)
-	: position(0), size(50), gui(&gui), color0(MayaWhite), color1(MayaBlack), relativeto(0), relwpos(MayaCornerCC)
+	: position(0), size(50), gui(&gui), color0(MayaWhite), color1(MayaBlack),
+	visible(true), enabled(true),
+	relativeto(0), relwpos(MayaCornerCC)
 {
 }
 
@@ -70,6 +88,16 @@ MayaFvec2 MayaGraphicsGUI::Component::GetRelativePosition() const
 	d.x = ((relwpos & 0b11) - 2) * hsz.x;
 	d.y = ((relwpos >> 2) - 2) * hsz.y;
 	return d;
+}
+
+void MayaGraphicsGUI::Component::SetPosition(float x, float y)
+{
+	SetPosition(MayaFvec2{ x, y });
+}
+
+void MayaGraphicsGUI::Component::SetSize(float width, float height)
+{
+	SetSize(MayaFvec2{ width, height });
 }
 
 void MayaGraphicsGUI::Component::SetPosition(MayaFvec2 pos)
@@ -110,6 +138,26 @@ MayaIvec4 MayaGraphicsGUI::Component::GetColor0() const
 MayaIvec4 MayaGraphicsGUI::Component::GetColor1() const
 {
 	return color1;
+}
+
+void MayaGraphicsGUI::Component::SetVisible(bool visible)
+{
+	this->visible = visible;
+}
+
+void MayaGraphicsGUI::Component::SetEnabled(bool enable)
+{
+	enabled = enable;
+}
+
+bool MayaGraphicsGUI::Component::IsVisible() const
+{
+	return visible;
+}
+
+bool MayaGraphicsGUI::Component::IsEnabled() const
+{
+	return enabled;
 }
 
 void MayaGraphicsGUI::Component::SetEventCallback(UserEventCallbackCR callback)

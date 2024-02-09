@@ -8,7 +8,10 @@ public:
 
 	TextDisplay(MayaFont& font, MayaStringCR text);
 	TextDisplay& operator=(MayaStringCR text);
+	void InsertCharAt(int index, char c);
+	char RemoveCharAt(int index);
 
+	MayaFont& GetFont() const;
 	MayaStringCR GetString() const;
 	unsigned GetLength() const;
 
@@ -34,10 +37,11 @@ private:
 	MayaFvec2 scale;
 	float rotation;
 
-	bool require_update_global_model;
+	bool require_update_char, require_update_global;
 	MayaFmat4 global_model;
 	MayaArrayList<MayaFmat4> char_models;
 
+	void ComputeCharModel();
 	void ComputeGlobalModel();
 	friend class MayaGraphics2D;
 };

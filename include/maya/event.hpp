@@ -159,7 +159,7 @@ MAYA_TYPEDEF0(MayaEventCallback, MayaFunction<void(MayaEvent&)>);
 
 #define MAYA_DEFINE_EVENT_ID(x) static constexpr int EventID = x; inline int GetEventID() const override { return x; }
 
-template<class Ty> requires std::is_base_of_v<MayaEvent, Ty> && requires { Ty::EventID; }
+template<class Ty>
 Ty* MayaEventCast(MayaEvent& e)
 {
 	if (e.GetEventID() == Ty::EventID)
@@ -173,6 +173,12 @@ struct MayaKeyEvent : public MayaEvent
 	MayaKeyCode KeyCode; // the keycode
 	bool Down; // true if key is pressed
 	bool Repeat;
+};
+
+struct MayaCharEvent : public MayaEvent
+{
+	MAYA_DEFINE_EVENT_ID(0x09)
+	char Char;
 };
 
 struct MayaMouseEvent : public MayaEvent

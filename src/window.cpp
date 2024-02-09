@@ -73,6 +73,13 @@ static void s_SetupWindowEventCallback(GLFWwindow* window)
 		e.Position = { x, y };
 		callback(e);
 	});
+
+	glfwSetCharCallback(window, [](GLFWwindow* window, unsigned codepoint) {
+		auto& callback = *static_cast<MayaEventCallback*>(glfwGetWindowUserPointer(window));
+		MayaCharEvent e;
+		e.Char = (char) codepoint;
+		callback(e);
+	});
 }
 
 template<class Ty>

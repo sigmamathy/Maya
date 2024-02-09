@@ -24,6 +24,7 @@ MayaFontSptr MayaCreateFontSptr(MayaWindow& window, void* data, unsigned size, i
 }
 
 MayaFont::MayaFont(MayaWindow& window, MayaStringCR path, int pixelsize)
+    : max_height(0)
 {
     FT_Library ft;
     FT_Init_FreeType(&ft);
@@ -52,6 +53,9 @@ MayaFont::MayaFont(MayaWindow& window, MayaStringCR path, int pixelsize)
             .Bearing = MayaIvec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
             .Advance = unsigned(face->glyph->advance.x >> 6)
         };
+
+        if (face->glyph->bitmap_top > max_height)
+            max_height = face->glyph->bitmap_top;
     }
 
     FT_Done_Face(face);
@@ -59,6 +63,7 @@ MayaFont::MayaFont(MayaWindow& window, MayaStringCR path, int pixelsize)
 }
 
 MayaFont::MayaFont(MayaWindow& window, void* data, unsigned size, int pixelsize)
+    : max_height(0)
 {
     FT_Library ft;
     FT_Init_FreeType(&ft);
@@ -87,6 +92,9 @@ MayaFont::MayaFont(MayaWindow& window, void* data, unsigned size, int pixelsize)
             .Bearing = MayaIvec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
             .Advance = unsigned(face->glyph->advance.x >> 6)
         };
+
+        if (face->glyph->bitmap_top > max_height)
+            max_height = face->glyph->bitmap_top;
     }
 
     FT_Done_Face(face);
@@ -96,4 +104,9 @@ MayaFont::MayaFont(MayaWindow& window, void* data, unsigned size, int pixelsize)
 MayaGlyphInfo const& MayaFont::operator[](char c) const
 {
     return glyph_infos.at(c);
+}
+
+int MayaFont::GetMaxHeight() const
+{
+    return max_height;
 }

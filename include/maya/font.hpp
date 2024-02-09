@@ -36,8 +36,11 @@ public:
 
 	MayaGlyphInfo const& operator[](char c) const;
 
+	int GetMaxHeight() const;
+
 private:
 
 	MayaHashMap<char, MayaTextureUptr> textures;
 	MayaHashMap<char, MayaGlyphInfo> glyph_infos;
+	int max_height;
 };

@@ -48,6 +48,10 @@ public:
 
 	void DrawRect(MayaFvec2 pos, MayaFvec2 size);
 
+	void DrawRectBorder(float x, float y, float width, float height, int linewidth = 1);
+
+	void DrawRectBorder(MayaFvec2 pos, MayaFvec2 size, int linewidth = 1);
+
 	void DrawLine(float startx, float starty, float endx, float endy);
 
 	void DrawLine(MayaFvec2 start, MayaFvec2 end);
@@ -56,9 +60,9 @@ public:
 
 	void DrawOval(MayaFvec2 pos, MayaFvec2 size);
 
-	void DrawText(MayaFont* font, MayaStringCR text, float x, float y, MayaCorner align = MayaCornerBC);
+	void DrawText(MayaFont& font, MayaStringCR text, float x, float y, MayaCorner align = MayaCornerBC);
 
-	void DrawText(MayaFont* font, MayaStringCR text, MayaFvec2 pos, MayaCorner align = MayaCornerBC);
+	void DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos, MayaCorner align = MayaCornerBC);
 
 	void DrawText(TextDisplay& text);
 
@@ -70,7 +74,4 @@ private:
 	MayaVertexArrayUptr squarevao, circlevao64;
 	Camera* camera;
 	MayaTexture* texture;
-
-	MayaFontUptr default_font;
-	MayaFont* GetDefaultFont();
 };

@@ -20,7 +20,9 @@ int main()
 	MayaGraphicsGUI gui(*window);
 	auto& x = gui.CreateButton();
 	x.SetPositionRelativeTo(MayaCornerTL);
-	x.SetPosition(MayaFvec2(250, -150));
+	x.SetPosition(250, -150);
+
+	gui.CreateTextField();
 
 	while (!window->IsTimeToClose())
 	{

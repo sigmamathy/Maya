@@ -33,15 +33,22 @@ public:
 		void SetPositionRelativeTo(MayaCorner relpos);
 		MayaFvec2 GetRelativePosition() const;
 
-		void SetPosition(MayaFvec2 pos);
-		void SetSize(MayaFvec2 size);
-		MayaFvec2 GetPosition() const;
-		MayaFvec2 GetSize() const;
+		void SetPosition(float x, float y);
+		void SetSize(float width, float height);
+		virtual void SetPosition(MayaFvec2 pos);
+		virtual void SetSize(MayaFvec2 size);
+		virtual MayaFvec2 GetPosition() const;
+		virtual MayaFvec2 GetSize() const;
 
 		void SetColor0(MayaIvec4 color);
 		void SetColor1(MayaIvec4 color);
 		MayaIvec4 GetColor0() const;
 		MayaIvec4 GetColor1() const;
+
+		void SetVisible(bool visible);
+		void SetEnabled(bool enable);
+		bool IsVisible() const;
+		bool IsEnabled() const;
 
 		void SetEventCallback(UserEventCallbackCR callback);
 
@@ -49,6 +56,7 @@ public:
 		MayaGraphicsGUI* gui;
 		MayaFvec2 position, size;
 		MayaIvec4 color0, color1;
+		bool visible, enabled;
 		UserEventCallback callback;
 
 		Component* relativeto;
@@ -58,24 +66,25 @@ public:
 public:
 
 	MayaGraphicsGUI(MayaWindow& window);
-
 	MayaGraphicsGUI(MayaGraphicsGUI const&) = delete;
-
 	MayaGraphicsGUI& operator=(MayaGraphicsGUI const&) = delete;
-
 	~MayaGraphicsGUI();
 
 	MayaWindow* const Window;
 
 	Button& CreateButton();
+	TextField& CreateTextField();
 
 	void Draw();
+
+	MayaFont& GetDefaultFont();
 
 private:
 
 	MayaArrayList<MayaUptr<Component>> components;
 	MayaGraphics2D g2d;
 	unsigned callbackid;
+	MayaFontUptr default_font;
 };
 
 struct MayaGraphicsGUI::UserEvent : public MayaEvent
