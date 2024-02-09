@@ -1,5 +1,6 @@
 #include <maya/gui/textfield.hpp>
 #include <maya/color.hpp>
+#include <glad/glad.h>
 
 MayaGraphicsGUI::TextField::TextField(MayaGraphicsGUI& gui)
 	: Component(gui), text(gui.GetDefaultFont(), "Enter Text"),
@@ -22,16 +23,21 @@ void MayaGraphicsGUI::TextField::Draw(MayaGraphics2D& g2d)
 		position.y - text.GetFont().GetMaxHeight() * 0.5f) + GetRelativePosition();
 	g2d.UseColor(MayaWhite);
 	text.SetPosition(tpos);
-	g2d.DrawText(text);
 
-	if (careti != -1)
+	glEnable(GL_SCISSOR_TEST);
+	MayaIvec2 sc = position + GetRelativePosition() + gui->Window->GetSize() * 0.5f - size * 0.5f;
+	glScissor(sc.x, sc.y, static_cast<int>(size.x - 4), static_cast<int>(size.y));
+	g2d.DrawText(text);
+	glDisable(GL_SCISSOR_TEST);
+
+	if (enabled && careti != -1)
 	{
 		float crnt = (float) MayaGetCurrentTimeSinceInit();
 		if (crnt - caret_timer > 1.0f)
 			caret_timer += 1.0f;
 		if (crnt - caret_timer <= 0.5f)
-			g2d.DrawLine(tpos.x + caretpos, position.y + size.y * 0.5f - 10,
-				tpos.x + caretpos, position.y - size.y * 0.5f + 10);
+			g2d.DrawLine(tpos.x + caretpos, position.y + GetRelativePosition().y + size.y * 0.5f - 10,
+				tpos.x + caretpos, position.y + GetRelativePosition().y - size.y * 0.5f + 10);
 
 		g2d.UseColor(color1);
 		g2d.DrawRectBorder(position + GetRelativePosition(), size);

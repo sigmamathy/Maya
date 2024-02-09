@@ -72,6 +72,7 @@ private:
 
 	MayaShaderProgramUptr program;
 	MayaVertexArrayUptr squarevao, circlevao64;
+
 	Camera* camera;
 	MayaTexture* texture;
 };

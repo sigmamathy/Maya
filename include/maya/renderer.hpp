@@ -11,5 +11,6 @@ public:
 	MayaVertexArray* Input			= 0; // REQUIRED
 	MayaShaderProgram* Program		= 0; // REQUIRED
 	MayaTexture* Textures[16]		= {0};
+	MayaFvec4* Scissor				= 0; // x, y, width, height
 	void ExecuteDraw();
 };

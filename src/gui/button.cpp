@@ -23,7 +23,7 @@ void MayaGraphicsGUI::Button::Draw(MayaGraphics2D& g2d)
 	g2d.UseColor(MayaWhite);
 	g2d.DrawText(gui->GetDefaultFont(), text, position + GetRelativePosition(), MayaCornerCC);
 
-	if (IsButtonTouched())
+	if (enabled && IsButtonTouched())
 	{
 		g2d.UseColor(color1);
 		g2d.DrawRectBorder(position + GetRelativePosition(), size);
