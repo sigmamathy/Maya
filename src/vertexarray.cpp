@@ -39,6 +39,8 @@ MayaVertexArray::MayaVertexArray(unsigned vao, MayaWindow* window)
 
 MayaVertexArray::~MayaVertexArray()
 {
+	if (!MayaWindow::Exists(window))
+		return;
 	window->UseGraphicsContext();
 	glDeleteVertexArrays(1, &vaoid);
 	if (!vboids.empty())

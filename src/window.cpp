@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <maya/2d/graphics.hpp>
 #include <maya/gui/graphics.hpp>
+#include <unordered_set>
 
 static void s_SetupWindowEventCallback(GLFWwindow* window)
 {
@@ -128,6 +129,8 @@ MayaWindowSptr MayaCreateWindowSptr(MayaWindowParameters& param)
 	return s_CreateWindowPtr<MayaWindowSptr>(param);
 }
 
+static std::unordered_set<MayaWindow*> s_window_instances;
+
 MayaWindow::MayaWindow(void* resource_pointer, int monitor, MayaStringCR title)
 	: resptr(resource_pointer), monitor(monitor), title(title)
 {
@@ -135,21 +138,35 @@ MayaWindow::MayaWindow(void* resource_pointer, int monitor, MayaStringCR title)
 	event_callback = [this](MayaEvent& e) {
 		e.Window = this;
 		for (auto& call : callbacks)
-			call(e);
+			if(call) call(e);
 	};
 	glfwSetWindowUserPointer(window, &event_callback);
 	s_SetupWindowEventCallback(window);
+	s_window_instances.insert(this);
+	callbacks.reserve(5);
 }
 
 MayaWindow::~MayaWindow()
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	glfwDestroyWindow(window);
+	s_window_instances.erase(this);
 }
 
-void MayaWindow::AddEventCallback(MayaEventCallbackCR callback)
+bool MayaWindow::Exists(MayaWindow* window)
+{
+	return s_window_instances.contains(window);
+}
+
+unsigned MayaWindow::AddEventCallback(MayaEventCallbackCR callback)
 {
 	callbacks.push_back(callback);
+	return static_cast<unsigned>(callbacks.size() - 1);
+}
+
+void MayaWindow::RemoveEventCallback(unsigned index)
+{
+	callbacks.at(index) = nullptr;
 }
 
 void MayaWindow::PleaseClose(bool close)

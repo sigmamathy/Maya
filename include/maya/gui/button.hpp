@@ -12,8 +12,6 @@ public:
 
 	void ReactEvent(MayaEvent& e) override;
 
-	void SetEventCallback(MayaFunctionCR<void()> callback);
-
 	void SetText(MayaStringCR text);
 
 	MayaStringCR GetText() const;
@@ -24,7 +22,6 @@ public:
 
 private:
 
-	MayaFunction<void()> callback;
 	MayaString text;
 	bool pressed;
 };

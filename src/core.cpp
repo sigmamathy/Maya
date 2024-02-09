@@ -72,8 +72,3 @@ double MayaGetCurrentTimeSinceInit(void)
 {
 	return glfwGetTime();
 }
-
-void tmp()
-{
-	std::cout << glGetError();
-}

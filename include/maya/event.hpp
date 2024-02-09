@@ -152,16 +152,24 @@ enum MayaMouseButton : int
 struct MayaEvent
 {
 	class MayaWindow* Window;
-	virtual int GetEventID() const = 0; // 0-64 reserved
+	virtual int GetEventID() const = 0; // 0x00 - 0xFF is reserved
 };
 
 MAYA_TYPEDEF0(MayaEventCallback, MayaFunction<void(MayaEvent&)>);
 
 #define MAYA_DEFINE_EVENT_ID(x) static constexpr int EventID = x; inline int GetEventID() const override { return x; }
 
+template<class Ty> requires std::is_base_of_v<MayaEvent, Ty> && requires { Ty::EventID; }
+Ty* MayaEventCast(MayaEvent& e)
+{
+	if (e.GetEventID() == Ty::EventID)
+		return static_cast<Ty*>(&e);
+	return nullptr;
+}
+
 struct MayaKeyEvent : public MayaEvent
 {
-	MAYA_DEFINE_EVENT_ID(1)
+	MAYA_DEFINE_EVENT_ID(0x01)
 	MayaKeyCode KeyCode; // the keycode
 	bool Down; // true if key is pressed
 	bool Repeat;
@@ -169,7 +177,7 @@ struct MayaKeyEvent : public MayaEvent
 
 struct MayaMouseEvent : public MayaEvent
 {
-	MAYA_DEFINE_EVENT_ID(2);
+	MAYA_DEFINE_EVENT_ID(0x02);
 	MayaMouseButton Button; // the mouse button
 	bool Down; // true if button is pressed
 };
@@ -177,40 +185,40 @@ struct MayaMouseEvent : public MayaEvent
 // When users moves the mouse
 struct MayaMouseMovedEvent : public MayaEvent
 {
-	MAYA_DEFINE_EVENT_ID(3);
+	MAYA_DEFINE_EVENT_ID(0x03);
 	MayaIvec2 Position; // cursor position
 };
 
 // When users scroll the mouse (mouse wheel)
 struct MayaMouseScrolledEvent : public MayaEvent
 {
-	MAYA_DEFINE_EVENT_ID(4);
+	MAYA_DEFINE_EVENT_ID(0x04);
 	MayaIvec2 Offset; // mouse offset
 };
 
 // When the window is focused or unfocused by the user
 struct MayaWindowFocusedEvent : public MayaEvent
 {
-	MAYA_DEFINE_EVENT_ID(5);
+	MAYA_DEFINE_EVENT_ID(0x05);
 	bool Focused; // true if focused
 };
 
 // When the window is closed by the user
 struct MayaWindowClosedEvent : public MayaEvent
 {
-	MAYA_DEFINE_EVENT_ID(6);
+	MAYA_DEFINE_EVENT_ID(0x06);
 };
 
 // When the window is resized by the user
 struct MayaWindowResizedEvent : public MayaEvent
 {
-	MAYA_DEFINE_EVENT_ID(7);
+	MAYA_DEFINE_EVENT_ID(0x07);
 	MayaIvec2 Size; // current window size
 };
 
 // When the window is moved by the user
 struct MayaWindowMovedEvent : public MayaEvent
 {
-	MAYA_DEFINE_EVENT_ID(8);
+	MAYA_DEFINE_EVENT_ID(0x08);
 	MayaIvec2 Position; // current window position
 };

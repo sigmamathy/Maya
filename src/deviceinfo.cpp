@@ -1,7 +1,6 @@
 #include <maya/deviceinfo.hpp>
 #include <GLFW/glfw3.h>
 
-
 void MayaGetDeviceInfo(MayaMonitorsInfo* info)
 {
 	MAYA_DIF (!MayaIsLibraryFound())

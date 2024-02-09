@@ -6,7 +6,7 @@ MayaGraphicsGUI::Button::Button(MayaGraphicsGUI& gui)
 	: Component(gui), pressed(false)
 {
 	position = { 0, 0 };
-	size = { 200, 100 };
+	size = { 160, 80 };
 	color0 = { 89, 97, 107, 255 };
 	color1 = { 117, 129, 143, 255 };
 	text = "Button";
@@ -18,7 +18,7 @@ void MayaGraphicsGUI::Button::Draw(MayaGraphics2D& g2d)
 	g2d.DrawRect(position + GetRelativePosition(), size);
 
 	g2d.UseColor(MayaWhite);
-	g2d.DrawText(0, text, position + GetRelativePosition(), MayaTextAlignCC);
+	g2d.DrawText(0, text, position + GetRelativePosition(), MayaCornerCC);
 }
 
 void MayaGraphicsGUI::Button::ReactEvent(MayaEvent& e)
@@ -29,19 +29,30 @@ void MayaGraphicsGUI::Button::ReactEvent(MayaEvent& e)
 		if (me->Down && me->Button == MayaMouseButtonLeft && IsButtonTouched())
 		{
 			pressed = true;
+			if (callback)
+			{
+				UserMouseEvent ue;
+				ue.Window = gui->Window;
+				ue.Source = this;
+				ue.Button = MayaMouseButtonLeft;
+				ue.Down = true;
+				callback(ue);
+			}
 		}
 		if (pressed && !me->Down && me->Button == MayaMouseButtonLeft)
 		{
 			pressed = false;
 			if (callback)
-				callback();
+			{
+				UserMouseEvent ue;
+				ue.Window = gui->Window;
+				ue.Source = this;
+				ue.Button = MayaMouseButtonLeft;
+				ue.Down = false;
+				callback(ue);
+			}
 		}
 	}
-}
-
-void MayaGraphicsGUI::Button::SetEventCallback(MayaFunctionCR<void()> callback)
-{
-	this->callback = callback;
 }
 
 void MayaGraphicsGUI::Button::SetText(MayaStringCR text)

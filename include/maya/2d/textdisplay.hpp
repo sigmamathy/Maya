@@ -7,12 +7,13 @@ class MayaGraphics2D::TextDisplay
 public:
 
 	TextDisplay(MayaFont& font, MayaStringCR text);
+	TextDisplay& operator=(MayaStringCR text);
 
 	MayaStringCR GetString() const;
 	unsigned GetLength() const;
 
-	void SetTextAlign(MayaTextAlign align);
-	MayaTextAlign GetTextAlign() const;
+	void SetTextAlign(MayaCorner align);
+	MayaCorner GetTextAlign() const;
 
 	void SetPosition(MayaFvec2 pos);
 	void SetScale(MayaFvec2 scale);
@@ -27,7 +28,7 @@ private:
 	MayaFont* font;
 	MayaString string;
 	MayaFvec2 text_size;
-	MayaTextAlign text_align;
+	MayaCorner text_align;
 
 	MayaFvec2 position;
 	MayaFvec2 scale;

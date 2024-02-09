@@ -17,9 +17,15 @@ MayaGraphicsGUI::MayaGraphicsGUI(MayaWindow& window)
 			if (comp) comp->ReactEvent(e);
 	};
 	
-	Window->AddEventCallback(projupdate);
+	callbackid = Window->AddEventCallback(projupdate);
 	auto sz = Window->GetSize();
 	g2d.UseProjection(sz);
+}
+
+MayaGraphicsGUI::~MayaGraphicsGUI()
+{
+	if (MayaWindow::Exists(Window))
+		Window->RemoveEventCallback(callbackid);
 }
 
 MayaGraphicsGUI::Button& MayaGraphicsGUI::CreateButton()
@@ -39,17 +45,17 @@ void MayaGraphicsGUI::Draw()
 }
 
 MayaGraphicsGUI::Component::Component(MayaGraphicsGUI& gui)
-	: position(0), size(50), gui(&gui), color0(MayaWhite), color1(MayaBlack), relativeto(0), relwpos(RelativeToNone)
+	: position(0), size(50), gui(&gui), color0(MayaWhite), color1(MayaBlack), relativeto(0), relwpos(MayaCornerCC)
 {
 }
 
 void MayaGraphicsGUI::Component::SetPositionRelativeTo(Component* comp)
 {
 	relativeto = comp;
-	relwpos = RelativeToNone;
+	relwpos = MayaCornerCC;
 }
 
-void MayaGraphicsGUI::Component::SetPositionRelativeTo(WindowRelativePos relpos)
+void MayaGraphicsGUI::Component::SetPositionRelativeTo(MayaCorner relpos)
 {
 	relwpos = relpos;
 	relativeto = 0;
@@ -60,28 +66,10 @@ MayaFvec2 MayaGraphicsGUI::Component::GetRelativePosition() const
 	if (relativeto)
 		return relativeto->GetPosition();
 	auto hsz = gui->Window->GetSize() * 0.5f;
-	switch (relwpos)
-	{
-		case RelativeToWindowTopLeft:
-			return MayaFvec2(-hsz.x, hsz.y);
-		case RelativeToWindowTopCenter:
-			return MayaFvec2(0, hsz.y);
-		case RelativeToWindowTopRight:
-			return MayaFvec2(hsz.x, hsz.y);
-		case RelativeToWindowCenterLeft:
-			return MayaFvec2(-hsz.x, 0);
-		case RelativeToNone:
-			return MayaFvec2(0, 0);
-		case RelativeToWindowCenterRight:
-			return MayaFvec2(hsz.x, 0);
-		case RelativeToWindowBottomLeft:
-			return MayaFvec2(-hsz.x, -hsz.y);
-		case RelativeToWindowBottomCenter:
-			return MayaFvec2(0, -hsz.y);
-		case RelativeToWindowBottomRight:
-			return MayaFvec2(hsz.x, -hsz.y);
-	}
-	return {};
+	MayaFvec2 d;
+	d.x = ((relwpos & 0b11) - 2) * hsz.x;
+	d.y = ((relwpos >> 2) - 2) * hsz.y;
+	return d;
 }
 
 void MayaGraphicsGUI::Component::SetPosition(MayaFvec2 pos)
@@ -122,4 +110,9 @@ MayaIvec4 MayaGraphicsGUI::Component::GetColor0() const
 MayaIvec4 MayaGraphicsGUI::Component::GetColor1() const
 {
 	return color1;
+}
+
+void MayaGraphicsGUI::Component::SetEventCallback(UserEventCallbackCR callback)
+{
+	this->callback = callback;
 }

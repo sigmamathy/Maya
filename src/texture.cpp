@@ -92,6 +92,8 @@ MayaTexture::MayaTexture(unsigned texture, MayaWindow* window, MayaIvec2 size)
 
 MayaTexture::~MayaTexture()
 {
+	if (!MayaWindow::Exists(window))
+		return;
 	window->UseGraphicsContext();
 	glDeleteTextures(1, &textureid);
 }

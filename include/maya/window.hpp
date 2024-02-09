@@ -49,7 +49,11 @@ public:
 
 	MayaWindow& operator=(MayaWindow const&) = delete;
 
-	void AddEventCallback(MayaEventCallbackCR callback);
+	static bool Exists(MayaWindow* window);
+
+	unsigned AddEventCallback(MayaEventCallbackCR callback);
+
+	void RemoveEventCallback(unsigned index);
 
 	void PleaseClose(bool close = true);
 

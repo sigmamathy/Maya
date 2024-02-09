@@ -5,6 +5,7 @@
 #include "../renderer.hpp"
 #include "../window.hpp"
 #include "../font.hpp"
+#include "../transformation.hpp"
 
 class MayaGraphics2D
 {
@@ -55,9 +56,9 @@ public:
 
 	void DrawOval(MayaFvec2 pos, MayaFvec2 size);
 
-	void DrawText(MayaFont* font, MayaStringCR text, float x, float y, MayaTextAlign align = MayaTextAlignBC);
+	void DrawText(MayaFont* font, MayaStringCR text, float x, float y, MayaCorner align = MayaCornerBC);
 
-	void DrawText(MayaFont* font, MayaStringCR text, MayaFvec2 pos, MayaTextAlign align = MayaTextAlignBC);
+	void DrawText(MayaFont* font, MayaStringCR text, MayaFvec2 pos, MayaCorner align = MayaCornerBC);
 
 	void DrawText(TextDisplay& text);
 

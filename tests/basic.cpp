@@ -18,24 +18,19 @@ int main()
 	window->SetResizeAspectRatioLock(16, 9);
 
 	MayaGraphicsGUI gui(*window);
-
 	auto& x = gui.CreateButton();
-	x.SetPositionRelativeTo(MayaGraphicsGUI::RelativeToWindowTopLeft);
+	x.SetPositionRelativeTo(MayaCornerTL);
 	x.SetPosition(MayaFvec2(250, -150));
-
-	float start = MayaGetCurrentTimeSinceInit();
 
 	while (!window->IsTimeToClose())
 	{
-		//if (MayaGetCurrentTimeSinceInit() - start < 1 / 120.0f) continue;
-		start = MayaGetCurrentTimeSinceInit();
-
 		window->ClearBuffers();
 		window->PackViewport();
 
 		gui.Draw();
 
 		window->SwapBuffers();
+
 		MayaPollWindowEvents();
 	}
 

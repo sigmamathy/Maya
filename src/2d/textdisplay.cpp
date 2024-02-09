@@ -2,14 +2,24 @@
 #include <maya/transformation.hpp>
 
 MayaGraphics2D::TextDisplay::TextDisplay(MayaFont& font, MayaStringCR text)
-	: font(&font), string(text), text_size(0), text_align(MayaTextAlignBL), global_model(1), require_update_global_model(0),
+	: font(&font),
+	text_align(MayaCornerBL), global_model(1), require_update_global_model(0),
 	position(0), scale(1), rotation(0)
 {
+	operator=(text);
+}
+
+MayaGraphics2D::TextDisplay& MayaGraphics2D::TextDisplay::operator=(MayaStringCR text)
+{
+	string = text;
+	char_models.clear();
+	text_size = MayaFvec2(0);
+
 	char_models.reserve(text.size());
 
 	for (int i = 0, advance = 0; i < text.size(); i++)
 	{
-		auto& glyph = font[text[i]];
+		auto& glyph = (*font)[text[i]];
 		text_size.x += glyph.Advance;
 		if (glyph.Bearing.y > text_size.y)
 			text_size.y = static_cast<float>(glyph.Bearing[1]);
@@ -23,6 +33,7 @@ MayaGraphics2D::TextDisplay::TextDisplay(MayaFont& font, MayaStringCR text)
 		advance += glyph.Advance;
 	}
 
+	return *this;
 }
 
 MayaStringCR MayaGraphics2D::TextDisplay::GetString() const
@@ -35,13 +46,13 @@ unsigned MayaGraphics2D::TextDisplay::GetLength() const
 	return (unsigned) string.length();
 }
 
-void MayaGraphics2D::TextDisplay::SetTextAlign(MayaTextAlign align)
+void MayaGraphics2D::TextDisplay::SetTextAlign(MayaCorner align)
 {
 	text_align = align;
 	require_update_global_model = true;
 }
 
-MayaTextAlign MayaGraphics2D::TextDisplay::GetTextAlign() const
+MayaCorner MayaGraphics2D::TextDisplay::GetTextAlign() const
 {
 	return text_align;
 }

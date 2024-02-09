@@ -232,12 +232,12 @@ void MayaGraphics2D::DrawOval(MayaFvec2 pos, MayaFvec2 size)
 	r.ExecuteDraw();
 }
 
-void MayaGraphics2D::DrawText(MayaFont* font, MayaStringCR text, float x, float y, MayaTextAlign align)
+void MayaGraphics2D::DrawText(MayaFont* font, MayaStringCR text, float x, float y, MayaCorner align)
 {
 	return DrawText(font, text, MayaFvec2(x, y), align);
 }
 
-void MayaGraphics2D::DrawText(MayaFont* font, MayaStringCR text, MayaFvec2 pos, MayaTextAlign align)
+void MayaGraphics2D::DrawText(MayaFont* font, MayaStringCR text, MayaFvec2 pos, MayaCorner align)
 {
 	program->SetUniform<int>("uHasTexture[1]", 1);
 	if (camera && camera->require_update)
@@ -247,7 +247,7 @@ void MayaGraphics2D::DrawText(MayaFont* font, MayaStringCR text, MayaFvec2 pos, 
 		font = GetDefaultFont();
 	MayaFvec2 tsize(0);
 
-	if (align != MayaTextAlignBL) {
+	if (align != MayaCornerBL) {
 		for (int i = 0, advance = 0; i < text.size(); i++)
 		{
 			auto& glyph = (*font)[text[i]];
@@ -311,6 +311,6 @@ void MayaGraphics2D::DrawText(TextDisplay& text, int start, int end)
 MayaFont* MayaGraphics2D::GetDefaultFont()
 {
 	if (!default_font)
-		default_font = MayaCreateFontUptr(*Window, s_OpenSansRegular, sizeof(s_OpenSansRegular), 40);
+		default_font = MayaCreateFontUptr(*Window, s_OpenSansRegular, sizeof(s_OpenSansRegular), 30);
 	return default_font.get();
 }

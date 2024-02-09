@@ -108,5 +108,3 @@ struct MayaLibrarySingleton {
 bool MayaIsLibraryFound(void);
 
 double MayaGetCurrentTimeSinceInit(void);
-
-void tmp();

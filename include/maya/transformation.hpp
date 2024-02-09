@@ -3,6 +3,31 @@
 #include "./core.hpp"
 #include "./math.hpp"
 
+// Specify a corner for aligning
+// Horizontal:      (x & 0b11) = 1, 2, 3 for Left, Center, Right
+// Vertical:        (x >> 2) = 1, 2, 3 for Bottom, Center, Top
+enum MayaCorner
+{
+	MayaCornerLeft		= 0b1,			// 0001
+	MayaCornerCenterH	= 0b10,			// 0010
+	MayaCornerRight		= 0b11,			// 0011
+	MayaCornerBottom	= 0b100,		// 0100
+	MayaCornerCenterV	= 0b1000,		// 1000
+	MayaCornerTop		= 0b1100,		// 1100
+
+// ---------------- Combinations ---------------- //
+
+	MayaCornerTL = MayaCornerTop | MayaCornerLeft,
+	MayaCornerTC = MayaCornerTop | MayaCornerCenterH,
+	MayaCornerTR = MayaCornerTop | MayaCornerRight,
+	MayaCornerCL = MayaCornerCenterV | MayaCornerLeft,
+	MayaCornerCC = MayaCornerCenterV | MayaCornerCenterH,
+	MayaCornerCR = MayaCornerCenterV | MayaCornerRight,
+	MayaCornerBL = MayaCornerBottom | MayaCornerLeft,
+	MayaCornerBC = MayaCornerBottom | MayaCornerCenterH,
+	MayaCornerBR = MayaCornerBottom | MayaCornerRight,
+};
+
 // Translation matrix (2D)
 MayaFmat4 MayaTranslate(MayaFvec2 position);
 

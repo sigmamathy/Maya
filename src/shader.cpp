@@ -121,6 +121,8 @@ MayaShaderProgram::MayaShaderProgram(unsigned program, MayaWindow* window)
 
 MayaShaderProgram::~MayaShaderProgram()
 {
+	if (!MayaWindow::Exists(window))
+		return;
 	window->UseGraphicsContext();
 	glDeleteProgram(programid);
 }
