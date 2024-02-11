@@ -24,8 +24,6 @@ public:
 
 	MayaWindow* const Window;
 
-	void UseProjection(float left, float right, float bottom, float top);
-
 	void UseProjection(float width, float height);
 
 	void UseProjection(MayaFvec2 size);
@@ -43,6 +41,10 @@ public:
 	void UseColor(unsigned hexcode, bool hasopacity = false);
 
 	void UseTexture(MayaTexture* texture);
+
+	void BeginScissor(MayaFvec2 pos, MayaFvec2 size);
+
+	void EndScissor();
 
 	void DrawRect(float x, float y, float width, float height);
 
@@ -73,6 +75,8 @@ private:
 	MayaShaderProgramUptr program;
 	MayaVertexArrayUptr squarevao, circlevao64;
 
+	MayaFvec2 projection;
 	Camera* camera;
 	MayaTexture* texture;
+	bool has_scissor;
 };

@@ -15,6 +15,7 @@ static void s_SetupWindowEventCallback(GLFWwindow* window)
 		e.KeyCode = static_cast<MayaKeyCode>(key);
 		e.Down = act != GLFW_RELEASE;
 		e.Repeat = act == GLFW_REPEAT;
+		e.Mods = static_cast<MayaModifierKeys>(modes);
 		callback(e);
 	});
 
@@ -24,6 +25,7 @@ static void s_SetupWindowEventCallback(GLFWwindow* window)
 		MayaMouseEvent e;
 		e.Button = static_cast<MayaMouseButton>(button);
 		e.Down = act != GLFW_RELEASE;
+		e.Mods = static_cast<MayaModifierKeys>(modes);
 		callback(e);
 	});
 
@@ -197,6 +199,7 @@ void MayaWindow::UseGraphicsContext()
 void MayaWindow::ClearBuffers()
 {
 	UseGraphicsContext();
+	glDisable(GL_SCISSOR_TEST);
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 

@@ -18,3 +18,5 @@ struct MayaMonitorsInfo
 };
 
 void MayaGetDeviceInfo(MayaMonitorsInfo* info);
+
+MayaString MayaGetClipBoardString();

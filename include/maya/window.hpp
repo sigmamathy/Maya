@@ -102,4 +102,5 @@ private:
 	MayaArrayList<MayaEventCallback> callbacks;
 	MayaString title;
 	int monitor;
+
 };

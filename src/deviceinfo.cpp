@@ -28,3 +28,12 @@ void MayaGetDeviceInfo(MayaMonitorsInfo* info)
 	info->Monitors = monitors_info_cache.data();
 	info->Count = static_cast<int>(monitors_info_cache.size());
 }
+
+MayaString MayaGetClipBoardString()
+{
+	MAYA_DIF(!MayaIsLibraryFound())
+		MAYA_SERR(MAYA_MISSING_LIBRARY_ERROR,
+			"MayaGetDeviceInfo(MayaMonitorsInfo&): Required library is not initialized.");
+	char const* s = glfwGetClipboardString(0);
+	return s ? s : "";
+}

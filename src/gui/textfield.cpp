@@ -1,10 +1,9 @@
 #include <maya/gui/textfield.hpp>
 #include <maya/color.hpp>
-#include <glad/glad.h>
 
 MayaGraphicsGUI::TextField::TextField(MayaGraphicsGUI& gui)
 	: Component(gui), text(gui.GetDefaultFont(), "Enter Text"),
-	careti(-1), caretpos(0), caret_timer(MayaGetCurrentTimeSinceInit())
+	careti(-1), caretpos(0), caret_timer(static_cast<float>(MayaGetCurrentTimeSinceInit())), scroll(0)
 {
 	size = { 200, 60 };
 	color0 = { 65, 71, 74, 255 };
@@ -21,17 +20,18 @@ void MayaGraphicsGUI::TextField::Draw(MayaGraphics2D& g2d)
 
 	auto tpos = MayaFvec2(position.x - size.x * 0.5f + 5,
 		position.y - text.GetFont().GetMaxHeight() * 0.5f) + GetRelativePosition();
+	tpos.x -= scroll;
 	g2d.UseColor(MayaWhite);
 	text.SetPosition(tpos);
 
-	glEnable(GL_SCISSOR_TEST);
-	MayaIvec2 sc = position + GetRelativePosition() + gui->Window->GetSize() * 0.5f - size * 0.5f;
-	glScissor(sc.x, sc.y, static_cast<int>(size.x - 4), static_cast<int>(size.y));
+	g2d.BeginScissor(position + GetRelativePosition(), MayaFvec2(size.x - 10, size.y));
 	g2d.DrawText(text);
-	glDisable(GL_SCISSOR_TEST);
+	g2d.EndScissor();
 
 	if (enabled && careti != -1)
 	{
+
+		g2d.UseColor(MayaWhite);
 		float crnt = (float) MayaGetCurrentTimeSinceInit();
 		if (crnt - caret_timer > 1.0f)
 			caret_timer += 1.0f;
@@ -40,7 +40,7 @@ void MayaGraphicsGUI::TextField::Draw(MayaGraphics2D& g2d)
 				tpos.x + caretpos, position.y + GetRelativePosition().y - size.y * 0.5f + 10);
 
 		g2d.UseColor(color1);
-		g2d.DrawRectBorder(position + GetRelativePosition(), size);
+		g2d.DrawRectBorder(position + GetRelativePosition(), size, 1);
 	}
 }
 
@@ -63,6 +63,8 @@ void MayaGraphicsGUI::TextField::ReactEvent(MayaEvent& e)
 			text.InsertCharAt(careti, ce->Char);
 			careti++;
 			caretpos += text.GetFont()[ce->Char].Advance;
+			if (caretpos - scroll > size.x - 10)
+				scroll = caretpos - static_cast<int>(size.x) + 10;
 		}
 	}
 
@@ -76,6 +78,8 @@ void MayaGraphicsGUI::TextField::ReactEvent(MayaEvent& e)
 				careti--;
 				caretpos -= text.GetFont()[c].Advance;
 				caret_timer = static_cast<float>(MayaGetCurrentTimeSinceInit());
+				if (caretpos < scroll)
+					scroll = caretpos;
 			}
 			else if (ke->KeyCode == MayaKeyDelete && careti != text.GetLength())
 			{
@@ -88,6 +92,8 @@ void MayaGraphicsGUI::TextField::ReactEvent(MayaEvent& e)
 				careti--;
 				caretpos -= text.GetFont()[c].Advance;
 				caret_timer = static_cast<float>(MayaGetCurrentTimeSinceInit());
+				if (caretpos < scroll)
+					scroll = caretpos;
 			}
 			else if (ke->KeyCode == MayaKeyRight && careti != text.GetLength())
 			{
@@ -95,6 +101,12 @@ void MayaGraphicsGUI::TextField::ReactEvent(MayaEvent& e)
 				careti++;
 				caretpos += text.GetFont()[c].Advance;
 				caret_timer = static_cast<float>(MayaGetCurrentTimeSinceInit());
+				if (caretpos - scroll > size.x - 10)
+					scroll = caretpos - static_cast<int>(size.x) + 10;
+			}
+			else if (ke->KeyCode == MayaKeyV && (ke->Mods & MayaModControl))
+			{
+
 			}
 		}
 	}
@@ -122,11 +134,11 @@ void MayaGraphicsGUI::TextField::UpdateCaretPos()
 	cp = cp - gui->Window->GetSize() / 2;
 	float d = cp.x - (position.x + GetRelativePosition().x - size.x * 0.5f);
 
-	for (int i = 0, advance = 0; i < text.GetLength(); i++)
+	for (int i = 0, advance = 0; i < static_cast<int>(text.GetLength()); i++)
 	{
 		caretpos = advance;
 		advance += text.GetFont()[text.GetString()[i]].Advance;
-		if (advance > d) {
+		if (advance - scroll > d) {
 			careti = i;
 			break;
 		}

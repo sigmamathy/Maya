@@ -3,6 +3,7 @@
 #include <maya/2d/textdisplay.hpp>
 #include <maya/color.hpp>
 #include <maya/transformation.hpp>
+#include <glad/glad.h>
 
 static MayaString s_vertex_shader = R"(
 
@@ -85,7 +86,7 @@ static MayaVertexArrayUptr s_CreateCircleVertexArray(MayaWindow& window, int pre
 }
 
 MayaGraphics2D::MayaGraphics2D(MayaWindow& window)
-	: Window(&window), texture(nullptr), camera(nullptr)
+	: Window(&window), texture(nullptr), camera(nullptr), projection(1), has_scissor(false)
 {
 	MayaShaderProgramParameters param;
 	param.Vertex = s_vertex_shader;
@@ -121,12 +122,6 @@ MayaGraphics2D::MayaGraphics2D(MayaWindow& window)
 	circlevao64 = s_CreateCircleVertexArray(window, 64);
 }
 
-void MayaGraphics2D::UseProjection(float left, float right, float bottom, float top)
-{
-	MayaFmat4 proj = MayaOrthogonalProjection(left, right, bottom, top);
-	program->SetUniformMatrix("uProjection", proj);
-}
-
 void MayaGraphics2D::UseProjection(float width, float height)
 {
 	UseProjection(MayaFvec2(width, height));
@@ -136,6 +131,7 @@ void MayaGraphics2D::UseProjection(MayaFvec2 size)
 {
 	MayaFmat4 proj = MayaOrthogonalProjection(size);
 	program->SetUniformMatrix("uProjection", proj);
+	projection = size;
 }
 
 void MayaGraphics2D::UseWindowProjection()
@@ -177,6 +173,25 @@ void MayaGraphics2D::UseTexture(MayaTexture* texture)
 	program->SetUniform<int>("uHasTexture[0]", texture ? 1 : 0);
 }
 
+void MayaGraphics2D::BeginScissor(MayaFvec2 pos, MayaFvec2 size)
+{
+	MayaFvec2 wsz = Window->GetSize();
+	float xs = wsz.x / projection.x, ys = wsz.y / projection.y;
+	pos.x *= xs;
+	pos.y *= ys;
+	size.x *= xs;
+	size.y *= ys;
+	pos = pos + wsz * 0.5f - size * 0.5f;
+	pos.y = wsz.y - pos.y - size.y;
+	MayaSetScissorRect(Window, pos, size);
+	has_scissor = true;
+}
+
+void MayaGraphics2D::EndScissor()
+{
+	has_scissor = false;
+}
+
 void MayaGraphics2D::DrawRect(float x, float y, float width, float height)
 {
 	DrawRect(MayaFvec2(x, y), MayaFvec2(width, height));
@@ -191,6 +206,7 @@ void MayaGraphics2D::DrawRect(MayaFvec2 pos, MayaFvec2 size)
 	r.Input = squarevao.get();
 	r.Program = program.get();
 	r.Textures[0] = texture;
+	r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
 	r.ExecuteDraw();
 }
 
@@ -203,10 +219,11 @@ void MayaGraphics2D::DrawRectBorder(MayaFvec2 pos, MayaFvec2 size, int linewidth
 {
 	if (camera && camera->require_update)
 		program->SetUniformMatrix("uView", camera->GetViewMatrix());
+	program->SetUniform<int>("uHasTexture[0]", 0);
 	MayaRenderer r;
 	r.Input = squarevao.get();
 	r.Program = program.get();
-	r.Textures[0] = texture;
+	r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
 	program->SetUniformMatrix("uModel", MayaTranslate(MayaFvec2(pos.x - size.x * 0.5f, pos.y))
 		* MayaScale(MayaFvec2(linewidth, size.y)));
 	r.ExecuteDraw();
@@ -219,6 +236,7 @@ void MayaGraphics2D::DrawRectBorder(MayaFvec2 pos, MayaFvec2 size, int linewidth
 	program->SetUniformMatrix("uModel", MayaTranslate(MayaFvec2(pos.x, pos.y - size.y * 0.5f))
 		* MayaScale(MayaFvec2(size.x, linewidth)));
 	r.ExecuteDraw();
+	program->SetUniform<int>("uHasTexture[0]", texture ? 1 : 0);
 }
 
 void MayaGraphics2D::DrawLine(float startx, float starty, float endx, float endy)
@@ -238,6 +256,7 @@ void MayaGraphics2D::DrawLine(MayaFvec2 start, MayaFvec2 end)
 	MayaRenderer r;
 	r.Input = squarevao.get();
 	r.Program = program.get();
+	r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
 	r.ExecuteDraw();
 	program->SetUniform<int>("uHasTexture[0]", texture ? 1 : 0);
 }
@@ -256,6 +275,7 @@ void MayaGraphics2D::DrawOval(MayaFvec2 pos, MayaFvec2 size)
 	r.Input = circlevao64.get();
 	r.Program = program.get();
 	r.Textures[0] = texture;
+	r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
 	r.ExecuteDraw();
 }
 
@@ -301,6 +321,7 @@ void MayaGraphics2D::DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos, 
 		r.Program = program.get();
 		r.Textures[0] = texture;
 		r.Textures[1] = glyph.Texture;
+		r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
 		r.ExecuteDraw();
 		advance += glyph.Advance;
 	}
@@ -326,6 +347,7 @@ void MayaGraphics2D::DrawText(TextDisplay& text, int start, int end)
 		r.Program = program.get();
 		r.Textures[0] = texture;
 		r.Textures[1] = (*text.font)[text.string[i]].Texture;
+		r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
 		r.ExecuteDraw();
 	}
 	program->SetUniform<int>("uHasTexture[1]", 0);

@@ -10,17 +10,14 @@ MayaGraphicsGUI::MayaGraphicsGUI(MayaWindow& window)
 {
 	auto projupdate = [this](MayaEvent& e) -> void
 	{
-		if (e.GetEventID() == MayaWindowResizedEvent::EventID) {
-			auto re = static_cast<MayaWindowResizedEvent*>(&e);
-			g2d.UseProjection(re->Size);
-		}
+		if (e.GetEventID() == MayaWindowResizedEvent::EventID)
+			g2d.UseWindowProjection();
 		for (auto& comp : components)
 			if (comp) comp->ReactEvent(e);
 	};
 	
 	callbackid = Window->AddEventCallback(projupdate);
-	auto sz = Window->GetSize();
-	g2d.UseProjection(sz);
+	g2d.UseWindowProjection();
 }
 
 MayaGraphicsGUI::~MayaGraphicsGUI()

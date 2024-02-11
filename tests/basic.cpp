@@ -6,6 +6,9 @@
 #include <maya/2d/camera.hpp>
 #include <maya/2d/textdisplay.hpp>
 #include <maya/gui/button.hpp>
+#include <maya/gui/textfield.hpp>
+
+#include <glad/glad.h>
 
 int main()
 {
@@ -18,11 +21,12 @@ int main()
 	window->SetResizeAspectRatioLock(16, 9);
 
 	MayaGraphicsGUI gui(*window);
+
 	auto& x = gui.CreateButton();
 	x.SetPositionRelativeTo(MayaCornerTL);
 	x.SetPosition(250, -150);
 
-	gui.CreateTextField();
+	gui.CreateTextField(); 
 
 	while (!window->IsTimeToClose())
 	{

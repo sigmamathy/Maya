@@ -49,14 +49,7 @@ MayaVertexArray::~MayaVertexArray()
 		glDeleteBuffers(1, &iboid);
 }
 
-unsigned Maya_s_binded_vao = 0;
-
-static void s_BindVertexArray(unsigned vaoid)
-{
-	if (Maya_s_binded_vao == vaoid) return;
-	glBindVertexArray(vaoid);
-	Maya_s_binded_vao = vaoid;
-}
+void Maya_s_BindVertexArray(MayaWindow* window, unsigned vaoid);
 
 void MayaVertexArray::SetVertexCount(int count)
 {
@@ -71,7 +64,7 @@ void MayaVertexArray::LinkVertexBuffer(MayaVertexLayout& layout)
 
 	glGenBuffers(1, &vboid);
 	glBindVertexArray(vaoid);
-	s_BindVertexArray(vaoid);
+	Maya_s_BindVertexArray(window, vaoid);
 	glBindBuffer(GL_ARRAY_BUFFER, vboid);
 	glBufferData(GL_ARRAY_BUFFER, layout.Size, layout.Data, GL_STATIC_DRAW);
 	
@@ -101,10 +94,10 @@ void MayaVertexArray::LinkIndexBuffer(unsigned* data, unsigned size)
 	if (iboid)
 		glDeleteBuffers(1, &iboid);
 	glGenBuffers(1, &iboid);
-	s_BindVertexArray(vaoid);
+	Maya_s_BindVertexArray(window, vaoid);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboid);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-	s_BindVertexArray(0);
+	Maya_s_BindVertexArray(window, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	indices_draw_count = size / sizeof(unsigned);
 }

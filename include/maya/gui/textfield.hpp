@@ -24,4 +24,5 @@ private:
 	MayaGraphics2D::TextDisplay text;
 	int careti, caretpos;
 	float caret_timer;
+	int scroll = 0;
 };

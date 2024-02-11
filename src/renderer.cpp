@@ -5,8 +5,68 @@
 
 #define MAYA_TEXTURE_SLOTS_COUNT 16
 
-extern unsigned Maya_s_binded_vao;
-extern unsigned Maya_s_binded_shader_program;
+struct s_CrntBindCache
+{
+	unsigned VAO, Program;
+	unsigned Test;
+};
+
+static MayaHashMap<MayaWindow*, s_CrntBindCache> s_bind_cache;
+
+static void s_InitCacheIfNotPresent(MayaWindow* window)
+{
+	if (s_bind_cache.count(window))
+		return;
+	auto& x = s_bind_cache[window];
+	x.VAO = 0;
+	x.Program = 0;
+	x.Test = MayaNoTest;
+}
+
+void Maya_s_BindVertexArray(MayaWindow* window, unsigned vaoid)
+{
+	s_InitCacheIfNotPresent(window);
+	if (s_bind_cache.at(window).VAO != vaoid) {
+		window->UseGraphicsContext();
+		glBindVertexArray(vaoid);
+		s_bind_cache.at(window).VAO = vaoid;
+	}
+}
+
+void Maya_s_BindShaderProgram(MayaWindow* window, unsigned programid)
+{
+	s_InitCacheIfNotPresent(window);
+	if (s_bind_cache.at(window).Program != programid) {
+		window->UseGraphicsContext();
+		glUseProgram(programid);
+		s_bind_cache.at(window).Program = programid;
+	}
+}
+
+static void s_SetEnableTest(MayaWindow* window, MayaPerFragTest test, unsigned gltest, bool enable)
+{
+	if (enable)
+	{
+		if (!(s_bind_cache.at(window).Test & test)) {
+			glEnable(gltest);
+			s_bind_cache.at(window).Test |= test;
+		}
+	}
+	else
+	{
+		if (s_bind_cache.at(window).Test & test) {
+			glDisable(gltest);
+			s_bind_cache.at(window).Test &= ~test;
+		}
+	}
+}
+
+void MayaSetScissorRect(MayaWindow* window, MayaFvec2 pos, MayaFvec2 size)
+{
+	s_InitCacheIfNotPresent(window);
+	s_SetEnableTest(window, MayaScissorTest, GL_SCISSOR_TEST, true);
+	glScissor((int)pos.x, window->GetSize().y - (int)pos.y - (int)size.y, (int)size.x, (int)size.y);
+}
 
 void MayaRenderer::ExecuteDraw()
 {
@@ -36,17 +96,13 @@ void MayaRenderer::ExecuteDraw()
 	}
 #endif
 
-	Program->window->UseGraphicsContext();
+	auto* window = Program->window;
+	window->UseGraphicsContext();
 
-	if (Maya_s_binded_vao != Input->vaoid) {
-		glBindVertexArray(Input->vaoid);
-		Maya_s_binded_vao = Input->vaoid;
-	}
+	Maya_s_BindVertexArray(window, Input->vaoid);
+	Maya_s_BindShaderProgram(window, Program->programid);
 
-	if (Maya_s_binded_shader_program != Program->programid) {
-		glUseProgram(Program->programid);
-		Maya_s_binded_shader_program = Program->programid;
-	}
+	s_SetEnableTest(window, MayaScissorTest, GL_SCISSOR_TEST, (bool)(Test & MayaScissorTest));
 
 	for (int i = 0; i < MAYA_TEXTURE_SLOTS_COUNT; i++)
 	{

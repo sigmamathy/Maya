@@ -132,6 +132,16 @@ enum MayaKeyCode : int
 	MayaKeyMenu				= 348
 };
 
+enum MayaModifierKeys : int
+{
+	MayaModShift		= 0x01,
+	MayaModControl		= 0x02,
+	MayaModAlt			= 0x04,
+	MayaModSuper		= 0x08,
+	MayaModCapsLock		= 0x10,
+	MayaModNumLock		= 0x20
+};
+
 // List of all mouse button code available
 enum MayaMouseButton : int
 {
@@ -171,6 +181,7 @@ struct MayaKeyEvent : public MayaEvent
 {
 	MAYA_DEFINE_EVENT_ID(0x01)
 	MayaKeyCode KeyCode; // the keycode
+	MayaModifierKeys Mods;
 	bool Down; // true if key is pressed
 	bool Repeat;
 };
@@ -185,6 +196,7 @@ struct MayaMouseEvent : public MayaEvent
 {
 	MAYA_DEFINE_EVENT_ID(0x02);
 	MayaMouseButton Button; // the mouse button
+	MayaModifierKeys Mods;
 	bool Down; // true if button is pressed
 };
 

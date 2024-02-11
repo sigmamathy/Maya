@@ -127,14 +127,7 @@ MayaShaderProgram::~MayaShaderProgram()
 	glDeleteProgram(programid);
 }
 
-unsigned Maya_s_binded_shader_program = 0;
-
-static void s_BindShaderProgram(unsigned id)
-{
-	if (id == Maya_s_binded_shader_program) return;
-	glUseProgram(id);
-	Maya_s_binded_shader_program = id;
-}
+void Maya_s_BindShaderProgram(MayaWindow* window, unsigned programid);
 
 int MayaShaderProgram::FindUniformLocation(MayaStringCR name)
 {
@@ -152,7 +145,7 @@ int MayaShaderProgram::FindUniformLocation(MayaStringCR name)
 
 #define MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(ty, sz, fn)\
 	template<> void MayaShaderProgram::SetUniformVector(MayaStringCR name, MayaVector<ty, sz> const& vec)\
-	{ window->UseGraphicsContext(); s_BindShaderProgram(programid); int loc = FindUniformLocation(name); fn(loc, 1, &vec[0]); }
+	{ window->UseGraphicsContext(); Maya_s_BindShaderProgram(window, programid); int loc = FindUniformLocation(name); fn(loc, 1, &vec[0]); }
 
 MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(float, 1, glUniform1fv)
 MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(float, 2, glUniform2fv)
@@ -169,18 +162,18 @@ MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(unsigned, 2, glUniform2uiv)
 MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(unsigned, 3, glUniform3uiv)
 MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(unsigned, 4, glUniform4uiv)
 
-#define MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(sz, fn)\
-	template<> void MayaShaderProgram::SetUniformVector(MayaStringCR name, MayaVector<bool, sz> const& vec)\
-	{ window->UseGraphicsContext(); s_BindShaderProgram(programid); int loc = FindUniformLocation(name); fn(loc, 1, (int*)&vec[0]); }
-
-MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(1, glUniform1iv)
-MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(2, glUniform2iv)
-MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(3, glUniform3iv)
-MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(4, glUniform4iv)
+//#define MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(sz, fn)\
+//	template<> void MayaShaderProgram::SetUniformVector(MayaStringCR name, MayaVector<bool, sz> const& vec)\
+//	{ window->UseGraphicsContext(); Maya_s_BindShaderProgram(window, programid); int loc = FindUniformLocation(name); fn(loc, 1, (int*)&vec[0]); }
+//
+//MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(1, glUniform1iv)
+//MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(2, glUniform2iv)
+//MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(3, glUniform3iv)
+//MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(4, glUniform4iv)
 
 #define MAYA_DEFINE_UNIFORM_MATRIX_FUNCTION(rw, cn, fn)\
 	template<> void MayaShaderProgram::SetUniformMatrix(MayaStringCR name, MayaMatrix<float, rw, cn> const& mat)\
-	{ window->UseGraphicsContext(); s_BindShaderProgram(programid); int loc = FindUniformLocation(name); fn(loc, 1, false, &mat[0][0]); }
+	{ window->UseGraphicsContext(); Maya_s_BindShaderProgram(window, programid); int loc = FindUniformLocation(name); fn(loc, 1, false, &mat[0][0]); }
 
 MAYA_DEFINE_UNIFORM_MATRIX_FUNCTION(2, 2, glUniformMatrix2fv)
 MAYA_DEFINE_UNIFORM_MATRIX_FUNCTION(2, 3, glUniformMatrix2x3fv)
