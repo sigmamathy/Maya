@@ -30,6 +30,21 @@ char MayaGraphics2D::TextDisplay::RemoveCharAt(int index)
 	return c;
 }
 
+void MayaGraphics2D::TextDisplay::InsertStringAt(int index, MayaStringCR str)
+{
+	string.insert(index, str);
+	require_update_char = true;
+}
+
+void MayaGraphics2D::TextDisplay::SetFont(MayaFont& font)
+{
+	if (this->font != &font)
+	{
+		this->font = &font;
+		require_update_char = true;
+	}
+}
+
 MayaFont& MayaGraphics2D::TextDisplay::GetFont() const
 {
 	return *font;

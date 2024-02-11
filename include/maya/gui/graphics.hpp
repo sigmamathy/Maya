@@ -11,6 +11,7 @@ public:
 	class Component;
 	class Button;
 	class TextField;
+	class Checkbox;
 
 // ----------- Events ----------- //
 
@@ -74,17 +75,21 @@ public:
 
 	Button& CreateButton();
 	TextField& CreateTextField();
+	Checkbox& CreateCheckbox();
 
 	void Draw();
 
 	MayaFont& GetDefaultFont();
+	MayaTexture& GetDefaultTickSymbol();
 
 private:
 
 	MayaArrayList<MayaUptr<Component>> components;
 	MayaGraphics2D g2d;
 	unsigned callbackid;
+
 	MayaFontUptr default_font;
+	MayaTextureUptr default_tick_symbol;
 };
 
 struct MayaGraphicsGUI::UserEvent : public MayaEvent

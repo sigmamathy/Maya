@@ -103,6 +103,7 @@ void MayaRenderer::ExecuteDraw()
 	Maya_s_BindShaderProgram(window, Program->programid);
 
 	s_SetEnableTest(window, MayaScissorTest, GL_SCISSOR_TEST, (bool)(Test & MayaScissorTest));
+	s_SetEnableTest(window, MayaBlending, GL_BLEND, (bool)(Test & MayaBlending));
 
 	for (int i = 0; i < MAYA_TEXTURE_SLOTS_COUNT; i++)
 	{

@@ -1,6 +1,7 @@
 #include <maya/gui/graphics.hpp>
 #include <maya/gui/button.hpp>
 #include <maya/gui/textfield.hpp>
+#include <maya/gui/checkbox.hpp>
 #include <maya/color.hpp>
 #include <maya/transformation.hpp>
 #include <maya/font.hpp>
@@ -26,19 +27,12 @@ MayaGraphicsGUI::~MayaGraphicsGUI()
 		Window->RemoveEventCallback(callbackid);
 }
 
-MayaGraphicsGUI::Button& MayaGraphicsGUI::CreateButton()
-{
-	auto button = new Button(*this);
-	components.emplace_back(static_cast<Component*>(button));
-	return *button;
-}
+#define MAYA_DEFINE_CREATE(x) MayaGraphicsGUI::x& MayaGraphicsGUI::Create##x()\
+	{ auto comp = new x(*this); components.emplace_back(static_cast<Component*>(comp)); return *comp; }
 
-MayaGraphicsGUI::TextField& MayaGraphicsGUI::CreateTextField()
-{
-	auto tf = new TextField(*this);
-	components.emplace_back(static_cast<Component*>(tf));
-	return *tf;
-}
+MAYA_DEFINE_CREATE(Button)
+MAYA_DEFINE_CREATE(TextField)
+MAYA_DEFINE_CREATE(Checkbox)
 
 void MayaGraphicsGUI::Draw()
 {
@@ -49,12 +43,20 @@ void MayaGraphicsGUI::Draw()
 	}
 }
 
-#include "./opensans.hpp"
+#include "./resources/opensans.hpp"
+#include "./resources/ticksym.hpp"
 MayaFont& MayaGraphicsGUI::GetDefaultFont()
 {
 	if (!default_font)
-		default_font = MayaCreateFontUptr(*Window, s_OpenSansRegular, sizeof(s_OpenSansRegular), 30);
+		default_font = MayaCreateFontUptr(*Window, s_open_sans_regular, sizeof(s_open_sans_regular), 30);
 	return *default_font;
+}
+
+MayaTexture& MayaGraphicsGUI::GetDefaultTickSymbol()
+{
+	if (!default_tick_symbol)
+		default_tick_symbol = MayaCreateTextureUptr(*Window, s_tick_symbol, MayaIvec2(640, 472), 4);
+	return *default_tick_symbol;
 }
 
 MayaGraphicsGUI::Component::Component(MayaGraphicsGUI& gui)

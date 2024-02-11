@@ -8,9 +8,12 @@ public:
 
 	TextDisplay(MayaFont& font, MayaStringCR text);
 	TextDisplay& operator=(MayaStringCR text);
+
 	void InsertCharAt(int index, char c);
 	char RemoveCharAt(int index);
+	void InsertStringAt(int index, MayaStringCR str);
 
+	void SetFont(MayaFont& font);
 	MayaFont& GetFont() const;
 	MayaStringCR GetString() const;
 	unsigned GetLength() const;

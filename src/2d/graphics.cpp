@@ -207,6 +207,7 @@ void MayaGraphics2D::DrawRect(MayaFvec2 pos, MayaFvec2 size)
 	r.Program = program.get();
 	r.Textures[0] = texture;
 	r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
+	r.Test |= MayaBlending;
 	r.ExecuteDraw();
 }
 
@@ -224,6 +225,7 @@ void MayaGraphics2D::DrawRectBorder(MayaFvec2 pos, MayaFvec2 size, int linewidth
 	r.Input = squarevao.get();
 	r.Program = program.get();
 	r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
+	r.Test |= MayaBlending;
 	program->SetUniformMatrix("uModel", MayaTranslate(MayaFvec2(pos.x - size.x * 0.5f, pos.y))
 		* MayaScale(MayaFvec2(linewidth, size.y)));
 	r.ExecuteDraw();
@@ -257,6 +259,7 @@ void MayaGraphics2D::DrawLine(MayaFvec2 start, MayaFvec2 end)
 	r.Input = squarevao.get();
 	r.Program = program.get();
 	r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
+	r.Test |= MayaBlending;
 	r.ExecuteDraw();
 	program->SetUniform<int>("uHasTexture[0]", texture ? 1 : 0);
 }
@@ -276,6 +279,7 @@ void MayaGraphics2D::DrawOval(MayaFvec2 pos, MayaFvec2 size)
 	r.Program = program.get();
 	r.Textures[0] = texture;
 	r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
+	r.Test |= MayaBlending;
 	r.ExecuteDraw();
 }
 
@@ -322,6 +326,7 @@ void MayaGraphics2D::DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos, 
 		r.Textures[0] = texture;
 		r.Textures[1] = glyph.Texture;
 		r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
+		r.Test |= MayaBlending;
 		r.ExecuteDraw();
 		advance += glyph.Advance;
 	}
@@ -348,6 +353,7 @@ void MayaGraphics2D::DrawText(TextDisplay& text, int start, int end)
 		r.Textures[0] = texture;
 		r.Textures[1] = (*text.font)[text.string[i]].Texture;
 		r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
+		r.Test |= MayaBlending;
 		r.ExecuteDraw();
 	}
 	program->SetUniform<int>("uHasTexture[1]", 0);

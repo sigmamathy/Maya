@@ -5,10 +5,11 @@
 #include "./vertexarray.hpp"
 #include "./texture.hpp"
 
-enum MayaPerFragTest
+enum MayaPerFragTest : unsigned
 {
-	MayaNoTest = 0,
-	MayaScissorTest = 1,
+	MayaNoTest			= 0,
+	MayaScissorTest		= 1,
+	MayaBlending		= 2
 };
 
 void MayaSetScissorRect(MayaWindow* window, MayaFvec2 pos, MayaFvec2 size);
@@ -21,7 +22,7 @@ public:
 	MayaShaderProgram* Program		= 0; // REQUIRED
 	MayaTexture* Textures[16]		= {0};
 	
-	MayaPerFragTest Test			= MayaNoTest;
+	unsigned Test			= MayaNoTest;
 
 	void ExecuteDraw();
 };

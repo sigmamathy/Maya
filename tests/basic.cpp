@@ -26,7 +26,9 @@ int main()
 	x.SetPositionRelativeTo(MayaCornerTL);
 	x.SetPosition(250, -150);
 
-	gui.CreateTextField(); 
+	//gui.CreateTextField(); 
+
+	gui.CreateCheckbox();
 
 	while (!window->IsTimeToClose())
 	{
