@@ -43,8 +43,8 @@ void MayaGraphicsGUI::Draw()
 	}
 }
 
-#include "./resources/opensans.hpp"
-#include "./resources/ticksym.hpp"
+#include "./resources/opensans"
+#include "./resources/ticksym"
 MayaFont& MayaGraphicsGUI::GetDefaultFont()
 {
 	if (!default_font)
