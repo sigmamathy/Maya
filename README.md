@@ -7,8 +7,10 @@ while offers full controll over resource management.
 
 ## Prerequisites
 
-Operating system needs to be either Windows, MacOS or Linux.
-Supported compilers are MSVC, GCC or CLANG.
+Operating system: Windows, MacOS or Linux.
+Compiler: MSVC, GCC or CLANG.
+Minimum version: ISO C++20
+Hardware: OpenGL 3.3 supported
 
 Also make sure the following is properly setup:
 
@@ -37,8 +39,9 @@ project(MyProject)
 
 add_executable(${PROJECT_NAME} main.cpp)
 
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 add_subdirectory("external/Maya")
-target_include_directories(${PROJECT_NAME} "external/Maya/include")
+target_include_directories(${PROJECT_NAME} PUBLIC "external/Maya/include")
 target_link_libraries(${PROJECT_NAME} Maya)
 ```
 
