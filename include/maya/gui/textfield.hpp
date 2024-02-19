@@ -3,13 +3,13 @@
 #include "./graphics.hpp"
 #include "../2d/textdisplay.hpp"
 
-class MayaGraphicsGUI::TextField : public MayaGraphicsGUI::Component
+class MayaTextFieldGui : public MayaComponentGui
 {
 public:
 
-	TextField(MayaGraphicsGUI& gui);
+	MayaTextFieldGui(MayaGraphicsGui& gui);
 
-	virtual void Draw(MayaGraphics2D& g2d) override;
+	virtual void Draw(MayaGraphics2d& g2d) override;
 
 	void ReactEvent(MayaEvent& e) override;
 
@@ -27,11 +27,11 @@ public:
 
 private:
 
-	void UpdateCaretPos();
+	void SetCaretPosToMousePos();
 
 private:
 
-	MayaGraphics2D::TextDisplay text, description;
+	MayaTextDisplay2d text, description;
 	int careti, caretpos;
 	float caret_timer;
 	int scroll = 0;

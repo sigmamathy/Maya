@@ -26,17 +26,14 @@
 
 /**
 	@brief Initial configuration for window creation. (Optional)
-
+	
 	This struct provides user customization on window that
 	will be immediately applied at the moment the window is created.
 	Some option can be changed later (e.g. size and title) but some not,
 	which may require destroy the existing window and create a new one.
 	All parameters is default initialized.
-
-	@see MayaCreateWindowUptr(MayaWindowParameters&)
-	@see MayaCreateWindowSptr(MayaWindowParameters&)
 */
-static struct MayaWindowParameters
+inline struct MayaWindowParameters
 {
 	/**
 		@brief Desired size of window.
@@ -129,8 +126,7 @@ static struct MayaWindowParameters
 }
 
 /**
-	Default parameters for this struct.
-	Equivalent to MayaWindowParameters{}.
+	@brief Default parameters for this struct.
 */
 MayaDefaultWindowParameters;
 
@@ -143,17 +139,21 @@ MayaWindowSptr MayaCreateWindowSptr(MayaWindowParameters& param = MayaDefaultWin
 
 void MayaPollWindowEvents();
 
+/**
+	@brief Provides control over window functionality.
+
+
+*/
 class MayaWindow
 {
 
 public:
 
-	MayaWindow(void* resptr, int monitor, MayaStringCR title);
+	MayaWindow(void* pointer, int monitor, MayaStringCR title);
 
 	~MayaWindow();
 
 	MayaWindow(MayaWindow const&) = delete;
-
 	MayaWindow& operator=(MayaWindow const&) = delete;
 
 	static bool Exists(MayaWindow* window);
@@ -176,7 +176,11 @@ public:
 
 	void SwapBuffers();
 
+	void SetPosition(int x, int y);
+
 	void SetPosition(MayaIvec2 pos);
+
+	void SetSize(int width, int height);
 
 	void SetSize(MayaIvec2 size);
 

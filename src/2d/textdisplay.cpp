@@ -1,28 +1,29 @@
 #include <maya/2d/textdisplay.hpp>
 #include <maya/transformation.hpp>
 
-MayaGraphics2D::TextDisplay::TextDisplay(MayaFont& font, MayaStringCR text)
-	: font(&font),
+MayaTextDisplay2d::MayaTextDisplay2d(MayaFont& font, MayaStringCR text)
+	: font(&font), string(""), require_update_char(false), text_size(0),
 	text_align(MayaCornerBL), global_model(1), require_update_global(0),
 	position(0), scale(1), rotation(0)
 {
-	operator=(text);
+	if (!text.empty())
+		operator=(text);
 }
 
-MayaGraphics2D::TextDisplay& MayaGraphics2D::TextDisplay::operator=(MayaStringCR text)
+MayaTextDisplay2d& MayaTextDisplay2d::operator=(MayaStringCR text)
 {
 	string = text;
 	require_update_char = true;
 	return *this;
 }
 
-void MayaGraphics2D::TextDisplay::InsertCharAt(int index, char c)
+void MayaTextDisplay2d::InsertCharAt(int index, char c)
 {
 	string.insert(index, 1, c);
 	require_update_char = true;
 }
 
-char MayaGraphics2D::TextDisplay::RemoveCharAt(int index)
+char MayaTextDisplay2d::RemoveCharAt(int index)
 {
 	char c = string[index];
 	string.erase(index, 1);
@@ -30,13 +31,13 @@ char MayaGraphics2D::TextDisplay::RemoveCharAt(int index)
 	return c;
 }
 
-void MayaGraphics2D::TextDisplay::InsertStringAt(int index, MayaStringCR str)
+void MayaTextDisplay2d::InsertStringAt(int index, MayaStringCR str)
 {
 	string.insert(index, str);
 	require_update_char = true;
 }
 
-void MayaGraphics2D::TextDisplay::SetFont(MayaFont& font)
+void MayaTextDisplay2d::SetFont(MayaFont& font)
 {
 	if (this->font != &font)
 	{
@@ -45,66 +46,66 @@ void MayaGraphics2D::TextDisplay::SetFont(MayaFont& font)
 	}
 }
 
-MayaFont& MayaGraphics2D::TextDisplay::GetFont() const
+MayaFont& MayaTextDisplay2d::GetFont() const
 {
 	return *font;
 }
 
-MayaStringCR MayaGraphics2D::TextDisplay::GetString() const
+MayaStringCR MayaTextDisplay2d::GetString() const
 {
 	return string;
 }
 
-unsigned MayaGraphics2D::TextDisplay::GetLength() const
+unsigned MayaTextDisplay2d::GetLength() const
 {
 	return (unsigned) string.length();
 }
 
-void MayaGraphics2D::TextDisplay::SetTextAlign(MayaCorner align)
+void MayaTextDisplay2d::SetTextAlign(MayaCorner align)
 {
 	text_align = align;
 	require_update_global = true;
 }
 
-MayaCorner MayaGraphics2D::TextDisplay::GetTextAlign() const
+MayaCorner MayaTextDisplay2d::GetTextAlign() const
 {
 	return text_align;
 }
 
-void MayaGraphics2D::TextDisplay::SetPosition(MayaFvec2 pos)
+void MayaTextDisplay2d::SetPosition(MayaFvec2 pos)
 {
 	this->position = pos;
 	require_update_global = true;
 }
 
-void MayaGraphics2D::TextDisplay::SetScale(MayaFvec2 scale)
+void MayaTextDisplay2d::SetScale(MayaFvec2 scale)
 {
 	this->scale = scale;
 	require_update_global = true;
 }
 
-void MayaGraphics2D::TextDisplay::SetRotation(float rot)
+void MayaTextDisplay2d::SetRotation(float rot)
 {
 	this->rotation = rot;
 	require_update_global = true;
 }
 
-MayaFvec2 MayaGraphics2D::TextDisplay::GetPosition() const
+MayaFvec2 MayaTextDisplay2d::GetPosition() const
 {
 	return position;
 }
 
-MayaFvec2 MayaGraphics2D::TextDisplay::GetScale() const
+MayaFvec2 MayaTextDisplay2d::GetScale() const
 {
 	return scale;
 }
 
-float MayaGraphics2D::TextDisplay::GetRotation() const
+float MayaTextDisplay2d::GetRotation() const
 {
 	return rotation;
 }
 
-void MayaGraphics2D::TextDisplay::ComputeGlobalModel()
+void MayaTextDisplay2d::ComputeGlobalModel()
 {
 	ComputeCharModel();
 	if (require_update_global) {
@@ -116,7 +117,7 @@ void MayaGraphics2D::TextDisplay::ComputeGlobalModel()
 	}
 }
 
-void MayaGraphics2D::TextDisplay::ComputeCharModel()
+void MayaTextDisplay2d::ComputeCharModel()
 {
 	if (require_update_char)
 	{

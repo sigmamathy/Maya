@@ -446,3 +446,6 @@ _deps
 # Build Files
 out/
 [Bb][Uu][Ii][Ll][Dd]/
+
+docs/html/
+docs/latex/

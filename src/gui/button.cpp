@@ -2,79 +2,65 @@
 #include <maya/transformation.hpp>
 #include <maya/color.hpp>
 
-MayaGraphicsGUI::Button::Button(MayaGraphicsGUI& gui)
-	: Component(gui), pressed(false)
+MayaButtonGui::MayaButtonGui(MayaGraphicsGui& gui)
+	: MayaComponentGui(gui), pressed(false), text(gui.GetDefaultFont(), "Button")
 {
 	position = { 0, 0 };
 	size = { 160, 80 };
-	color0 = { 90, 101, 107, 255 };
-	color1 = { 117, 129, 143, 255 };
-	text = "Button";
+	text.SetTextAlign(MayaCornerCC);
 }
 
-void MayaGraphicsGUI::Button::Draw(MayaGraphics2D& g2d)
+void MayaButtonGui::Draw(MayaGraphics2d& g2d)
 {
 	if (!visible)
 		return;
 
-	g2d.UseColor(enabled ? (IsButtonPressed() ? color1 : color0) : MayaGray);
-	g2d.DrawRect(position + GetRelativePosition(), size);
+	auto epos = position + GetRelativePosition();
 
-	g2d.UseColor(MayaWhite);
-	g2d.DrawText(gui->GetDefaultFont(), text, position + GetRelativePosition(), MayaCornerCC);
+	g2d.UseColor(enabled ? (IsButtonPressed() ? colors[1] : colors[0]) : MayaGray);
+	g2d.DrawRect(epos, size);
+
+	g2d.UseColor(colors[3]);
+	text.SetPosition(epos);
+	g2d.DrawText(text);
 
 	if (enabled && IsButtonTouched())
 	{
-		g2d.UseColor(color1);
-		g2d.DrawRectBorder(position + GetRelativePosition(), size);
+		g2d.UseColor(colors[2]);
+		g2d.DrawRectBorder(epos, size);
 	}
 }
 
-void MayaGraphicsGUI::Button::ReactEvent(MayaEvent& e)
+void MayaButtonGui::ReactEvent(MayaEvent& e)
 {
-	if (visible && enabled && e.GetEventID() == MayaMouseEvent::EventID)
+	if (!visible || !enabled)
+		return;
+
+	if (auto* me = MayaEventCast<MayaMouseEvent>(e))
 	{
-		auto* me = static_cast<MayaMouseEvent*>(&e);
 		if (me->Down && me->Button == MayaMouseButtonLeft && IsButtonTouched())
 		{
 			pressed = true;
-			if (callback)
-			{
-				UserMouseEvent ue;
-				ue.Window = gui->Window;
-				ue.Source = this;
-				ue.Button = MayaMouseButtonLeft;
-				ue.Down = true;
-				callback(ue);
-			}
 		}
 		if (pressed && !me->Down && me->Button == MayaMouseButtonLeft)
 		{
 			pressed = false;
-			if (callback)
-			{
-				UserMouseEvent ue;
-				ue.Window = gui->Window;
-				ue.Source = this;
-				ue.Button = MayaMouseButtonLeft;
-				ue.Down = false;
-				callback(ue);
-			}
+			SendCallback(MayaEventGui::Interact);
 		}
 	}
 }
 
-void MayaGraphicsGUI::Button::SetText(MayaStringCR text)
+void MayaButtonGui::SetText(MayaStringCR text)
 {
 	this->text = text;
 }
 
-MayaStringCR MayaGraphicsGUI::Button::GetText() const
+MayaStringCR MayaButtonGui::GetText() const
 {
-	return text;
+	return text.GetString();
 }
 
-bool MayaGraphicsGUI::Button::IsButtonTouched() const
+bool MayaButtonGui::IsButtonTouched() const
 {
 	auto* window = gui->Window;
 	MayaFvec2 cp = window->GetCursorPosition();
@@ -85,7 +71,7 @@ bool MayaGraphicsGUI::Button::IsButtonTouched() const
 		&& cp.y >= pos.y - size.y * 0.5f && cp.y <= pos.y + size.y * 0.5f;
 }
 
-bool MayaGraphicsGUI::Button::IsButtonPressed() const
+bool MayaButtonGui::IsButtonPressed() const
 {
 	return pressed;
 }

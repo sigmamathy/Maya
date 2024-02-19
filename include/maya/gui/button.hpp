@@ -1,14 +1,15 @@
 #pragma once
 
 #include "./graphics.hpp"
+#include "../2d/textdisplay.hpp"
 
-class MayaGraphicsGUI::Button : public MayaGraphicsGUI::Component
+class MayaButtonGui : public MayaComponentGui
 {
 public:
 
-	Button(MayaGraphicsGUI& gui);
+	MayaButtonGui(MayaGraphicsGui& gui);
 
-	virtual void Draw(MayaGraphics2D& g2d) override;
+	virtual void Draw(MayaGraphics2d& g2d) override;
 
 	void ReactEvent(MayaEvent& e) override;
 
@@ -22,6 +23,6 @@ public:
 
 private:
 
-	MayaString text;
+	MayaTextDisplay2d text;
 	bool pressed;
 };

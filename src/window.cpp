@@ -2,8 +2,7 @@
 #include <maya/deviceinfo.hpp>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <maya/2d/graphics.hpp>
-#include <maya/gui/graphics.hpp>
+#include <maya/renderer.hpp>
 #include <unordered_set>
 
 static void s_SetupWindowEventCallback(GLFWwindow* window)
@@ -84,15 +83,10 @@ static void s_SetupWindowEventCallback(GLFWwindow* window)
 	});
 }
 
-template<class Ty>
-static Ty s_CreateWindowPtr(MayaWindowParameters& param)
-{
-	MAYA_DIF(!MayaIsLibraryFound())
-	{
-		MAYA_SERR(MAYA_MISSING_LIBRARY_ERROR, "MayaCreateWindowUptr(MayaWindowParameters&): Maya is not initialized.");
-		return nullptr;
-	}
-	
+void Maya_s_SetEnableTest(MayaWindow* window, unsigned test, unsigned gltest, bool enable);
+
+static MayaWindow* s_CreateWindowPtr(MayaWindowParameters& param)
+{	
 	glfwWindowHint(GLFW_RESIZABLE,		param.Resizable);
 	glfwWindowHint(GLFW_DECORATED,		param.Decorated);
 	glfwWindowHint(GLFW_AUTO_ICONIFY,	param.AutoIconify);
@@ -121,27 +115,40 @@ static Ty s_CreateWindowPtr(MayaWindowParameters& param)
 
 	glfwMakeContextCurrent(window);
 	gladLoadGL();
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	if constexpr (std::is_same_v<Ty, MayaWindowUptr>) return std::make_unique<MayaWindow>(window, param.Monitor, param.Title);
-	else return std::make_shared<MayaWindow>(window, param.Monitor, param.Title);
+	return new MayaWindow(window, param.Monitor, param.Title);
 }
 
 MayaWindowUptr MayaCreateWindowUptr(MayaWindowParameters& param)
 {
-	return s_CreateWindowPtr<MayaWindowUptr>(param);
+	MAYA_DIF(!MayaGetLibraryManager()
+		|| !MayaGetLibraryManager()->FoundDependency(MAYA_LIBRARY_GLFW))
+	{
+		MayaSendError({ MAYA_MISSING_LIBRARY_ERROR,
+			"MayaCreateWindowUptr(MayaWindowParameters&): GLFW is not initialized." });
+		return nullptr;
+	}
+
+	return MayaWindowUptr(s_CreateWindowPtr(param));
 }
 
 MayaWindowSptr MayaCreateWindowSptr(MayaWindowParameters& param)
 {
-	return s_CreateWindowPtr<MayaWindowSptr>(param);
+	MAYA_DIF(!MayaGetLibraryManager()
+		|| !MayaGetLibraryManager()->FoundDependency(MAYA_LIBRARY_GLFW))
+	{
+		MayaSendError({ MAYA_MISSING_LIBRARY_ERROR,
+			"MayaCreateWindowSptr(MayaWindowParameters&): GLFW is not initialized." });
+		return nullptr;
+	}
+
+	return MayaWindowSptr(s_CreateWindowPtr(param));
 }
 
 static std::unordered_set<MayaWindow*> s_window_instances;
 
-MayaWindow::MayaWindow(void* resource_pointer, int monitor, MayaStringCR title)
-	: resptr(resource_pointer), monitor(monitor), title(title)
+MayaWindow::MayaWindow(void* pointer, int monitor, MayaStringCR title)
+	: resptr(pointer), monitor(monitor), title(title)
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	event_callback = [this](MayaEvent& e) {
@@ -152,7 +159,8 @@ MayaWindow::MayaWindow(void* resource_pointer, int monitor, MayaStringCR title)
 	glfwSetWindowUserPointer(window, &event_callback);
 	s_SetupWindowEventCallback(window);
 	s_window_instances.insert(this);
-	callbacks.reserve(5);
+	Maya_s_SetEnableTest(this, MayaBlending, GL_BLEND, true);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 MayaWindow::~MayaWindow()
@@ -199,7 +207,7 @@ void MayaWindow::UseGraphicsContext()
 void MayaWindow::ClearBuffers()
 {
 	UseGraphicsContext();
-	glDisable(GL_SCISSOR_TEST);
+	Maya_s_SetEnableTest(this, MayaScissorTest, GL_SCISSOR_TEST, false);
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
@@ -227,10 +235,20 @@ void MayaWindow::SwapBuffers()
 	glfwSwapBuffers(window);
 }
 
+void MayaWindow::SetPosition(int x, int y)
+{
+	SetPosition(MayaIvec2(x, y));
+}
+
 void MayaWindow::SetPosition(MayaIvec2 pos)
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	glfwSetWindowPos(window, pos.x, pos.y);
+}
+
+void MayaWindow::SetSize(int width, int height)
+{
+	SetSize(MayaIvec2(width, height));
 }
 
 void MayaWindow::SetSize(MayaIvec2 size)

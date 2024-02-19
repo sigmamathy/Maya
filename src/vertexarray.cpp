@@ -32,7 +32,7 @@ MayaVertexArraySptr MayaCreateVertexArraySptr(MayaWindow& window)
 }
 
 MayaVertexArray::MayaVertexArray(unsigned vao, MayaWindow* window)
-	: vaoid(vao), window(window), vertex_count(0), iboid(0), indices_draw_count(0)
+	: vaoid(vao), window(window), vertex_count(0), iboid(0), indices_count(0), draw_range(-1)
 {
 	vboids.reserve(1);
 }
@@ -51,9 +51,14 @@ MayaVertexArray::~MayaVertexArray()
 
 void Maya_s_BindVertexArray(MayaWindow* window, unsigned vaoid);
 
-void MayaVertexArray::SetVertexCount(int count)
+void MayaVertexArray::SetDrawRange(int start, int end)
 {
-	vertex_count = count;
+	draw_range = { start, end };
+}
+
+void MayaVertexArray::ResetDrawRange()
+{
+	draw_range = { -1, -1 };
 }
 
 template<class Ty>
@@ -66,7 +71,8 @@ void MayaVertexArray::LinkVertexBuffer(MayaVertexLayout& layout)
 	glBindVertexArray(vaoid);
 	Maya_s_BindVertexArray(window, vaoid);
 	glBindBuffer(GL_ARRAY_BUFFER, vboid);
-	glBufferData(GL_ARRAY_BUFFER, layout.Size, layout.Data, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, layout.Size, layout.Data,
+		layout.MaySubjectToChange ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
 	
 	GLenum datatype;
 	if (std::is_same_v<Ty, float>)			datatype = GL_FLOAT;
@@ -82,13 +88,26 @@ void MayaVertexArray::LinkVertexBuffer(MayaVertexLayout& layout)
 	}
 	
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	int vc = layout.Size / layout.stride / sizeof(Ty);
+
+	if (!vertex_count)
+	{
+		vertex_count = vc;
+	}
+	else MAYA_DIF(vertex_count != vc)
+	{
+		MayaSendError({ MAYA_INCONSISTENTENCY_ERROR,
+			"MayaVertexArray::LinkVertexBuffer(MayaVertexLayout&): "
+			"Number of vertices is inconsistence with the existsing buffers." });
+	}
 }
 
 template void MayaVertexArray::LinkVertexBuffer<float>(MayaVertexLayout&);
 template void MayaVertexArray::LinkVertexBuffer<int>(MayaVertexLayout&);
 template void MayaVertexArray::LinkVertexBuffer<unsigned>(MayaVertexLayout&);
 
-void MayaVertexArray::LinkIndexBuffer(unsigned* data, unsigned size)
+void MayaVertexArray::LinkIndexBuffer(unsigned const* data, unsigned size)
 {
 	window->UseGraphicsContext();
 	if (iboid)
@@ -99,5 +118,5 @@ void MayaVertexArray::LinkIndexBuffer(unsigned* data, unsigned size)
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
 	Maya_s_BindVertexArray(window, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	indices_draw_count = size / sizeof(unsigned);
+	indices_count = size / sizeof(unsigned);
 }

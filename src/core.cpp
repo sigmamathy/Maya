@@ -2,11 +2,12 @@
 #include <queue>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <chrono>
 
-static std::queue<MayaErrorStatus> s_error_queue;
-static MayaFunction<void(MayaErrorStatus& stat)> s_error_callback;
+static std::queue<MayaError> s_error_queue;
+static MayaFunction<void(MayaError& stat)> s_error_callback;
 
-void MayaSetErrorCallback(MayaFunctionCR<void(MayaErrorStatus& stat)> callback)
+void MayaSetErrorCallback(MayaFunctionCR<void(MayaError& stat)> callback)
 {
 	s_error_callback = callback;
 	if (callback)
@@ -14,16 +15,16 @@ void MayaSetErrorCallback(MayaFunctionCR<void(MayaErrorStatus& stat)> callback)
 			s_error_callback(s);
 }
 
-MayaErrorStatus MayaPollError()
+MayaError MayaPollError()
 {
 	if (s_error_queue.empty())
-		return MayaErrorStatus{ .ErrorCode = MAYA_NO_ERROR };
+		return MayaError{ .ErrorCode = MAYA_NO_ERROR };
 	auto res = s_error_queue.front();
 	s_error_queue.pop();
 	return res;
 }
 
-void MayaSendError(MayaErrorStatus stat)
+void MayaSendError(MayaError stat)
 {
 	if (s_error_callback)
 		s_error_callback(stat);
@@ -31,44 +32,61 @@ void MayaSendError(MayaErrorStatus stat)
 		s_error_queue.push(stat);
 }
 
-static bool s_library_initialized = false;
+static MayaLibraryManager* s_library_pointer = 0;
+static std::chrono::steady_clock::time_point s_library_start_tp;
 
-static void s_InitLibrary(void)
+MayaLibraryManager::MayaLibraryManager(unsigned bitfield)
+	: libraries(bitfield)
 {
-	MAYA_DIF(s_library_initialized) {
-		MAYA_SERR(MAYA_SINGLETON_ERROR,
-			"MayaLibrarySingleton::MayaLibrarySingleton(): Multiple instances of MayaLibrarySingleton is detected.");
+	MAYA_DIF(s_library_pointer)
+	{
+		MayaSendError({
+			MAYA_INSTANCE_ERROR,
+			"MayaLibraryManager::MayaLibraryManager(): Multiple instances of MayaLibraryManager is detected."
+		});
 		return;
 	}
-	s_library_initialized = true;
-	glfwInit();
-	//glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	//glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+	s_library_pointer = this;
+	LoadDependencies(bitfield);
+	s_library_start_tp = std::chrono::high_resolution_clock::now();
 }
 
-void s_TerminateLibrary(void)
+MayaLibraryManager::~MayaLibraryManager()
 {
-	s_library_initialized = false;
-	glfwTerminate();
+	UnloadDependencies(libraries);
+	s_library_pointer = 0;
 }
 
-MayaLibrarySingleton::MayaLibrarySingleton()
+void MayaLibraryManager::LoadDependencies(unsigned bitfield)
 {
-	s_InitLibrary();
+	libraries |= bitfield;
+	if (bitfield & MAYA_LIBRARY_GLFW) {
+		glfwInit();
+	}
 }
 
-MayaLibrarySingleton::~MayaLibrarySingleton()
+void MayaLibraryManager::UnloadDependencies(unsigned bitfield)
 {
-	s_TerminateLibrary();
+	libraries &= ~bitfield;
+	if (bitfield & MAYA_LIBRARY_GLFW) {
+		glfwTerminate();
+	}
 }
 
-bool MayaIsLibraryFound(void)
+bool MayaLibraryManager::FoundDependency(unsigned bit) const
 {
-	return s_library_initialized;
+	return libraries & bit;
 }
 
-double MayaGetCurrentTimeSinceInit(void)
+float MayaLibraryManager::GetTimeSince() const
 {
-	return glfwGetTime();
+	auto end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<float> duration = end - s_library_start_tp;
+	return duration.count();
+}
+
+MayaLibraryManager* MayaGetLibraryManager()
+{
+	return s_library_pointer;
 }

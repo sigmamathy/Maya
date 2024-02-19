@@ -1,45 +1,45 @@
 #include <maya/2d/camera.hpp>
 #include <maya/transformation.hpp>
 
-MayaGraphics2D::Camera::Camera()
+MayaCamera2d::MayaCamera2d()
 	: position(0), zoom(1), rotation(0), view_matrix(1), require_update(0)
 {
 }
 
-void MayaGraphics2D::Camera::SetPosition(MayaFvec2 pos)
+void MayaCamera2d::SetPosition(MayaFvec2 pos)
 {
 	this->position = pos;
 	require_update = true;
 }
 
-void MayaGraphics2D::Camera::SetZoom(MayaFvec2 zoom)
+void MayaCamera2d::SetZoom(MayaFvec2 zoom)
 {
 	this->zoom = zoom;
 	require_update = true;
 }
 
-void MayaGraphics2D::Camera::SetRotation(float rot)
+void MayaCamera2d::SetRotation(float rot)
 {
 	this->rotation = rot;
 	require_update = true;
 }
 
-MayaFvec2 MayaGraphics2D::Camera::GetPosition() const
+MayaFvec2 MayaCamera2d::GetPosition() const
 {
 	return position;
 }
 
-MayaFvec2 MayaGraphics2D::Camera::GetZoom() const
+MayaFvec2 MayaCamera2d::GetZoom() const
 {
 	return zoom;
 }
 
-float MayaGraphics2D::Camera::GetRotation() const
+float MayaCamera2d::GetRotation() const
 {
 	return rotation;
 }
 
-MayaFmat4 MayaGraphics2D::Camera::GetViewMatrix()
+MayaFmat4 MayaCamera2d::GetViewMatrix()
 {
 	if (require_update)
 		view_matrix = MayaScale(zoom) * MayaRotate(rotation) * MayaTranslate(position);

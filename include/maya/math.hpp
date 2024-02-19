@@ -129,8 +129,8 @@ template<class Ty, int Dim>
 constexpr Ty& MayaVector<Ty, Dim>::operator[](int i)
 {
 	MAYA_DIF(i < 0 || i > Dim - 1)
-		MAYA_SERR(MAYA_BOUNDARY_ERROR,
-			"MayaVector::operator[](int): Array index out of bounds.");
+		MayaSendError({ MAYA_BOUNDARY_ERROR,
+			"MayaVector::operator[](int): Array index out of bounds." });
 	return elems[i];
 }
 
@@ -138,8 +138,8 @@ template<class Ty, int Dim>
 constexpr Ty const& MayaVector<Ty, Dim>::operator[](int i) const
 {
 	MAYA_DIF(i < 0 || i > Dim - 1)
-		MAYA_SERR(MAYA_BOUNDARY_ERROR,
-			"MayaVector::operator[](int): Array index out of bounds.");
+		MayaSendError({ MAYA_BOUNDARY_ERROR,
+			"MayaVector::operator[](int): Array index out of bounds." });
 	return elems[i];
 }
 
@@ -190,9 +190,9 @@ template<class Ty> template<class Ty2> constexpr MayaVector<Ty, 4>::MayaVector(M
 
 #define MAYA_TEMP_DEFINE_VECTOR_OPERATOR_BRACKETS(dim, ...)\
 	template<class Ty> constexpr Ty& MayaVector<Ty, dim>::operator[](int i) {\
-			MAYA_DIF (i < 0 || i > dim - 1) MAYA_SERR(MAYA_BOUNDARY_ERROR, "MayaVector::operator[](int): Array index out of bounds."); __VA_ARGS__; }\
+			MAYA_DIF (i < 0 || i > dim - 1) MayaSendError({ MAYA_BOUNDARY_ERROR, "MayaVector::operator[](int): Array index out of bounds."}); __VA_ARGS__; }\
 	template<class Ty> constexpr Ty const& MayaVector<Ty, dim>::operator[](int i) const {\
-			MAYA_DIF (i < 0 || i > dim - 1) MAYA_SERR(MAYA_BOUNDARY_ERROR, "MayaVector::operator[](int): Array index out of bounds."); __VA_ARGS__; }
+			MAYA_DIF (i < 0 || i > dim - 1) MayaSendError({ MAYA_BOUNDARY_ERROR, "MayaVector::operator[](int): Array index out of bounds."}); __VA_ARGS__; }
 
 MAYA_TEMP_DEFINE_VECTOR_OPERATOR_BRACKETS(1, return x)
 MAYA_TEMP_DEFINE_VECTOR_OPERATOR_BRACKETS(2, return i ? y : x)
@@ -326,8 +326,8 @@ constexpr auto MayaNormalize(MayaVector<Ty, Dim> const& vec)
 	for (int i = 0; i < Dim; i++)
 		sum += vec[i] * vec[i];
 	MAYA_DIF(!sum)
-		MAYA_SERR(MAYA_DIVISION_BY_ZERO_ERROR,
-			"MayaNormalize(MayaVector const&): The required vector has norm equal to zero.");
+		MayaSendError({ MAYA_DIVISION_BY_ZERO_ERROR,
+			"MayaNormalize(MayaVector const&): The required vector has norm equal to zero." });
 	auto invsqrt = 1.0f / std::sqrt(static_cast<common_type>(sum));
 	MayaVector<common_type, Dim> res;
 	for (int i = 0; i < Dim; i++)
@@ -457,8 +457,8 @@ template<class Ty, int Rw, int Cn>
 constexpr MayaVector<Ty, Rw>& MayaMatrix<Ty, Rw, Cn>::operator[](int i)
 {
 	MAYA_DIF(i < 0 || i > Cn - 1)
-		MAYA_SERR(MAYA_BOUNDARY_ERROR,
-			"MayaMatrix::operator[](int): Array index out of bounds.");
+		MayaSendError({ MAYA_BOUNDARY_ERROR,
+			"MayaMatrix::operator[](int): Array index out of bounds." });
 	return column_vectors[i];
 }
 
@@ -466,8 +466,8 @@ template<class Ty, int Rw, int Cn>
 constexpr MayaVector<Ty, Rw> const& MayaMatrix<Ty, Rw, Cn>::operator[](int i) const
 {
 	MAYA_DIF(i < 0 || i > Cn - 1)
-		MAYA_SERR(MAYA_BOUNDARY_ERROR,
-			"MayaMatrix::operator[](int): Array index out of bounds.");
+		MayaSendError({ MAYA_BOUNDARY_ERROR,
+			"MayaMatrix::operator[](int): Array index out of bounds." });
 	return column_vectors[i];
 }
 

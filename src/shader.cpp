@@ -55,7 +55,7 @@ static bool s_CreateShader(unsigned* result, unsigned type, MayaStringCR src, Ma
 			case GL_GEOMETRY_SHADER: errmsg = "Following error found in geometry shader\n" + errmsg; break;
 		}
 
-		MAYA_SERR(MAYA_SHADER_COMPILE_ERROR, funcname + errmsg);
+		MayaSendError({ MAYA_SHADER_COMPILE_ERROR, funcname + errmsg });
 		return false;
 	}
 
@@ -137,8 +137,8 @@ int MayaShaderProgram::FindUniformLocation(MayaStringCR name)
 	int x = glGetUniformLocation(programid, name.c_str());
 	uniform_location_cache[name] = x;
 	if (x == -1) {
-		MAYA_SERR(MAYA_SHADER_UNIFORM_NO_FOUND_ERROR,
-			"MayaShaderProgram::FindUniformLocation(MayaStringCR): The required uniform does not exists.");
+		MayaSendError({ MAYA_SHADER_UNIFORM_NO_FOUND_ERROR,
+			"MayaShaderProgram::FindUniformLocation(MayaStringCR): The required uniform \"" + name + "\" does not exists." });
 	}
 	return x;
 }

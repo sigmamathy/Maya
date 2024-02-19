@@ -2,13 +2,16 @@
 #include <maya/window.hpp>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <stack>
 
 #define MAYA_TEXTURE_SLOTS_COUNT 16
 
 struct s_CrntBindCache
 {
-	unsigned VAO, Program;
-	unsigned Test;
+	unsigned VAO		= 0;
+	unsigned Program	= 0;
+	unsigned Test		= MayaNoTest;
+	std::stack<MayaIvec4> ScissorRects;
 };
 
 static MayaHashMap<MayaWindow*, s_CrntBindCache> s_bind_cache;
@@ -18,14 +21,10 @@ static void s_InitCacheIfNotPresent(MayaWindow* window)
 	if (s_bind_cache.count(window))
 		return;
 	auto& x = s_bind_cache[window];
-	x.VAO = 0;
-	x.Program = 0;
-	x.Test = MayaNoTest;
 }
 
 void Maya_s_BindVertexArray(MayaWindow* window, unsigned vaoid)
 {
-	s_InitCacheIfNotPresent(window);
 	if (s_bind_cache.at(window).VAO != vaoid) {
 		window->UseGraphicsContext();
 		glBindVertexArray(vaoid);
@@ -35,7 +34,6 @@ void Maya_s_BindVertexArray(MayaWindow* window, unsigned vaoid)
 
 void Maya_s_BindShaderProgram(MayaWindow* window, unsigned programid)
 {
-	s_InitCacheIfNotPresent(window);
 	if (s_bind_cache.at(window).Program != programid) {
 		window->UseGraphicsContext();
 		glUseProgram(programid);
@@ -43,8 +41,10 @@ void Maya_s_BindShaderProgram(MayaWindow* window, unsigned programid)
 	}
 }
 
-static void s_SetEnableTest(MayaWindow* window, MayaPerFragTest test, unsigned gltest, bool enable)
+void Maya_s_SetEnableTest(MayaWindow* window, unsigned test, unsigned gltest, bool enable)
 {
+	s_InitCacheIfNotPresent(window);
+
 	if (enable)
 	{
 		if (!(s_bind_cache.at(window).Test & test)) {
@@ -61,22 +61,48 @@ static void s_SetEnableTest(MayaWindow* window, MayaPerFragTest test, unsigned g
 	}
 }
 
-void MayaSetScissorRect(MayaWindow* window, MayaFvec2 pos, MayaFvec2 size)
+void MayaPushScissorRect(MayaWindow* window, MayaIvec2 pos, MayaIvec2 size)
+{
+	Maya_s_SetEnableTest(window, MayaScissorTest, GL_SCISSOR_TEST, true);
+	auto& sr = s_bind_cache.at(window).ScissorRects;
+
+	if (!sr.empty())
+	{
+		auto p2 = pos + size;
+		auto prev = sr.top();
+		if (prev.x > pos.x) pos.x = prev.x;
+		if (prev.y > pos.y) pos.y = prev.y;
+		if (prev.x + prev.z < p2.x) p2.x = prev.x + prev.z;
+		if (prev.y + prev.w < p2.y) p2.y = prev.y + prev.w;
+		size = p2 - pos;
+	}
+
+	sr.push(MayaConcat(pos, size));
+	glScissor(pos.x, window->GetSize().y - pos.y - size.y, size.x, size.y);
+}
+
+void MayaPopScissorRect(MayaWindow* window)
 {
 	s_InitCacheIfNotPresent(window);
-	s_SetEnableTest(window, MayaScissorTest, GL_SCISSOR_TEST, true);
-	glScissor((int)pos.x, window->GetSize().y - (int)pos.y - (int)size.y, (int)size.x, (int)size.y);
+	auto& sr = s_bind_cache.at(window).ScissorRects;
+	if (sr.empty())
+		return;
+	sr.pop();
+	if (sr.empty())
+		return;
+	auto s = sr.top();
+	glScissor(s.x, window->GetSize().y - s.y - s.w, s.z, s.w);
 }
 
 void MayaRenderer::ExecuteDraw()
 {
 	MAYA_DIF(!Input) {
-		MAYA_SERR(MAYA_EMPTY_REFERENCE_ERROR, "MayaRenderer::ExecuteDraw(): Input is nullptr");
+		MayaSendError({ MAYA_EMPTY_REFERENCE_ERROR, "MayaRenderer::ExecuteDraw(): Input is nullptr" });
 		return;
 	}
 
 	MAYA_DIF(!Program) {
-		MAYA_SERR(MAYA_EMPTY_REFERENCE_ERROR, "MayaRenderer::ExecuteDraw(): Program is nullptr");
+		MayaSendError({ MAYA_EMPTY_REFERENCE_ERROR, "MayaRenderer::ExecuteDraw(): Program is nullptr" });
 		return;
 	}
 
@@ -90,8 +116,8 @@ void MayaRenderer::ExecuteDraw()
 		}
 	}
 	if (!alleq) {
-		MAYA_SERR(MAYA_INVALID_GRAPHICS_CONTEXT_ERROR,
-			"MayaRenderer::ExecuteDraw(): Resources used in the process refers to different graphics context.");
+		MayaSendError({ MAYA_INCONSISTENTENCY_ERROR,
+			"MayaRenderer::ExecuteDraw(): Graphics context used is inconsistence." });
 		return;
 	}
 #endif
@@ -102,8 +128,8 @@ void MayaRenderer::ExecuteDraw()
 	Maya_s_BindVertexArray(window, Input->vaoid);
 	Maya_s_BindShaderProgram(window, Program->programid);
 
-	s_SetEnableTest(window, MayaScissorTest, GL_SCISSOR_TEST, (bool)(Test & MayaScissorTest));
-	s_SetEnableTest(window, MayaBlending, GL_BLEND, (bool)(Test & MayaBlending));
+	Maya_s_SetEnableTest(window, MayaScissorTest, GL_SCISSOR_TEST, Test & MayaScissorTest);
+	Maya_s_SetEnableTest(window, MayaBlending, GL_BLEND, Test & MayaBlending);
 
 	for (int i = 0; i < MAYA_TEXTURE_SLOTS_COUNT; i++)
 	{
@@ -114,7 +140,13 @@ void MayaRenderer::ExecuteDraw()
 	}
 
 	if (Input->iboid)
-		glDrawElements(GL_TRIANGLES, Input->indices_draw_count, GL_UNSIGNED_INT, 0);
+	{
+		MayaIvec2 dr = Input->draw_range.x != -1 ? Input->draw_range * 3 : MayaIvec2{0, Input->indices_count};
+		glDrawElements(GL_TRIANGLES, dr.y - dr.x, GL_UNSIGNED_INT, (void*)(size_t)dr.x);
+	}
 	else
-		glDrawArrays(GL_TRIANGLES, 0, Input->vertex_count);
+	{
+		MayaIvec2 dr = Input->draw_range.x != -1 ? Input->draw_range : MayaIvec2{ 0, Input->vertex_count };
+		glDrawArrays(GL_TRIANGLES, dr.x, dr.y - dr.x);
+	}
 }

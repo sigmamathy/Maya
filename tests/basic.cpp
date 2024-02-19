@@ -1,34 +1,34 @@
-#include <maya/core.hpp>
-#include <maya/window.hpp>
-#include <maya/renderer.hpp>
-#include <maya/transformation.hpp>
-#include <maya/2d/graphics.hpp>
-#include <maya/2d/camera.hpp>
-#include <maya/2d/textdisplay.hpp>
 #include <maya/gui/button.hpp>
 #include <maya/gui/textfield.hpp>
-
-#include <glad/glad.h>
+#include <maya/gui/label.hpp>
+#include <maya/gui/checkbox.hpp>
 
 int main()
 {
-	MayaLibrarySingleton _;
-	MayaSetErrorCallback([](MayaErrorStatus& err) {
+	MayaLibraryManager manager(MAYA_LIBRARY_GLFW);
+
+	MayaSetErrorCallback([](MayaError& err) {
 		std::cout << err.Details << '\n';
 	});
 
 	MayaWindowUptr window = MayaCreateWindowUptr();
-	window->SetResizeAspectRatioLock(16, 9);
+	window->SetSize(1920, 1080);
 
-	MayaGraphicsGUI gui(*window);
+	MayaGraphicsGui gui(*window);
 
-	auto& x = gui.CreateButton();
-	x.SetPositionRelativeTo(MayaCornerTL);
-	x.SetPosition(250, -150);
+	auto& label = gui.CreateLabel();
+	auto& textfield = gui.CreateTextField();
+	auto& button = gui.CreateButton();
+	auto& checkbox = gui.CreateCheckbox();
 
-	//gui.CreateTextField(); 
+	label.SetPosition(0, 100);
+	button.SetPosition(-100, -100);
+	checkbox.SetPosition(100, -100);
 
-	gui.CreateCheckbox();
+	textfield.SetEventCallback([&](MayaEventGui& e) -> void {
+		if (e.Type == e.Interact)
+			label.SetText(textfield.GetText());
+	});
 
 	while (!window->IsTimeToClose())
 	{
@@ -38,7 +38,6 @@ int main()
 		gui.Draw();
 
 		window->SwapBuffers();
-
 		MayaPollWindowEvents();
 	}
 

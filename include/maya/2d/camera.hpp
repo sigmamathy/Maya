@@ -2,11 +2,11 @@
 
 #include "./graphics.hpp"
 
-class MayaGraphics2D::Camera
+class MayaCamera2d
 {
 public:
 
-	Camera();
+	MayaCamera2d();
 
 	void SetPosition(MayaFvec2 pos);
 	void SetZoom(MayaFvec2 zoom);
@@ -26,5 +26,5 @@ private:
 	float rotation;
 	MayaFmat4 view_matrix;
 
-	friend class MayaGraphics2D;
+	friend class MayaGraphics2d;
 };

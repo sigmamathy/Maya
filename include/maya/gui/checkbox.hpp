@@ -3,13 +3,13 @@
 #include "./graphics.hpp"
 #include "../2d/textdisplay.hpp"
 
-class MayaGraphicsGUI::Checkbox : public MayaGraphicsGUI::Component
+class MayaCheckboxGui : public MayaComponentGui
 {
 public:
 
-	Checkbox(MayaGraphicsGUI& gui);
+	MayaCheckboxGui(MayaGraphicsGui& gui);
 
-	virtual void Draw(MayaGraphics2D& g2d) override;
+	virtual void Draw(MayaGraphics2d& g2d) override;
 
 	void ReactEvent(MayaEvent& e) override;
 
@@ -25,6 +25,6 @@ public:
 
 private:
 
-	MayaGraphics2D::TextDisplay text;
+	MayaTextDisplay2d text;
 	bool selected;
 };

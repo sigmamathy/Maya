@@ -3,9 +3,12 @@
 
 void MayaGetDeviceInfo(MayaMonitorsInfo* info)
 {
-	MAYA_DIF (!MayaIsLibraryFound())
-		MAYA_SERR(MAYA_MISSING_LIBRARY_ERROR,
-			"MayaGetDeviceInfo(MayaMonitorsInfo&): Required library is not initialized.");
+	MAYA_DIF(!MayaGetLibraryManager() || !MayaGetLibraryManager()->FoundDependency(MAYA_LIBRARY_GLFW))
+	{
+		MayaSendError({ MAYA_MISSING_LIBRARY_ERROR,
+			"MayaGetDeviceInfo(MayaMonitorsInfo&): GLFW is not initialized." });
+		return;
+	}
 
 	static std::vector<MayaMonitorsInfo::MonitorData> monitors_info_cache;
 	static bool first_called = false;
@@ -31,9 +34,13 @@ void MayaGetDeviceInfo(MayaMonitorsInfo* info)
 
 MayaString MayaGetClipBoardString()
 {
-	MAYA_DIF(!MayaIsLibraryFound())
-		MAYA_SERR(MAYA_MISSING_LIBRARY_ERROR,
-			"MayaGetDeviceInfo(MayaMonitorsInfo&): Required library is not initialized.");
+	MAYA_DIF(!MayaGetLibraryManager() || !MayaGetLibraryManager()->FoundDependency(MAYA_LIBRARY_GLFW))
+	{
+		MayaSendError({ MAYA_MISSING_LIBRARY_ERROR,
+			"MayaGetDeviceInfo(MayaMonitorsInfo&): GLFW is not initialized." });
+		return "";
+	}
+
 	char const* s = glfwGetClipboardString(0);
 	return s ? s : "";
 }

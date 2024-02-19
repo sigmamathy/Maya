@@ -2,104 +2,105 @@
 
 #include "../2d/graphics.hpp"
 
-class MayaGraphicsGUI
+class MayaGraphicsGui
 {
 public:
 
-// ----------- Components ----------- //
-
-	class Component;
-	class Button;
-	class TextField;
-	class Checkbox;
-
-// ----------- Events ----------- //
-
-	struct UserEvent;
-	struct UserMouseEvent;
-	MAYA_TYPEDEF0(UserEventCallback, MayaFunction<void(UserEvent&)>);
-
-public:
-
-	class Component
-	{
-	public:
-		Component(MayaGraphicsGUI& gui);
-		virtual ~Component() = default;
-
-		virtual void ReactEvent(MayaEvent& e) = 0;
-		virtual void Draw(MayaGraphics2D& g2d) = 0;
-
-		void SetPositionRelativeTo(Component* comp);
-		void SetPositionRelativeTo(MayaCorner relpos);
-		MayaFvec2 GetRelativePosition() const;
-
-		void SetPosition(float x, float y);
-		void SetSize(float width, float height);
-		virtual void SetPosition(MayaFvec2 pos);
-		virtual void SetSize(MayaFvec2 size);
-		virtual MayaFvec2 GetPosition() const;
-		virtual MayaFvec2 GetSize() const;
-
-		void SetColor0(MayaIvec4 color);
-		void SetColor1(MayaIvec4 color);
-		MayaIvec4 GetColor0() const;
-		MayaIvec4 GetColor1() const;
-
-		void SetVisible(bool visible);
-		void SetEnabled(bool enable);
-		bool IsVisible() const;
-		bool IsEnabled() const;
-
-		void SetEventCallback(UserEventCallbackCR callback);
-
-	protected:
-		MayaGraphicsGUI* gui;
-		MayaFvec2 position, size;
-		MayaIvec4 color0, color1;
-		bool visible, enabled;
-		UserEventCallback callback;
-
-		Component* relativeto;
-		MayaCorner relwpos;
-	};
-
-public:
-
-	MayaGraphicsGUI(MayaWindow& window);
-	MayaGraphicsGUI(MayaGraphicsGUI const&) = delete;
-	MayaGraphicsGUI& operator=(MayaGraphicsGUI const&) = delete;
-	~MayaGraphicsGUI();
+	MayaGraphicsGui(MayaWindow& window);
+	MayaGraphicsGui(MayaGraphicsGui const&) = delete;
+	MayaGraphicsGui& operator=(MayaGraphicsGui const&) = delete;
+	~MayaGraphicsGui();
 
 	MayaWindow* const Window;
 
-	Button& CreateButton();
-	TextField& CreateTextField();
-	Checkbox& CreateCheckbox();
+	class MayaLabelGui& CreateLabel();
+	class MayaButtonGui& CreateButton();
+	class MayaTextFieldGui& CreateTextField();
+	class MayaCheckboxGui& CreateCheckbox();
 
 	void Draw();
 
 	MayaFont& GetDefaultFont();
-	MayaTexture& GetDefaultTickSymbol();
 
 private:
 
-	MayaArrayList<MayaUptr<Component>> components;
-	MayaGraphics2D g2d;
+	MayaArrayList<MayaUptr<class MayaComponentGui>> components;
+	MayaGraphics2d g2d;
 	unsigned callbackid;
 
 	MayaFontUptr default_font;
-	MayaTextureUptr default_tick_symbol;
 };
 
-struct MayaGraphicsGUI::UserEvent : public MayaEvent
+struct MayaEventGui
 {
-	Component* Source;
+	enum EventType {
+		Interact,
+		Typing,
+		Entered
+	} Type;
+	MayaComponentGui* Source;
+	MayaGraphicsGui* Gui;
 };
 
-struct MayaGraphicsGUI::UserMouseEvent : public MayaGraphicsGUI::UserEvent
+struct MayaColorSchemeGui
 {
-	MAYA_DEFINE_EVENT_ID(0x10);
-	MayaMouseButton Button;
-	bool Down;
+	/*
+		0: background
+		1: background (dim)
+		2: border
+		3: foreground
+		4: foreground (dim)
+	*/
+	MayaIvec4 Color[16];
+
+	static MayaColorSchemeGui DefaultScheme();
+
+	MayaIvec4& operator[](int index);
+	MayaIvec4 const& operator[](int index) const;
+};
+
+class MayaComponentGui
+{
+public:
+	MayaComponentGui(MayaGraphicsGui& gui);
+	virtual ~MayaComponentGui() = default;
+
+	virtual void ReactEvent(MayaEvent& e) = 0;
+	virtual void Draw(MayaGraphics2d& g2d) = 0;
+
+	void SetPositionRelativeTo(MayaComponentGui* comp);
+	void SetPositionRelativeTo(MayaCorner relpos);
+	MayaFvec2 GetRelativePosition() const;
+
+	void SetPosition(float x, float y);
+	void SetSize(float width, float height);
+	virtual void SetPosition(MayaFvec2 pos);
+	virtual void SetSize(MayaFvec2 size);
+	virtual MayaFvec2 GetPosition() const;
+	virtual MayaFvec2 GetSize() const;
+
+	void SetColorScheme(MayaColorSchemeGui scheme);
+	void SetColor(int index, MayaIvec4 color);
+	MayaColorSchemeGui const& GetColorScheme() const;
+	MayaIvec4 GetColor(int index) const;
+
+	void SetVisible(bool visible);
+	void SetEnabled(bool enable);
+	bool IsVisible() const;
+	bool IsEnabled() const;
+
+	void SetEventCallback(MayaFunctionCR<void(MayaEventGui&)> callback);
+
+protected:
+
+	MayaGraphicsGui* gui;
+	MayaFvec2 position, size;
+	MayaColorSchemeGui colors;
+	bool visible, enabled;
+	MayaFunction<void(MayaEventGui&)> callback;
+
+	MayaComponentGui* relativeto;
+	MayaCorner relwpos;
+
+	void SendCallback(MayaEventGui::EventType type);
 };

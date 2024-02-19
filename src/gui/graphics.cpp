@@ -1,4 +1,5 @@
 #include <maya/gui/graphics.hpp>
+#include <maya/gui/label.hpp>
 #include <maya/gui/button.hpp>
 #include <maya/gui/textfield.hpp>
 #include <maya/gui/checkbox.hpp>
@@ -6,7 +7,7 @@
 #include <maya/transformation.hpp>
 #include <maya/font.hpp>
 
-MayaGraphicsGUI::MayaGraphicsGUI(MayaWindow& window)
+MayaGraphicsGui::MayaGraphicsGui(MayaWindow& window)
 	: Window(&window), g2d(window)
 {
 	auto projupdate = [this](MayaEvent& e) -> void
@@ -21,20 +22,21 @@ MayaGraphicsGUI::MayaGraphicsGUI(MayaWindow& window)
 	g2d.UseWindowProjection();
 }
 
-MayaGraphicsGUI::~MayaGraphicsGUI()
+MayaGraphicsGui::~MayaGraphicsGui()
 {
 	if (MayaWindow::Exists(Window))
 		Window->RemoveEventCallback(callbackid);
 }
 
-#define MAYA_DEFINE_CREATE(x) MayaGraphicsGUI::x& MayaGraphicsGUI::Create##x()\
-	{ auto comp = new x(*this); components.emplace_back(static_cast<Component*>(comp)); return *comp; }
+#define MAYA_DEFINE_CREATE(x, y) x& MayaGraphicsGui::Create##y()\
+	{ auto comp = new x(*this); components.emplace_back(static_cast<MayaComponentGui*>(comp)); return *comp; }
 
-MAYA_DEFINE_CREATE(Button)
-MAYA_DEFINE_CREATE(TextField)
-MAYA_DEFINE_CREATE(Checkbox)
+MAYA_DEFINE_CREATE(MayaLabelGui, Label)
+MAYA_DEFINE_CREATE(MayaButtonGui, Button)
+MAYA_DEFINE_CREATE(MayaTextFieldGui, TextField)
+MAYA_DEFINE_CREATE(MayaCheckboxGui, Checkbox)
 
-void MayaGraphicsGUI::Draw()
+void MayaGraphicsGui::Draw()
 {
 	for (int i = 0; i < components.size(); i++)
 	{
@@ -44,44 +46,63 @@ void MayaGraphicsGUI::Draw()
 }
 
 #include "./resources/opensans"
-#include "./resources/ticksym"
-MayaFont& MayaGraphicsGUI::GetDefaultFont()
+
+MayaFont& MayaGraphicsGui::GetDefaultFont()
 {
 	if (!default_font)
 		default_font = MayaCreateFontUptr(*Window, s_open_sans_regular, sizeof(s_open_sans_regular), 30);
 	return *default_font;
 }
 
-MayaTexture& MayaGraphicsGUI::GetDefaultTickSymbol()
+MayaColorSchemeGui MayaColorSchemeGui::DefaultScheme()
 {
-	if (!default_tick_symbol)
-		default_tick_symbol = MayaCreateTextureUptr(*Window, s_tick_symbol, MayaIvec2(640, 472), 4);
-	return *default_tick_symbol;
+	static MayaColorSchemeGui scheme = {
+		.Color = {
+			{ 90, 101, 107, 255 },
+			{ 65, 71, 74, 255 },
+			{ 109, 123, 130, 255 },
+			MayaWhite,
+			MayaGray,
+		}
+	};
+
+	return scheme;
 }
 
-MayaGraphicsGUI::Component::Component(MayaGraphicsGUI& gui)
-	: position(0), size(50), gui(&gui), color0(MayaWhite), color1(MayaBlack),
+MayaIvec4& MayaColorSchemeGui::operator[](int index)
+{
+	return Color[index];
+}
+
+MayaIvec4 const& MayaColorSchemeGui::operator[](int index) const
+{
+	return Color[index];
+}
+
+MayaComponentGui::MayaComponentGui(MayaGraphicsGui& gui)
+	: position(0), size(50), gui(&gui),
 	visible(true), enabled(true),
 	relativeto(0), relwpos(MayaCornerCC)
 {
+	colors = MayaColorSchemeGui::DefaultScheme();
 }
 
-void MayaGraphicsGUI::Component::SetPositionRelativeTo(Component* comp)
+void MayaComponentGui::SetPositionRelativeTo(MayaComponentGui* comp)
 {
 	relativeto = comp;
 	relwpos = MayaCornerCC;
 }
 
-void MayaGraphicsGUI::Component::SetPositionRelativeTo(MayaCorner relpos)
+void MayaComponentGui::SetPositionRelativeTo(MayaCorner relpos)
 {
 	relwpos = relpos;
 	relativeto = 0;
 }
 
-MayaFvec2 MayaGraphicsGUI::Component::GetRelativePosition() const
+MayaFvec2 MayaComponentGui::GetRelativePosition() const
 {
 	if (relativeto)
-		return relativeto->GetPosition();
+		return relativeto->GetPosition() + relativeto->GetRelativePosition();
 	auto hsz = gui->Window->GetSize() * 0.5f;
 	MayaFvec2 d;
 	d.x = ((relwpos & 0b11) - 2) * hsz.x;
@@ -89,77 +110,88 @@ MayaFvec2 MayaGraphicsGUI::Component::GetRelativePosition() const
 	return d;
 }
 
-void MayaGraphicsGUI::Component::SetPosition(float x, float y)
+void MayaComponentGui::SetPosition(float x, float y)
 {
 	SetPosition(MayaFvec2{ x, y });
 }
 
-void MayaGraphicsGUI::Component::SetSize(float width, float height)
+void MayaComponentGui::SetSize(float width, float height)
 {
 	SetSize(MayaFvec2{ width, height });
 }
 
-void MayaGraphicsGUI::Component::SetPosition(MayaFvec2 pos)
+void MayaComponentGui::SetPosition(MayaFvec2 pos)
 {
 	position = pos;
 }
 
-void MayaGraphicsGUI::Component::SetSize(MayaFvec2 size)
+void MayaComponentGui::SetSize(MayaFvec2 size)
 {
 	this->size = size;
 }
 
-MayaFvec2 MayaGraphicsGUI::Component::GetPosition() const
+MayaFvec2 MayaComponentGui::GetPosition() const
 {
 	return position;
 }
 
-MayaFvec2 MayaGraphicsGUI::Component::GetSize() const
+MayaFvec2 MayaComponentGui::GetSize() const
 {
 	return size;
 }
 
-void MayaGraphicsGUI::Component::SetColor0(MayaIvec4 color)
+void MayaComponentGui::SetColorScheme(MayaColorSchemeGui scheme)
 {
-	color0 = color;
+	colors = scheme;
 }
 
-void MayaGraphicsGUI::Component::SetColor1(MayaIvec4 color)
+void MayaComponentGui::SetColor(int index, MayaIvec4 color)
 {
-	color1 = color;
+	colors[index] = color;
 }
 
-MayaIvec4 MayaGraphicsGUI::Component::GetColor0() const
+MayaColorSchemeGui const& MayaComponentGui::GetColorScheme() const
 {
-	return color0;
+	return colors;
 }
 
-MayaIvec4 MayaGraphicsGUI::Component::GetColor1() const
+MayaIvec4 MayaComponentGui::GetColor(int index) const
 {
-	return color1;
+	return colors[index];
 }
 
-void MayaGraphicsGUI::Component::SetVisible(bool visible)
+void MayaComponentGui::SetVisible(bool visible)
 {
 	this->visible = visible;
 }
 
-void MayaGraphicsGUI::Component::SetEnabled(bool enable)
+void MayaComponentGui::SetEnabled(bool enable)
 {
 	enabled = enable;
 }
 
-bool MayaGraphicsGUI::Component::IsVisible() const
+bool MayaComponentGui::IsVisible() const
 {
 	return visible;
 }
 
-bool MayaGraphicsGUI::Component::IsEnabled() const
+bool MayaComponentGui::IsEnabled() const
 {
 	return enabled;
 }
 
-void MayaGraphicsGUI::Component::SetEventCallback(UserEventCallbackCR callback)
+void MayaComponentGui::SetEventCallback(MayaFunctionCR<void(MayaEventGui&)> callback)
 {
 	this->callback = callback;
+}
+
+void MayaComponentGui::SendCallback(MayaEventGui::EventType type)
+{
+	if (!callback)
+		return;
+	MayaEventGui e;
+	e.Type = type;
+	e.Source = this;
+	e.Gui = gui;
+	callback(e);
 }

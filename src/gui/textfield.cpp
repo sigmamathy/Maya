@@ -2,61 +2,63 @@
 #include <maya/color.hpp>
 #include <maya/deviceinfo.hpp>
 
-MayaGraphicsGUI::TextField::TextField(MayaGraphicsGUI& gui)
-	: Component(gui), text(gui.GetDefaultFont(), ""), description(gui.GetDefaultFont(), "Enter Text"),
-	careti(-1), caretpos(0), caret_timer(static_cast<float>(MayaGetCurrentTimeSinceInit())), scroll(0)
+MayaTextFieldGui::MayaTextFieldGui(MayaGraphicsGui& gui)
+	: MayaComponentGui(gui), text(gui.GetDefaultFont(), ""), description(gui.GetDefaultFont(), "Enter Text"),
+	careti(-1), caretpos(0), caret_timer(MayaGetLibraryManager()->GetTimeSince()), scroll(0)
 {
-	size = { 200, 60 };
-	color0 = { 65, 71, 74, 255 };
-	color1 = { 109, 123, 130, 255 };
+	size = { 300, 60 };
 }
 
-void MayaGraphicsGUI::TextField::Draw(MayaGraphics2D& g2d)
+void MayaTextFieldGui::Draw(MayaGraphics2d& g2d)
 {
 	if (!visible)
 		return;
-	g2d.UseColor(enabled ? color0 : MayaGray);
-	g2d.DrawRect(position + GetRelativePosition(), size);
+	auto epos = position + GetRelativePosition();
 
-	auto tpos = MayaFvec2(position.x - size.x * 0.5f + 5,
-		position.y - text.GetFont().GetMaxHeight() * 0.5f) + GetRelativePosition();
-	tpos.x -= scroll;
+	g2d.UseColor(enabled ? colors[1] : MayaGray);
+	g2d.DrawRect(epos, size);
+
+	auto tpos = epos + MayaFvec2(-size.x * 0.5f + 5 - scroll, -text.GetFont().GetMaxHeight() * 0.5f);
+
+	auto sp = epos - size * 0.5f + gui->Window->GetSize() * 0.5f;
+	sp.x += 5;
+	sp.y = gui->Window->GetSize().y - sp.y - size.y;
+	MayaPushScissorRect(gui->Window, sp, MayaIvec2(size.x - 10, size.y));
+	g2d.UseScissor(true);
 
 	if (text.GetLength() != 0)
 	{
-		g2d.UseColor(MayaWhite);
+		g2d.UseColor(colors[3]);
 		text.SetPosition(tpos);
-		g2d.BeginScissor(position + GetRelativePosition(), MayaFvec2(size.x - 10, size.y));
 		g2d.DrawText(text);
-		g2d.EndScissor();
 	}
 	else
 	{
-		g2d.UseColor(MayaGray);
+		g2d.UseColor(colors[4]);
 		description.SetPosition(tpos);
-		g2d.BeginScissor(position + GetRelativePosition(), MayaFvec2(size.x - 10, size.y));
 		g2d.DrawText(description);
-		g2d.EndScissor();
 	}
-	
+
+	MayaPopScissorRect(gui->Window);
+	g2d.UseScissor(false);
 
 	if (enabled && careti != -1)
 	{
 
-		g2d.UseColor(MayaWhite);
-		float crnt = (float) MayaGetCurrentTimeSinceInit();
+		g2d.UseColor(colors[3]);
+		float crnt = MayaGetLibraryManager()->GetTimeSince();
 		if (crnt - caret_timer > 1.0f)
 			caret_timer += 1.0f;
 		if (crnt - caret_timer <= 0.5f)
-			g2d.DrawLine(tpos.x + caretpos, position.y + GetRelativePosition().y + size.y * 0.5f - 10,
-				tpos.x + caretpos, position.y + GetRelativePosition().y - size.y * 0.5f + 10);
+			g2d.DrawLine(tpos.x + caretpos, epos.y + size.y * 0.5f - 10,
+				tpos.x + caretpos, epos.y - size.y * 0.5f + 10);
 
-		g2d.UseColor(color1);
-		g2d.DrawRectBorder(position + GetRelativePosition(), size, 1);
+		g2d.UseColor(colors[2]);
+		g2d.DrawRectBorder(epos, size, 1);
 	}
 }
 
-void MayaGraphicsGUI::TextField::ReactEvent(MayaEvent& e)
+void MayaTextFieldGui::ReactEvent(MayaEvent& e)
 {
 	if (!visible || !enabled)
 		return;
@@ -65,7 +67,7 @@ void MayaGraphicsGUI::TextField::ReactEvent(MayaEvent& e)
 	{
 		if (me->Down && me->Button == MayaMouseButton1)
 		{
-			UpdateCaretPos();
+			SetCaretPosToMousePos();
 		}
 	}
 
@@ -77,6 +79,7 @@ void MayaGraphicsGUI::TextField::ReactEvent(MayaEvent& e)
 			caretpos += text.GetFont()[ce->Char].Advance;
 			if (caretpos - scroll > size.x - 10)
 				scroll = caretpos - static_cast<int>(size.x) + 10;
+			SendCallback(MayaEventGui::Typing);
 		}
 	}
 
@@ -89,21 +92,23 @@ void MayaGraphicsGUI::TextField::ReactEvent(MayaEvent& e)
 				char c = text.RemoveCharAt(careti - 1);
 				careti--;
 				caretpos -= text.GetFont()[c].Advance;
-				caret_timer = static_cast<float>(MayaGetCurrentTimeSinceInit());
+				caret_timer = MayaGetLibraryManager()->GetTimeSince();
 				if (caretpos < scroll)
 					scroll = caretpos;
+				SendCallback(MayaEventGui::Typing);
 			}
 			else if (ke->KeyCode == MayaKeyDelete && careti != text.GetLength())
 			{
 				char c = text.RemoveCharAt(careti);
-				caret_timer = static_cast<float>(MayaGetCurrentTimeSinceInit());
+				caret_timer = MayaGetLibraryManager()->GetTimeSince();
+				SendCallback(MayaEventGui::Typing);
 			}
 			else if (ke->KeyCode == MayaKeyLeft && careti != 0)
 			{
 				char c = text.GetString()[careti - 1];
 				careti--;
 				caretpos -= text.GetFont()[c].Advance;
-				caret_timer = static_cast<float>(MayaGetCurrentTimeSinceInit());
+				caret_timer = MayaGetLibraryManager()->GetTimeSince();
 				if (caretpos < scroll)
 					scroll = caretpos;
 			}
@@ -112,7 +117,7 @@ void MayaGraphicsGUI::TextField::ReactEvent(MayaEvent& e)
 				char c = text.GetString()[careti];
 				careti++;
 				caretpos += text.GetFont()[c].Advance;
-				caret_timer = static_cast<float>(MayaGetCurrentTimeSinceInit());
+				caret_timer = MayaGetLibraryManager()->GetTimeSince();
 				if (caretpos - scroll > size.x - 10)
 					scroll = caretpos - static_cast<int>(size.x) + 10;
 			}
@@ -131,16 +136,21 @@ void MayaGraphicsGUI::TextField::ReactEvent(MayaEvent& e)
 						adv += text.GetFont()[c].Advance;
 					careti += static_cast<int>(s.length());
 					caretpos += adv;
-					caret_timer = static_cast<float>(MayaGetCurrentTimeSinceInit());
+					caret_timer = MayaGetLibraryManager()->GetTimeSince();
 					if (caretpos - scroll > size.x - 10)
 						scroll = caretpos - static_cast<int>(size.x) + 10;
+					SendCallback(MayaEventGui::Typing);
 				}
+			}
+			else if (ke->KeyCode == MayaKeyEnter)
+			{
+				SendCallback(MayaEventGui::Interact);
 			}
 		}
 	}
 }
 
-bool MayaGraphicsGUI::TextField::IsTextFieldTouched() const
+bool MayaTextFieldGui::IsTextFieldTouched() const
 {
 	auto* window = gui->Window;
 	MayaFvec2 cp = window->GetCursorPosition();
@@ -151,7 +161,7 @@ bool MayaGraphicsGUI::TextField::IsTextFieldTouched() const
 		&& cp.y >= pos.y - size.y * 0.5f && cp.y <= pos.y + size.y * 0.5f;
 }
 
-void MayaGraphicsGUI::TextField::UpdateCaretPos()
+void MayaTextFieldGui::SetCaretPosToMousePos()
 {
 	if (!IsTextFieldTouched()) {
 		careti = -1;
@@ -161,7 +171,7 @@ void MayaGraphicsGUI::TextField::UpdateCaretPos()
 	MayaFvec2 cp = gui->Window->GetCursorPosition();
 	cp = cp - gui->Window->GetSize() / 2;
 	float d = cp.x - (position.x + GetRelativePosition().x - size.x * 0.5f);
-	caret_timer = static_cast<float>(MayaGetCurrentTimeSinceInit());
+	caret_timer = MayaGetLibraryManager()->GetTimeSince();
 
 	if (text.GetLength() == 0)
 	{
@@ -185,7 +195,7 @@ void MayaGraphicsGUI::TextField::UpdateCaretPos()
 	}
 }
 
-void MayaGraphicsGUI::TextField::SetFont(MayaFont* font)
+void MayaTextFieldGui::SetFont(MayaFont* font)
 {
 	if (!font)
 		font = &gui->GetDefaultFont();
@@ -193,22 +203,22 @@ void MayaGraphicsGUI::TextField::SetFont(MayaFont* font)
 	description.SetFont(*font);
 }
 
-void MayaGraphicsGUI::TextField::SetText(MayaStringCR text)
+void MayaTextFieldGui::SetText(MayaStringCR text)
 {
 	this->text = text;
 }
 
-MayaStringCR MayaGraphicsGUI::TextField::GetText() const
+MayaStringCR MayaTextFieldGui::GetText() const
 {
 	return text.GetString();
 }
 
-void MayaGraphicsGUI::TextField::SetDescription(MayaStringCR desc)
+void MayaTextFieldGui::SetDescription(MayaStringCR desc)
 {
 	description = desc;
 }
 
-MayaStringCR MayaGraphicsGUI::TextField::GetDescription() const
+MayaStringCR MayaTextFieldGui::GetDescription() const
 {
 	return description.GetString();
 }

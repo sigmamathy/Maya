@@ -2,12 +2,12 @@
 
 #include "./graphics.hpp"
 
-class MayaGraphics2D::TextDisplay
+class MayaTextDisplay2d
 {
 public:
 
-	TextDisplay(MayaFont& font, MayaStringCR text);
-	TextDisplay& operator=(MayaStringCR text);
+	MayaTextDisplay2d(MayaFont& font, MayaStringCR text);
+	MayaTextDisplay2d& operator=(MayaStringCR text);
 
 	void InsertCharAt(int index, char c);
 	char RemoveCharAt(int index);
@@ -46,5 +46,5 @@ private:
 
 	void ComputeCharModel();
 	void ComputeGlobalModel();
-	friend class MayaGraphics2D;
+	friend class MayaGraphics2d;
 };

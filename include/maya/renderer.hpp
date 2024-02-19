@@ -7,12 +7,13 @@
 
 enum MayaPerFragTest : unsigned
 {
-	MayaNoTest			= 0,
-	MayaScissorTest		= 1,
-	MayaBlending		= 2
+	MayaNoTest			= 0x00,
+	MayaScissorTest		= 0x01,
+	MayaBlending		= 0x02
 };
 
-void MayaSetScissorRect(MayaWindow* window, MayaFvec2 pos, MayaFvec2 size);
+void MayaPushScissorRect(MayaWindow* window, MayaIvec2 pos, MayaIvec2 size);
+void MayaPopScissorRect(MayaWindow* window);
 
 class MayaRenderer
 {

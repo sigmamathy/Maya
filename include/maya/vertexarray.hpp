@@ -1,6 +1,7 @@
 #pragma once
 
 #include "./core.hpp"
+#include "./math.hpp"
 
 class MayaWindow;
 MAYA_TYPEDEFPTR(MayaVertexArray);
@@ -14,8 +15,9 @@ public:
 		int Offset;
 	};
 
-	void* Data;
-	unsigned Size;
+	void const* Data = 0;			// REQUIRED
+	unsigned Size = 0;				// REQUIRED
+	bool MaySubjectToChange = 0;	// REQUIRED
 
 	MayaVertexLayout() = default;
 	MayaVertexLayout(int location, int count);
@@ -43,21 +45,24 @@ public:
 
 	MayaVertexArray& operator=(MayaVertexArray const&) = delete;
 
-	void SetVertexCount(int count);
+	void SetDrawRange(int start, int end);
+
+	void ResetDrawRange();
 
 	template<class Ty = float>
 	void LinkVertexBuffer(MayaVertexLayout& layout);
 
-	void LinkIndexBuffer(unsigned* data, unsigned size);
+	void LinkIndexBuffer(unsigned const* data, unsigned size);
 
 public:
 
 	unsigned vaoid;
 	MayaWindow* window;
 	MayaArrayList<unsigned> vboids;
-	int vertex_count;
 	unsigned iboid;
-	int indices_draw_count;
+
+	int vertex_count, indices_count;
+	MayaIvec2 draw_range;
 
 	friend class MayaRenderer;
 };

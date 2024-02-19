@@ -49,6 +49,53 @@ void main()
 
 )";
 
+static MayaShaderProgramUptr s_CreateShaderProgram(MayaWindow& window)
+{
+	MayaShaderProgramParameters param;
+	param.Vertex = s_vertex_shader;
+	param.Fragment = s_fragment_shader;
+
+	MayaShaderProgramUptr program = MayaCreateShaderProgramUptr(window, param);
+
+	program->SetUniformMatrix("uModel", MayaFmat4(1));
+	program->SetUniformMatrix("uView", MayaFmat4(1));
+	program->SetUniformMatrix("uProjection", MayaFmat4(1));
+	program->SetUniformVector("uColor", MayaWhite / 255.0f);
+
+	program->SetUniform<int>("uHasTexture[0]", 0);
+	program->SetUniform<int>("uHasTexture[1]", 0);
+	program->SetUniform<int>("uTexture[0]", 0);
+	program->SetUniform<int>("uTexture[1]", 1);
+
+	return program;
+}
+
+#define MAYA_SQUARE			0
+#define MAYA_CIRCLE			1
+#define MAYA_TICK			2
+#define MAYA_ISO_TRIANGLE	3
+
+static MayaVertexArrayUptr s_CreateSquareVertexArray(MayaWindow& window)
+{
+	static constexpr float square_vertices[] = {
+		-0.5f, 0.5f,		0, 1,
+		-0.5f, -0.5f,		0, 0,
+		0.5f, 0.5f,			1, 1,
+		-0.5f, -0.5f,		0, 0,
+		0.5f, 0.5f,			1, 1,
+		0.5f, -0.5f,		1, 0
+	};
+
+	MayaVertexArrayUptr squarevao = MayaCreateVertexArrayUptr(window);
+	MayaVertexLayout layout;
+	layout(0, 2) (1, 2);
+	layout.Data = square_vertices;
+	layout.Size = sizeof(square_vertices);
+	squarevao->LinkVertexBuffer(layout);
+
+	return squarevao;
+}
+
 static MayaVertexArrayUptr s_CreateCircleVertexArray(MayaWindow& window, int precision)
 {
 	MayaArrayList<float> vertices;
@@ -57,7 +104,7 @@ static MayaVertexArrayUptr s_CreateCircleVertexArray(MayaWindow& window, int pre
 	for (int i = 0; i < precision; i++)
 	{
 		float radian = static_cast<float>(2 * MayaConstPI * i / precision);
-		float c = std::cosf(radian), s = std::sinf(radian);
+		float c = cosf(radian), s = sinf(radian);
 		vertices.emplace_back(c * 0.5f);
 		vertices.emplace_back(s * 0.5f);
 		vertices.emplace_back(c * 0.5f + 0.5f);
@@ -75,7 +122,6 @@ static MayaVertexArrayUptr s_CreateCircleVertexArray(MayaWindow& window, int pre
 	}
 
 	MayaVertexArrayUptr result = MayaCreateVertexArrayUptr(window);
-	result->SetVertexCount(precision);
 	MayaVertexLayout layout;
 	layout (0, 2) (1, 2);
 	layout.Data = vertices.data();
@@ -85,125 +131,142 @@ static MayaVertexArrayUptr s_CreateCircleVertexArray(MayaWindow& window, int pre
 	return result;
 }
 
-MayaGraphics2D::MayaGraphics2D(MayaWindow& window)
-	: Window(&window), texture(nullptr), camera(nullptr), projection(1), has_scissor(false)
+static MayaVertexArrayUptr s_CreateTickVertexArray(MayaWindow& window)
 {
-	MayaShaderProgramParameters param;
-	param.Vertex = s_vertex_shader;
-	param.Fragment = s_fragment_shader;
-	program = MayaCreateShaderProgramUptr(window, param);
-	program->SetUniformMatrix("uModel", MayaFmat4(1));
-	program->SetUniformMatrix("uView", MayaFmat4(1));
-	program->SetUniformMatrix("uProjection", MayaFmat4(1));
-	program->SetUniformVector("uColor", MayaWhite / 255.0f);
-
-	program->SetUniform<int>("uHasTexture[0]", 0);
-	program->SetUniform<int>("uHasTexture[1]", 0);
-	program->SetUniform<int>("uTexture[0]", 0);
-	program->SetUniform<int>("uTexture[1]", 1);
-
-	static float square_vertices[] = {
-		-0.5f, 0.5f,		0, 1,
-		-0.5f, -0.5f,		0, 0,
-		0.5f, 0.5f,			1, 1,
-		-0.5f, -0.5f,		0, 0,
-		0.5f, 0.5f,			1, 1,
-		0.5f, -0.5f,		1, 0
+	static constexpr float tick_vertices[] = {
+		-0.5f, -0.05f,				0, 0.45f,
+		-0.37f, 0.0f,				0.13f, 0.5f,
+		-0.267f, -0.481f,			0.234f, 0.02f,
+		-0.225f, -0.252f,			0.275f, 0.248f,
+		-0.222f, -0.5f,				0.278f, 0.0f,
+		-0.163f, -0.47f,			0.337f, 0.03f,
+		0.245f, 0.5f,				0.745f, 1.0f,
+		0.352f, 0.461f,				0.825f, 0.961f,
+		0.5f, 0.439f,				1.0f, 0.939f
 	};
 
-	squarevao = MayaCreateVertexArrayUptr(window);
-	squarevao->SetVertexCount(6);
-	MayaVertexLayout layout;
-	layout (0, 2) (1, 2);
-	layout.Data = square_vertices;
-	layout.Size = sizeof(square_vertices);
-	squarevao->LinkVertexBuffer(layout);
+	static constexpr unsigned tick_indices[] = {
+		0, 1, 2,
+		1, 2, 3,
+		2, 3, 4,
+		3, 4, 5,
+		3, 5, 6,
+		5, 6, 7,
+		5, 7, 8
+	};
 
-	circlevao64 = s_CreateCircleVertexArray(window, 64);
+	MayaVertexArrayUptr tickvao = MayaCreateVertexArrayUptr(window);
+
+	MayaVertexLayout layout;
+	layout(0, 2) (1, 2);
+	layout.Data = tick_vertices;
+	layout.Size = sizeof(tick_vertices);
+
+	tickvao->LinkVertexBuffer(layout);
+	tickvao->LinkIndexBuffer(tick_indices, sizeof(tick_indices));
+
+	return tickvao;
 }
 
-void MayaGraphics2D::UseProjection(float width, float height)
+static MayaVertexArrayUptr s_CreateIsoTriangleVertexArray(MayaWindow& window)
+{
+	static constexpr float tri_vertices[] = {
+		-0.5f, -0.5f,		0, 0,
+		0.5f, -0.5f,		1, 0,
+		0.0f, 0.5f,			0.5f, 1,
+	};
+
+	MayaVertexArrayUptr res = MayaCreateVertexArrayUptr(window);
+	MayaVertexLayout layout;
+	layout(0, 2) (1, 2);
+	layout.Data = tri_vertices;
+	layout.Size = sizeof(tri_vertices);
+
+	res->LinkVertexBuffer(layout);
+	return res;
+}
+
+MayaGraphics2d::MayaGraphics2d(MayaWindow& window)
+	: Window(&window), texture(nullptr), camera(nullptr), projection(1), color(MayaWhite), has_scissor(false)
+{
+	program = s_CreateShaderProgram(window);
+	vao[MAYA_SQUARE]		= s_CreateSquareVertexArray(window);
+	vao[MAYA_CIRCLE]		= s_CreateCircleVertexArray(window, 64);
+	vao[MAYA_TICK]			= s_CreateTickVertexArray(window);
+	vao[MAYA_ISO_TRIANGLE]	= s_CreateIsoTriangleVertexArray(window);
+}
+
+void MayaGraphics2d::UseProjection(float width, float height)
 {
 	UseProjection(MayaFvec2(width, height));
 }
 
-void MayaGraphics2D::UseProjection(MayaFvec2 size)
+void MayaGraphics2d::UseProjection(MayaFvec2 size)
 {
+	if (projection == size)
+		return;
 	MayaFmat4 proj = MayaOrthogonalProjection(size);
 	program->SetUniformMatrix("uProjection", proj);
 	projection = size;
 }
 
-void MayaGraphics2D::UseWindowProjection()
+void MayaGraphics2d::UseWindowProjection()
 {
 	UseProjection(Window->GetSize());
 }
 
-void MayaGraphics2D::UseCamera(Camera* camera)
+void MayaGraphics2d::UseCamera(MayaCamera2d* camera)
 {
+	if (this->camera == camera)
+		return;
 	this->camera = camera;
 	program->SetUniformMatrix("uView", camera ? camera->GetViewMatrix() : MayaFmat4(1));
 }
 
-void MayaGraphics2D::UseColor(int r, int g, int b, int a)
+void MayaGraphics2d::UseColor(int r, int g, int b, int a)
 {
 	UseColor(MayaIvec4(r, g, b, a));
 }
 
-void MayaGraphics2D::UseColor(MayaIvec3 color)
+void MayaGraphics2d::UseColor(MayaIvec3 color)
 {
 	UseColor(MayaIvec4(color.x, color.y, color.z, 255));
 }
 
-void MayaGraphics2D::UseColor(MayaIvec4 color)
+void MayaGraphics2d::UseColor(MayaIvec4 color)
 {
+	if (this->color == color)
+		return;
 	MayaFvec4 col = color / 255.0f;
 	program->SetUniformVector("uColor", col);
+	this->color = color;
 }
 
-void MayaGraphics2D::UseColor(unsigned hexcode, bool hasopacity)
+void MayaGraphics2d::UseColor(unsigned hexcode, bool hasopacity)
 {
 	MayaIvec4 color = MayaConvertHexToColor(hexcode, hasopacity);
 	UseColor(color);
 }
 
-void MayaGraphics2D::UseTexture(MayaTexture* texture)
+void MayaGraphics2d::UseTexture(MayaTexture* texture)
 {
+	if (this->texture == texture)
+		return;
 	this->texture = texture;
 	program->SetUniform<int>("uHasTexture[0]", texture ? 1 : 0);
 }
 
-void MayaGraphics2D::BeginScissor(MayaFvec2 pos, MayaFvec2 size)
+void MayaGraphics2d::UseScissor(bool use)
 {
-	MayaFvec2 wsz = Window->GetSize();
-	float xs = wsz.x / projection.x, ys = wsz.y / projection.y;
-	pos.x *= xs;
-	pos.y *= ys;
-	size.x *= xs;
-	size.y *= ys;
-	pos = pos + wsz * 0.5f - size * 0.5f;
-	pos.y = wsz.y - pos.y - size.y;
-	MayaSetScissorRect(Window, pos, size);
-	has_scissor = true;
+	has_scissor = use;
 }
 
-void MayaGraphics2D::EndScissor()
-{
-	has_scissor = false;
-}
-
-void MayaGraphics2D::DrawRect(float x, float y, float width, float height)
-{
-	DrawRect(MayaFvec2(x, y), MayaFvec2(width, height));
-}
-
-void MayaGraphics2D::DrawRect(MayaFvec2 pos, MayaFvec2 size)
+void MayaGraphics2d::DrawShape(int index)
 {
 	if (camera && camera->require_update)
 		program->SetUniformMatrix("uView", camera->GetViewMatrix());
-	program->SetUniformMatrix("uModel", MayaTranslate(pos) * MayaScale(size));
 	MayaRenderer r;
-	r.Input = squarevao.get();
+	r.Input = vao[index].get();
 	r.Program = program.get();
 	r.Textures[0] = texture;
 	r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
@@ -211,42 +274,43 @@ void MayaGraphics2D::DrawRect(MayaFvec2 pos, MayaFvec2 size)
 	r.ExecuteDraw();
 }
 
-void MayaGraphics2D::DrawRectBorder(float x, float y, float width, float height, int linewidth)
+void MayaGraphics2d::DrawShape(int index, MayaFvec2 pos, MayaFvec2 size)
+{
+	program->SetUniformMatrix("uModel", MayaTranslate(pos) * MayaScale(size));
+	DrawShape(index);
+}
+
+void MayaGraphics2d::DrawRect(float x, float y, float width, float height)
+{
+	DrawRect(MayaFvec2(x, y), MayaFvec2(width, height));
+}
+
+void MayaGraphics2d::DrawRect(MayaFvec2 pos, MayaFvec2 size)
+{
+	DrawShape(MAYA_SQUARE, pos, size);
+}
+
+void MayaGraphics2d::DrawRectBorder(float x, float y, float width, float height, int linewidth)
 {
 	DrawRectBorder(MayaFvec2(x, y), MayaFvec2(width, height), linewidth);
 }
 
-void MayaGraphics2D::DrawRectBorder(MayaFvec2 pos, MayaFvec2 size, int linewidth)
+void MayaGraphics2d::DrawRectBorder(MayaFvec2 pos, MayaFvec2 size, int linewidth)
 {
-	if (camera && camera->require_update)
-		program->SetUniformMatrix("uView", camera->GetViewMatrix());
 	program->SetUniform<int>("uHasTexture[0]", 0);
-	MayaRenderer r;
-	r.Input = squarevao.get();
-	r.Program = program.get();
-	r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
-	r.Test |= MayaBlending;
-	program->SetUniformMatrix("uModel", MayaTranslate(MayaFvec2(pos.x - size.x * 0.5f, pos.y))
-		* MayaScale(MayaFvec2(linewidth, size.y)));
-	r.ExecuteDraw();
-	program->SetUniformMatrix("uModel", MayaTranslate(MayaFvec2(pos.x + size.x * 0.5f, pos.y))
-		* MayaScale(MayaFvec2(linewidth, size.y)));
-	r.ExecuteDraw();
-	program->SetUniformMatrix("uModel", MayaTranslate(MayaFvec2(pos.x, pos.y + size.y * 0.5f))
-		* MayaScale(MayaFvec2(size.x, linewidth)));
-	r.ExecuteDraw();
-	program->SetUniformMatrix("uModel", MayaTranslate(MayaFvec2(pos.x, pos.y - size.y * 0.5f))
-		* MayaScale(MayaFvec2(size.x, linewidth)));
-	r.ExecuteDraw();
+	DrawShape(MAYA_SQUARE, MayaFvec2(pos.x - size.x * 0.5f, pos.y), MayaFvec2(linewidth, size.y));
+	DrawShape(MAYA_SQUARE, MayaFvec2(pos.x + size.x * 0.5f, pos.y), MayaFvec2(linewidth, size.y));
+	DrawShape(MAYA_SQUARE, MayaFvec2(pos.x, pos.y - size.y * 0.5f), MayaFvec2(size.x, linewidth));
+	DrawShape(MAYA_SQUARE, MayaFvec2(pos.x, pos.y + size.y * 0.5f), MayaFvec2(size.x, linewidth));
 	program->SetUniform<int>("uHasTexture[0]", texture ? 1 : 0);
 }
 
-void MayaGraphics2D::DrawLine(float startx, float starty, float endx, float endy)
+void MayaGraphics2d::DrawLine(float startx, float starty, float endx, float endy)
 {
 	DrawLine(MayaFvec2(startx, starty), MayaFvec2(endx, endy));
 }
 
-void MayaGraphics2D::DrawLine(MayaFvec2 start, MayaFvec2 end)
+void MayaGraphics2d::DrawLine(MayaFvec2 start, MayaFvec2 end)
 {
 	if (start == end) return;
 	MayaFmat4 pos = MayaTranslate((start + end) / 2.0f);
@@ -255,40 +319,36 @@ void MayaGraphics2D::DrawLine(MayaFvec2 start, MayaFvec2 end)
 	MayaFmat4 rot = MayaRotate(std::atan2(dv[1], dv[0]));
 	program->SetUniformMatrix("uModel", pos * rot * scale);
 	program->SetUniform<int>("uHasTexture[0]", 0);
-	MayaRenderer r;
-	r.Input = squarevao.get();
-	r.Program = program.get();
-	r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
-	r.Test |= MayaBlending;
-	r.ExecuteDraw();
+	DrawShape(MAYA_SQUARE);
 	program->SetUniform<int>("uHasTexture[0]", texture ? 1 : 0);
 }
 
-void MayaGraphics2D::DrawOval(float x, float y, float width, float height)
+void MayaGraphics2d::DrawOval(float x, float y, float width, float height)
 {
 	DrawOval(MayaFvec2(x, y), MayaFvec2(width, height));
 }
 
-void MayaGraphics2D::DrawOval(MayaFvec2 pos, MayaFvec2 size)
+void MayaGraphics2d::DrawOval(MayaFvec2 pos, MayaFvec2 size)
 {
-	if (camera && camera->require_update)
-		program->SetUniformMatrix("uView", camera->GetViewMatrix());
-	program->SetUniformMatrix("uModel", MayaTranslate(pos) * MayaScale(size));
-	MayaRenderer r;
-	r.Input = circlevao64.get();
-	r.Program = program.get();
-	r.Textures[0] = texture;
-	r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
-	r.Test |= MayaBlending;
-	r.ExecuteDraw();
+	DrawShape(MAYA_CIRCLE, pos, size);
 }
 
-void MayaGraphics2D::DrawText(MayaFont& font, MayaStringCR text, float x, float y, MayaCorner align)
+void MayaGraphics2d::DrawIsoTriangle(float x, float y, float width, float height)
+{
+	DrawIsoTriangle(MayaFvec2(x, y), MayaFvec2(width, height));
+}
+
+void MayaGraphics2d::DrawIsoTriangle(MayaFvec2 pos, MayaFvec2 size)
+{
+	DrawShape(MAYA_ISO_TRIANGLE, pos, size);
+}
+
+void MayaGraphics2d::DrawText(MayaFont& font, MayaStringCR text, float x, float y, MayaCorner align)
 {
 	return DrawText(font, text, MayaFvec2(x, y), align);
 }
 
-void MayaGraphics2D::DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos, MayaCorner align)
+void MayaGraphics2d::DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos, MayaCorner align)
 {
 	program->SetUniform<int>("uHasTexture[1]", 1);
 	if (camera && camera->require_update)
@@ -321,7 +381,7 @@ void MayaGraphics2D::DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos, 
 
 		program->SetUniformMatrix("uModel", MayaTranslate(pos + tpos + d) * MayaScale(glyph.Size));
 		MayaRenderer r;
-		r.Input = squarevao.get();
+		r.Input = vao[MAYA_SQUARE].get();
 		r.Program = program.get();
 		r.Textures[0] = texture;
 		r.Textures[1] = glyph.Texture;
@@ -333,12 +393,12 @@ void MayaGraphics2D::DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos, 
 	program->SetUniform<int>("uHasTexture[1]", 0);
 }
 
-void MayaGraphics2D::DrawText(TextDisplay& text)
+void MayaGraphics2d::DrawText(MayaTextDisplay2d& text)
 {
 	DrawText(text, 0, text.GetLength());
 }
 
-void MayaGraphics2D::DrawText(TextDisplay& text, int start, int end)
+void MayaGraphics2d::DrawText(MayaTextDisplay2d& text, int start, int end)
 {
 	text.ComputeGlobalModel();
 	program->SetUniform<int>("uHasTexture[1]", 1);
@@ -348,7 +408,7 @@ void MayaGraphics2D::DrawText(TextDisplay& text, int start, int end)
 	{
 		program->SetUniformMatrix("uModel", text.global_model * text.char_models[i]);
 		MayaRenderer r;
-		r.Input = squarevao.get();
+		r.Input = vao[MAYA_SQUARE].get();
 		r.Program = program.get();
 		r.Textures[0] = texture;
 		r.Textures[1] = (*text.font)[text.string[i]].Texture;
@@ -357,4 +417,14 @@ void MayaGraphics2D::DrawText(TextDisplay& text, int start, int end)
 		r.ExecuteDraw();
 	}
 	program->SetUniform<int>("uHasTexture[1]", 0);
+}
+
+void MayaGraphics2d::DrawTick(float x, float y, float width, float height)
+{
+	DrawTick(MayaFvec2(x, y), MayaFvec2(width, height));
+}
+
+void MayaGraphics2d::DrawTick(MayaFvec2 pos, MayaFvec2 size)
+{
+	DrawShape(MAYA_TICK, pos, size);
 }
