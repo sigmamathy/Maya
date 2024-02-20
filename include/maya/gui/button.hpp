@@ -17,8 +17,6 @@ public:
 
 	MayaStringCR GetText() const;
 
-	bool IsButtonTouched() const;
-
 	bool IsButtonPressed() const;
 
 private:

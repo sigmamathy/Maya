@@ -2,6 +2,7 @@
 #include <maya/gui/textfield.hpp>
 #include <maya/gui/label.hpp>
 #include <maya/gui/checkbox.hpp>
+#include <maya/gui/panel.hpp>
 
 int main()
 {
@@ -15,20 +16,24 @@ int main()
 	window->SetSize(1920, 1080);
 
 	MayaGraphicsGui gui(*window);
-
-	auto& label = gui.CreateLabel();
-	auto& textfield = gui.CreateTextField();
 	auto& button = gui.CreateButton();
-	auto& checkbox = gui.CreateCheckbox();
 
-	label.SetPosition(0, 100);
-	button.SetPosition(-100, -100);
-	checkbox.SetPosition(100, -100);
+	auto& pane = gui.CreatePanel();
+	pane.Add(button);
+	button.SetPosition(350, -100);
+	
+	//auto& label = gui.CreateLabel();
+	//auto& textfield = gui.CreateTextField();
+	//auto& checkbox = gui.CreateCheckbox();
+	
+	//label.SetPosition(0, 100);
+	//button.SetPosition(-100, -100);
+	//checkbox.SetPosition(100, -100);
 
-	textfield.SetEventCallback([&](MayaEventGui& e) -> void {
-		if (e.Type == e.Interact)
-			label.SetText(textfield.GetText());
-	});
+	//textfield.SetEventCallback([&](MayaEventGui& e) -> void {
+	//	if (e.Type == e.Interact)
+	//		label.SetText(textfield.GetText());
+	//});
 
 	while (!window->IsTimeToClose())
 	{

@@ -21,8 +21,6 @@ public:
 
 	bool IsSelected() const;
 
-	bool IsCheckboxTouched() const;
-
 private:
 
 	MayaTextDisplay2d text;

@@ -26,7 +26,7 @@ add_library(${PROJECT_NAME}
     "src/2d/textdisplay.cpp"
     "src/gui/graphics.cpp"
     "src/gui/button.cpp"
-  "src/gui/textfield.cpp" "src/gui/checkbox.cpp" "src/gui/label.cpp")
+  "src/gui/textfield.cpp" "src/gui/checkbox.cpp" "src/gui/label.cpp" "src/gui/panel.cpp")
  
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 add_compile_definitions(MAYA_PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")

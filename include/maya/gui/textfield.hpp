@@ -23,8 +23,6 @@ public:
 
 	MayaStringCR GetDescription() const;
 
-	bool IsTextFieldTouched() const;
-
 private:
 
 	void SetCaretPosToMousePos();

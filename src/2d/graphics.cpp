@@ -77,7 +77,7 @@ static MayaShaderProgramUptr s_CreateShaderProgram(MayaWindow& window)
 
 static MayaVertexArrayUptr s_CreateSquareVertexArray(MayaWindow& window)
 {
-	static constexpr float square_vertices[] = {
+	static constexpr float vertices[] = {
 		-0.5f, 0.5f,		0, 1,
 		-0.5f, -0.5f,		0, 0,
 		0.5f, 0.5f,			1, 1,
@@ -86,20 +86,23 @@ static MayaVertexArrayUptr s_CreateSquareVertexArray(MayaWindow& window)
 		0.5f, -0.5f,		1, 0
 	};
 
-	MayaVertexArrayUptr squarevao = MayaCreateVertexArrayUptr(window);
+	MayaVertexArrayUptr res = MayaCreateVertexArrayUptr(window);
 	MayaVertexLayout layout;
 	layout(0, 2) (1, 2);
-	layout.Data = square_vertices;
-	layout.Size = sizeof(square_vertices);
-	squarevao->LinkVertexBuffer(layout);
+	res->LinkVertexBuffer(MayaBuffer(vertices, sizeof(vertices)), layout, false);
 
-	return squarevao;
+	return res;
 }
 
 static MayaVertexArrayUptr s_CreateCircleVertexArray(MayaWindow& window, int precision)
 {
 	MayaArrayList<float> vertices;
-	vertices.reserve(precision * 4);
+	vertices.reserve(precision * 4 + 4);
+
+	vertices.emplace_back(0.0f);
+	vertices.emplace_back(0.0f);
+	vertices.emplace_back(0.5f);
+	vertices.emplace_back(0.5f);
 
 	for (int i = 0; i < precision; i++)
 	{
@@ -112,28 +115,30 @@ static MayaVertexArrayUptr s_CreateCircleVertexArray(MayaWindow& window, int pre
 	}
 
 	MayaArrayList<unsigned> indices;
-	indices.reserve(3 * precision - 6);
+	indices.reserve(3 * precision);
 
-	for (int i = 1; i <= precision - 2; i++)
+	for (int i = 1; i <= precision - 1; i++)
 	{
 		indices.emplace_back(0);
 		indices.emplace_back(i);
 		indices.emplace_back(i + 1);
 	}
 
+	indices.emplace_back(0);
+	indices.emplace_back(precision);
+	indices.emplace_back(1);
+
 	MayaVertexArrayUptr result = MayaCreateVertexArrayUptr(window);
 	MayaVertexLayout layout;
 	layout (0, 2) (1, 2);
-	layout.Data = vertices.data();
-	layout.Size = static_cast<unsigned>(vertices.size() * sizeof(float));
-	result->LinkVertexBuffer(layout);
-	result->LinkIndexBuffer(indices.data(), static_cast<unsigned>(indices.size() * sizeof(unsigned)));
+	result->LinkVertexBuffer(MayaBuffer(vertices.data(), unsigned(vertices.size() * sizeof(float))), layout);
+	result->LinkIndexBuffer(MayaBuffer(indices.data(), unsigned(indices.size() * sizeof(unsigned))));
 	return result;
 }
 
 static MayaVertexArrayUptr s_CreateTickVertexArray(MayaWindow& window)
 {
-	static constexpr float tick_vertices[] = {
+	static constexpr float vertices[] = {
 		-0.5f, -0.05f,				0, 0.45f,
 		-0.37f, 0.0f,				0.13f, 0.5f,
 		-0.267f, -0.481f,			0.234f, 0.02f,
@@ -145,7 +150,7 @@ static MayaVertexArrayUptr s_CreateTickVertexArray(MayaWindow& window)
 		0.5f, 0.439f,				1.0f, 0.939f
 	};
 
-	static constexpr unsigned tick_indices[] = {
+	static constexpr unsigned indices[] = {
 		0, 1, 2,
 		1, 2, 3,
 		2, 3, 4,
@@ -155,22 +160,20 @@ static MayaVertexArrayUptr s_CreateTickVertexArray(MayaWindow& window)
 		5, 7, 8
 	};
 
-	MayaVertexArrayUptr tickvao = MayaCreateVertexArrayUptr(window);
+	MayaVertexArrayUptr res = MayaCreateVertexArrayUptr(window);
 
 	MayaVertexLayout layout;
 	layout(0, 2) (1, 2);
-	layout.Data = tick_vertices;
-	layout.Size = sizeof(tick_vertices);
 
-	tickvao->LinkVertexBuffer(layout);
-	tickvao->LinkIndexBuffer(tick_indices, sizeof(tick_indices));
+	res->LinkVertexBuffer(MayaBuffer(vertices, sizeof(vertices)), layout);
+	res->LinkIndexBuffer(MayaBuffer(indices, sizeof(indices)));
 
-	return tickvao;
+	return res;
 }
 
 static MayaVertexArrayUptr s_CreateIsoTriangleVertexArray(MayaWindow& window)
 {
-	static constexpr float tri_vertices[] = {
+	static constexpr float vertices[] = {
 		-0.5f, -0.5f,		0, 0,
 		0.5f, -0.5f,		1, 0,
 		0.0f, 0.5f,			0.5f, 1,
@@ -179,10 +182,8 @@ static MayaVertexArrayUptr s_CreateIsoTriangleVertexArray(MayaWindow& window)
 	MayaVertexArrayUptr res = MayaCreateVertexArrayUptr(window);
 	MayaVertexLayout layout;
 	layout(0, 2) (1, 2);
-	layout.Data = tri_vertices;
-	layout.Size = sizeof(tri_vertices);
 
-	res->LinkVertexBuffer(layout);
+	res->LinkVertexBuffer(MayaBuffer(vertices, sizeof(vertices)), layout);
 	return res;
 }
 
@@ -191,7 +192,7 @@ MayaGraphics2d::MayaGraphics2d(MayaWindow& window)
 {
 	program = s_CreateShaderProgram(window);
 	vao[MAYA_SQUARE]		= s_CreateSquareVertexArray(window);
-	vao[MAYA_CIRCLE]		= s_CreateCircleVertexArray(window, 64);
+	vao[MAYA_CIRCLE]		= s_CreateCircleVertexArray(window, 100);
 	vao[MAYA_TICK]			= s_CreateTickVertexArray(window);
 	vao[MAYA_ISO_TRIANGLE]	= s_CreateIsoTriangleVertexArray(window);
 }
@@ -298,10 +299,10 @@ void MayaGraphics2d::DrawRectBorder(float x, float y, float width, float height,
 void MayaGraphics2d::DrawRectBorder(MayaFvec2 pos, MayaFvec2 size, int linewidth)
 {
 	program->SetUniform<int>("uHasTexture[0]", 0);
-	DrawShape(MAYA_SQUARE, MayaFvec2(pos.x - size.x * 0.5f, pos.y), MayaFvec2(linewidth, size.y));
-	DrawShape(MAYA_SQUARE, MayaFvec2(pos.x + size.x * 0.5f, pos.y), MayaFvec2(linewidth, size.y));
-	DrawShape(MAYA_SQUARE, MayaFvec2(pos.x, pos.y - size.y * 0.5f), MayaFvec2(size.x, linewidth));
-	DrawShape(MAYA_SQUARE, MayaFvec2(pos.x, pos.y + size.y * 0.5f), MayaFvec2(size.x, linewidth));
+	DrawShape(MAYA_SQUARE, MayaFvec2(pos.x - (size.x - linewidth) * 0.5f, pos.y), MayaFvec2(linewidth, size.y));
+	DrawShape(MAYA_SQUARE, MayaFvec2(pos.x + (size.x - linewidth) * 0.5f, pos.y), MayaFvec2(linewidth, size.y));
+	DrawShape(MAYA_SQUARE, MayaFvec2(pos.x, pos.y - (size.y - linewidth) * 0.5f), MayaFvec2(size.x, linewidth));
+	DrawShape(MAYA_SQUARE, MayaFvec2(pos.x, pos.y + (size.y - linewidth) * 0.5f), MayaFvec2(size.x, linewidth));
 	program->SetUniform<int>("uHasTexture[0]", texture ? 1 : 0);
 }
 
@@ -323,13 +324,14 @@ void MayaGraphics2d::DrawLine(MayaFvec2 start, MayaFvec2 end)
 	program->SetUniform<int>("uHasTexture[0]", texture ? 1 : 0);
 }
 
-void MayaGraphics2d::DrawOval(float x, float y, float width, float height)
+void MayaGraphics2d::DrawOval(float x, float y, float width, float height, int completion)
 {
-	DrawOval(MayaFvec2(x, y), MayaFvec2(width, height));
+	DrawOval(MayaFvec2(x, y), MayaFvec2(width, height), completion);
 }
 
-void MayaGraphics2d::DrawOval(MayaFvec2 pos, MayaFvec2 size)
+void MayaGraphics2d::DrawOval(MayaFvec2 pos, MayaFvec2 size, int completion)
 {
+	vao[MAYA_CIRCLE]->SetDrawRange(0, completion);
 	DrawShape(MAYA_CIRCLE, pos, size);
 }
 

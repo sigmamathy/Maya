@@ -19,7 +19,7 @@
 #ifndef MAYA_DEBUG // if not predefined
 #if (defined (_MSC_VER) && defined (_DEBUG)) || ((defined (__GNUC__) || defined (__clang__)) && defined (__OPTIMIZE__))
 #define MAYA_DEBUG 1
-#define MAYA_DIF(...) if (__VA_ARGS__)
+#define MAYA_DIF(...) if (__VA_ARGS__) [[unlikely]]
 #else
 #define MAYA_DEBUG 0
 #define MAYA_DIF(...) if (0)

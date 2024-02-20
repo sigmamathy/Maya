@@ -17,6 +17,7 @@ public:
 	class MayaButtonGui& CreateButton();
 	class MayaTextFieldGui& CreateTextField();
 	class MayaCheckboxGui& CreateCheckbox();
+	class MayaPanelGui& CreatePanel();
 
 	void Draw();
 
@@ -68,9 +69,9 @@ public:
 	virtual void ReactEvent(MayaEvent& e) = 0;
 	virtual void Draw(MayaGraphics2d& g2d) = 0;
 
-	void SetPositionRelativeTo(MayaComponentGui* comp);
-	void SetPositionRelativeTo(MayaCorner relpos);
-	MayaFvec2 GetRelativePosition() const;
+	void SetParent(class MayaContainerGui* container);
+	MayaContainerGui* GetParent();
+	MayaFvec2 GetExactPosition() const;
 
 	void SetPosition(float x, float y);
 	void SetSize(float width, float height);
@@ -91,6 +92,9 @@ public:
 
 	void SetEventCallback(MayaFunctionCR<void(MayaEventGui&)> callback);
 
+	bool PointInArea(MayaFvec2 pt) const;
+	bool CursorInArea() const;
+
 protected:
 
 	MayaGraphicsGui* gui;
@@ -99,8 +103,21 @@ protected:
 	bool visible, enabled;
 	MayaFunction<void(MayaEventGui&)> callback;
 
-	MayaComponentGui* relativeto;
-	MayaCorner relwpos;
+	MayaContainerGui* parent;
 
 	void SendCallback(MayaEventGui::EventType type);
+};
+
+class MayaContainerGui : public MayaComponentGui
+{
+public:
+
+	MayaContainerGui(MayaGraphicsGui& gui);
+
+	virtual void Add(MayaComponentGui& comp);
+	virtual void Remove(MayaComponentGui& comp);
+
+protected:
+
+	MayaArrayList<MayaComponentGui*> childs;
 };

@@ -13,7 +13,7 @@ void MayaTextFieldGui::Draw(MayaGraphics2d& g2d)
 {
 	if (!visible)
 		return;
-	auto epos = position + GetRelativePosition();
+	auto epos = GetExactPosition();
 
 	g2d.UseColor(enabled ? colors[1] : MayaGray);
 	g2d.DrawRect(epos, size);
@@ -150,27 +150,16 @@ void MayaTextFieldGui::ReactEvent(MayaEvent& e)
 	}
 }
 
-bool MayaTextFieldGui::IsTextFieldTouched() const
-{
-	auto* window = gui->Window;
-	MayaFvec2 cp = window->GetCursorPosition();
-	cp = cp - window->GetSize() / 2;
-	cp.y = -cp.y;
-	auto pos = position + GetRelativePosition();
-	return cp.x >= pos.x - size.x * 0.5f && cp.x <= pos.x + size.x * 0.5f
-		&& cp.y >= pos.y - size.y * 0.5f && cp.y <= pos.y + size.y * 0.5f;
-}
-
 void MayaTextFieldGui::SetCaretPosToMousePos()
 {
-	if (!IsTextFieldTouched()) {
+	if (!CursorInArea()) {
 		careti = -1;
 		return;
 	}
 
 	MayaFvec2 cp = gui->Window->GetCursorPosition();
 	cp = cp - gui->Window->GetSize() / 2;
-	float d = cp.x - (position.x + GetRelativePosition().x - size.x * 0.5f);
+	float d = cp.x - (GetExactPosition().x - size.x * 0.5f);
 	caret_timer = MayaGetLibraryManager()->GetTimeSince();
 
 	if (text.GetLength() == 0)

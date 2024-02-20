@@ -10,7 +10,7 @@ MayaCheckboxGui::MayaCheckboxGui(MayaGraphicsGui& gui)
 
 void MayaCheckboxGui::Draw(MayaGraphics2d& g2d)
 {
-	auto epos = position + GetRelativePosition();
+	auto epos = GetExactPosition();
 	g2d.UseColor(colors[0]);
 	g2d.DrawRect(epos, size);
 	
@@ -30,7 +30,7 @@ void MayaCheckboxGui::ReactEvent(MayaEvent& e)
 {
 	if (auto* me = MayaEventCast<MayaMouseEvent>(e))
 	{
-		if (me->Down && me->Button == MayaMouseButton1 && IsCheckboxTouched())
+		if (me->Down && me->Button == MayaMouseButton1 && CursorInArea())
 		{
 			selected = !selected;
 			SendCallback(MayaEventGui::Interact);
@@ -56,15 +56,4 @@ void MayaCheckboxGui::SetSelected(bool select)
 bool MayaCheckboxGui::IsSelected() const
 {
 	return selected;
-}
-
-bool MayaCheckboxGui::IsCheckboxTouched() const
-{
-	auto* window = gui->Window;
-	MayaFvec2 cp = window->GetCursorPosition();
-	cp = cp - window->GetSize() / 2;
-	cp.y = -cp.y;
-	auto pos = position + GetRelativePosition();
-	return cp.x >= pos.x - size.x * 0.5f && cp.x <= pos.x + size.x * 0.5f
-		&& cp.y >= pos.y - size.y * 0.5f && cp.y <= pos.y + size.y * 0.5f;
 }

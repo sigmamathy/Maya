@@ -3,6 +3,7 @@
 #include <maya/gui/button.hpp>
 #include <maya/gui/textfield.hpp>
 #include <maya/gui/checkbox.hpp>
+#include <maya/gui/panel.hpp>
 #include <maya/color.hpp>
 #include <maya/transformation.hpp>
 #include <maya/font.hpp>
@@ -10,6 +11,8 @@
 MayaGraphicsGui::MayaGraphicsGui(MayaWindow& window)
 	: Window(&window), g2d(window)
 {
+	components.reserve(30);
+
 	auto projupdate = [this](MayaEvent& e) -> void
 	{
 		if (e.GetEventID() == MayaWindowResizedEvent::EventID)
@@ -35,12 +38,13 @@ MAYA_DEFINE_CREATE(MayaLabelGui, Label)
 MAYA_DEFINE_CREATE(MayaButtonGui, Button)
 MAYA_DEFINE_CREATE(MayaTextFieldGui, TextField)
 MAYA_DEFINE_CREATE(MayaCheckboxGui, Checkbox)
+MAYA_DEFINE_CREATE(MayaPanelGui, Panel)
 
 void MayaGraphicsGui::Draw()
 {
 	for (int i = 0; i < components.size(); i++)
 	{
-		if (components[i])
+		if (components[i] && !components[i]->GetParent())
 			components[i]->Draw(g2d);
 	}
 }
@@ -82,32 +86,24 @@ MayaIvec4 const& MayaColorSchemeGui::operator[](int index) const
 MayaComponentGui::MayaComponentGui(MayaGraphicsGui& gui)
 	: position(0), size(50), gui(&gui),
 	visible(true), enabled(true),
-	relativeto(0), relwpos(MayaCornerCC)
+	parent(0)
 {
 	colors = MayaColorSchemeGui::DefaultScheme();
 }
 
-void MayaComponentGui::SetPositionRelativeTo(MayaComponentGui* comp)
+void MayaComponentGui::SetParent(MayaContainerGui* container)
 {
-	relativeto = comp;
-	relwpos = MayaCornerCC;
+	parent = container;
 }
 
-void MayaComponentGui::SetPositionRelativeTo(MayaCorner relpos)
+MayaContainerGui* MayaComponentGui::GetParent()
 {
-	relwpos = relpos;
-	relativeto = 0;
+	return parent;
 }
 
-MayaFvec2 MayaComponentGui::GetRelativePosition() const
+MayaFvec2 MayaComponentGui::GetExactPosition() const
 {
-	if (relativeto)
-		return relativeto->GetPosition() + relativeto->GetRelativePosition();
-	auto hsz = gui->Window->GetSize() * 0.5f;
-	MayaFvec2 d;
-	d.x = ((relwpos & 0b11) - 2) * hsz.x;
-	d.y = ((relwpos >> 2) - 2) * hsz.y;
-	return d;
+	return parent ? parent->GetExactPosition() + position : position;
 }
 
 void MayaComponentGui::SetPosition(float x, float y)
@@ -194,4 +190,46 @@ void MayaComponentGui::SendCallback(MayaEventGui::EventType type)
 	e.Source = this;
 	e.Gui = gui;
 	callback(e);
+}
+
+bool MayaComponentGui::PointInArea(MayaFvec2 pt) const
+{
+	if (parent) {
+		pt = pt - parent->GetExactPosition();
+		auto ps = parent->GetSize();
+		bool inparent = pt.x >= -ps.x * 0.5f && pt.x <= ps.x * 0.5f
+			&& pt.y >= -ps.y * 0.5f && pt.y <= ps.y * 0.5f;
+		if (!inparent)
+			return false;
+	}
+
+	pt = pt - position;
+	return pt.x >= -size.x * 0.5f && pt.x <= size.x * 0.5f
+		&& pt.y >= -size.y * 0.5f && pt.y <= size.y * 0.5f;
+}
+
+bool MayaComponentGui::CursorInArea() const
+{
+	auto* window = gui->Window;
+	MayaFvec2 cp = window->GetCursorPosition();
+	cp = cp - window->GetSize() / 2;
+	cp.y = -cp.y;
+	return PointInArea(cp);
+}
+
+MayaContainerGui::MayaContainerGui(MayaGraphicsGui& gui)
+	: MayaComponentGui(gui)
+{
+}
+
+void MayaContainerGui::Add(MayaComponentGui& comp)
+{
+	childs.emplace_back(&comp);
+	comp.SetParent(this);
+}
+
+void MayaContainerGui::Remove(MayaComponentGui& comp)
+{
+	comp.SetParent(nullptr);
+	childs.erase(std::remove(childs.begin(), childs.end(), &comp), childs.end());
 }

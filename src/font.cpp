@@ -46,7 +46,13 @@ MayaFont::MayaFont(MayaWindow& window, MayaStringCR path, int pixelsize)
                 for (unsigned k = 0; k < 4; k++)
                     image.emplace_back(map.buffer[(map.rows - j - 1) * map.width + i]);
 
-        textures[c] = MayaCreateTextureUptr(window, image.data(), MayaIvec2(map.width, map.rows), 4);
+        MayaTextureParameters param;
+        param.Source = MayaTextureParameters::FromMemory;
+        param.RawData.Data = image.data();
+        param.RawData.Size = MayaIvec2(map.width, map.rows);
+        param.RawData.Channels = 4;
+        textures[c] = MayaCreateTextureUptr(window, param);
+
         glyph_infos[c] = {
             .Texture = textures[c].get(),
             .Size = MayaIvec2(map.width, map.rows),
@@ -85,7 +91,13 @@ MayaFont::MayaFont(MayaWindow& window, void* data, unsigned size, int pixelsize)
                 for (unsigned k = 0; k < 4; k++)
                     image.emplace_back(map.buffer[(map.rows - j - 1) * map.width + i]);
 
-        textures[c] = MayaCreateTextureUptr(window, image.data(), MayaIvec2(map.width, map.rows), 4);
+        MayaTextureParameters param;
+        param.Source = MayaTextureParameters::FromMemory;
+        param.RawData.Data = image.data();
+        param.RawData.Size = MayaIvec2(map.width, map.rows);
+        param.RawData.Channels = 4;
+        textures[c] = MayaCreateTextureUptr(window, param);
+
         glyph_infos[c] = {
             .Texture = textures[c].get(),
             .Size = MayaIvec2(map.width, map.rows),

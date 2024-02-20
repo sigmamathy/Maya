@@ -6,13 +6,27 @@
 class MayaWindow;
 MAYA_TYPEDEFPTR(MayaTexture);
 
-MayaTextureUptr MayaCreateTextureUptr(MayaWindow& window, void const* data, MayaIvec2 size, int channels);
+struct MayaTextureParameters
+{
+	union {
+		struct {
+			void const* Data;
+			MayaIvec2 Size;
+			int Channels;
+		} RawData;
+		struct {
+			char const* Path;
+			int Channels;
+		} FileLoad;
+	};
+	enum DataSource {
+		FromMemory, FromFile
+	} Source;
+};
 
-MayaTextureUptr MayaCreateTextureUptrFromImageFile(MayaWindow& window, MayaStringCR path, int channels = 0);
+MayaTextureUptr MayaCreateTextureUptr(MayaWindow& window, MayaTextureParameters& param);
 
-MayaTextureSptr MayaCreateTextureSptr(MayaWindow& window, void const* data, MayaIvec2 size, int channels);
-
-MayaTextureSptr MayaCreateTextureSptrFromImageFile(MayaWindow& window, MayaStringCR path, int channels = 0);
+MayaTextureSptr MayaCreateTextureSptr(MayaWindow& window, MayaTextureParameters& param);
 
 class MayaTexture
 {

@@ -62,7 +62,7 @@ void MayaVertexArray::ResetDrawRange()
 }
 
 template<class Ty>
-void MayaVertexArray::LinkVertexBuffer(MayaVertexLayout& layout)
+void MayaVertexArray::LinkVertexBuffer(MayaBuffer<Ty> buffer, MayaVertexLayout& layout, bool MaySubjectToChange)
 {
 	window->UseGraphicsContext();
 	unsigned& vboid = vboids.emplace_back();
@@ -71,8 +71,8 @@ void MayaVertexArray::LinkVertexBuffer(MayaVertexLayout& layout)
 	glBindVertexArray(vaoid);
 	Maya_s_BindVertexArray(window, vaoid);
 	glBindBuffer(GL_ARRAY_BUFFER, vboid);
-	glBufferData(GL_ARRAY_BUFFER, layout.Size, layout.Data,
-		layout.MaySubjectToChange ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, buffer.Size, buffer.Data,
+		MaySubjectToChange ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
 	
 	GLenum datatype;
 	if (std::is_same_v<Ty, float>)			datatype = GL_FLOAT;
@@ -89,7 +89,7 @@ void MayaVertexArray::LinkVertexBuffer(MayaVertexLayout& layout)
 	
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	int vc = layout.Size / layout.stride / sizeof(Ty);
+	int vc = buffer.Size / layout.stride / sizeof(Ty);
 
 	if (!vertex_count)
 	{
@@ -103,11 +103,11 @@ void MayaVertexArray::LinkVertexBuffer(MayaVertexLayout& layout)
 	}
 }
 
-template void MayaVertexArray::LinkVertexBuffer<float>(MayaVertexLayout&);
-template void MayaVertexArray::LinkVertexBuffer<int>(MayaVertexLayout&);
-template void MayaVertexArray::LinkVertexBuffer<unsigned>(MayaVertexLayout&);
+template void MayaVertexArray::LinkVertexBuffer(MayaBuffer<float>, MayaVertexLayout&, bool);
+template void MayaVertexArray::LinkVertexBuffer(MayaBuffer<int>, MayaVertexLayout&, bool);
+template void MayaVertexArray::LinkVertexBuffer(MayaBuffer<unsigned>, MayaVertexLayout&, bool);
 
-void MayaVertexArray::LinkIndexBuffer(unsigned const* data, unsigned size)
+void MayaVertexArray::LinkIndexBuffer(MayaBuffer<unsigned> buffer)
 {
 	window->UseGraphicsContext();
 	if (iboid)
@@ -115,8 +115,25 @@ void MayaVertexArray::LinkIndexBuffer(unsigned const* data, unsigned size)
 	glGenBuffers(1, &iboid);
 	Maya_s_BindVertexArray(window, vaoid);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboid);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, buffer.Size, buffer.Data, GL_STATIC_DRAW);
 	Maya_s_BindVertexArray(window, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	indices_count = size / sizeof(unsigned);
+	indices_count = buffer.Size / sizeof(unsigned);
+}
+
+template<class Ty>
+void MayaVertexArray::UpdateVertexBuffer(int index, MayaBuffer<Ty> buffer)
+{
+	MAYA_DIF(index >= vboids.size())
+	{
+		MayaSendError({ MAYA_BOUNDARY_ERROR,
+			"MayaVertexArray::UpdateVertexBuffer(int, MayaBuffer<Ty>): Required buffer does not exists." });
+		return;
+	}
+
+	window->UseGraphicsContext();
+	auto id = vboids[index];
+	glBindBuffer(GL_ARRAY_BUFFER, id);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, buffer.Size, buffer.Data);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }

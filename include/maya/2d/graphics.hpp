@@ -40,8 +40,8 @@ public:
 	void DrawLine(float startx, float starty, float endx, float endy);
 	void DrawLine(MayaFvec2 start, MayaFvec2 end);
 
-	void DrawOval(float x, float y, float width, float height);
-	void DrawOval(MayaFvec2 pos, MayaFvec2 size);
+	void DrawOval(float x, float y, float width, float height, int completion = 100);
+	void DrawOval(MayaFvec2 pos, MayaFvec2 size, int completion = 100);
 
 	void DrawIsoTriangle(float x, float y, float width, float height);
 	void DrawIsoTriangle(MayaFvec2 pos, MayaFvec2 size);

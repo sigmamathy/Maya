@@ -45,46 +45,45 @@ static unsigned s_CreateTextureFromImageFile(MayaStringCR path, int channels, Ma
 	return id;
 }
 
-MayaTextureUptr MayaCreateTextureUptr(MayaWindow& window, void const* data, MayaIvec2 size, int channels)
+MayaTexture* s_CreateTexturePtr(MayaWindow& window, MayaTextureParameters& param)
 {
 	window.UseGraphicsContext();
-	unsigned id = s_CreateTexture(data, size, channels);
-	return std::make_unique<MayaTexture>(id, &window, size);
+
+	if (param.Source == MayaTextureParameters::FromMemory)
+	{
+		unsigned id = s_CreateTexture(param.RawData.Data, param.RawData.Size, param.RawData.Channels);
+		return new MayaTexture(id, &window, param.RawData.Size);
+	}
+	else
+	{
+		MayaIvec2 size;
+		unsigned id = s_CreateTextureFromImageFile(param.FileLoad.Path, param.FileLoad.Channels, size);
+		return id ? new MayaTexture(id, &window, size) : nullptr;
+	}
 }
 
-MayaTextureUptr MayaCreateTextureUptrFromImageFile(MayaWindow& window, MayaStringCR path, int channels)
+MayaTextureUptr MayaCreateTextureUptr(MayaWindow& window, MayaTextureParameters& param)
 {
-	window.UseGraphicsContext();
-	MayaIvec2 size;
-	unsigned id = s_CreateTextureFromImageFile(path, channels, size);
-	if (!id) {
+	auto ptr = s_CreateTexturePtr(window, param);
+	if (!ptr) [[unlikely]] {
 		MayaSendError({ MAYA_IMAGE_LOAD_ERROR,
-			"MayaCreateTextureUptrFromImageFile(MayaWindow&, MayaStringCR, int): "
-			"The required file path does not exists or unsupported format is detected." });
+					"MayaCreateTextureUptr(MayaWindow&, MayaTextureParameters&): "
+					"The required file path does not exists or unsupported format is detected." });
 		return nullptr;
 	}
-	return std::make_unique<MayaTexture>(id, &window, size);
+	return MayaTextureUptr(ptr);
 }
 
-MayaTextureSptr MayaCreateTextureSptr(MayaWindow& window, void const* data, MayaIvec2 size, int channels)
+MayaTextureSptr MayaCreateTextureSptr(MayaWindow& window, MayaTextureParameters& param)
 {
-	window.UseGraphicsContext();
-	unsigned id = s_CreateTexture(data, size, channels);
-	return std::make_shared<MayaTexture>(id, &window, size);
-}
-
-MayaTextureSptr MayaCreateTextureSptrFromImageFile(MayaWindow& window, MayaStringCR path, int channels)
-{
-	window.UseGraphicsContext();
-	MayaIvec2 size;
-	unsigned id = s_CreateTextureFromImageFile(path, channels, size);
-	if (!id) {
+	auto ptr = s_CreateTexturePtr(window, param);
+	if (!ptr) [[unlikely]] {
 		MayaSendError({ MAYA_IMAGE_LOAD_ERROR,
-			"MayaCreateTextureSptrFromImageFile(MayaWindow&, MayaStringCR, int): "
-			"The required file path does not exists or unsupported format is detected." });
+					"MayaCreateTextureSptr(MayaWindow&, MayaTextureParameters&): "
+					"The required file path does not exists or unsupported format is detected." });
 		return nullptr;
 	}
-	return std::make_shared<MayaTexture>(id, &window, size);
+	return MayaTextureSptr(ptr);
 }
 
 MayaTexture::MayaTexture(unsigned texture, MayaWindow* window, MayaIvec2 size)

@@ -6,6 +6,13 @@
 class MayaWindow;
 MAYA_TYPEDEFPTR(MayaVertexArray);
 
+template<class Ty>
+struct MayaBuffer
+{
+	Ty const* Data = 0;
+	unsigned Size = 0;
+};
+
 class MayaVertexLayout
 {
 public:
@@ -14,10 +21,6 @@ public:
 		int Count;
 		int Offset;
 	};
-
-	void const* Data = 0;			// REQUIRED
-	unsigned Size = 0;				// REQUIRED
-	bool MaySubjectToChange = 0;	// REQUIRED
 
 	MayaVertexLayout() = default;
 	MayaVertexLayout(int location, int count);
@@ -49,10 +52,13 @@ public:
 
 	void ResetDrawRange();
 
-	template<class Ty = float>
-	void LinkVertexBuffer(MayaVertexLayout& layout);
+	template<class Ty>
+	void LinkVertexBuffer(MayaBuffer<Ty> buffer, MayaVertexLayout& layout, bool MaySubjectToChange = false);
 
-	void LinkIndexBuffer(unsigned const* data, unsigned size);
+	void LinkIndexBuffer(MayaBuffer<unsigned> buffer);
+
+	template<class Ty>
+	void UpdateVertexBuffer(int index, MayaBuffer<Ty> buffer);
 
 public:
 
