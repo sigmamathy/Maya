@@ -29,7 +29,9 @@ public:
 	void UseColor(unsigned hexcode, bool hasopacity = false);
 
 	void UseTexture(MayaTexture* texture);
-	void UseScissor(bool use);
+	
+	void PushScissor(MayaFvec2 pos, MayaFvec2 size);
+	void PopScissor();
 
 	void DrawRect(float x, float y, float width, float height);
 	void DrawRect(MayaFvec2 pos, MayaFvec2 size);
@@ -58,6 +60,9 @@ private:
 
 	MayaShaderProgramUptr program;
 	MayaVertexArrayUptr vao[4];
+	MayaBlending blend;
+	MayaArrayList<MayaScissorTest> scissors;
+	MayaRenderer r;
 
 	void DrawShape(int index);
 	void DrawShape(int index, MayaFvec2 pos, MayaFvec2 size);
@@ -67,5 +72,4 @@ private:
 	MayaCamera2d* camera;
 	MayaIvec4 color;
 	MayaTexture* texture;
-	bool has_scissor;
 };

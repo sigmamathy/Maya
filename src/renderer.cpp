@@ -10,17 +10,15 @@ struct s_CrntBindCache
 {
 	unsigned VAO		= 0;
 	unsigned Program	= 0;
-	unsigned Test		= MayaNoTest;
-	std::stack<MayaIvec4> ScissorRects;
+	MayaBlending* Blending = 0;
+	MayaScissorTest* Scissor = 0;
 };
 
 static MayaHashMap<MayaWindow*, s_CrntBindCache> s_bind_cache;
 
-static void s_InitCacheIfNotPresent(MayaWindow* window)
+void Maya_s_InitCache(MayaWindow* window)
 {
-	if (s_bind_cache.count(window))
-		return;
-	auto& x = s_bind_cache[window];
+	s_bind_cache[window];
 }
 
 void Maya_s_BindVertexArray(MayaWindow* window, unsigned vaoid)
@@ -41,57 +39,39 @@ void Maya_s_BindShaderProgram(MayaWindow* window, unsigned programid)
 	}
 }
 
-void Maya_s_SetEnableTest(MayaWindow* window, unsigned test, unsigned gltest, bool enable)
+void Maya_s_BindBlending(MayaWindow* window, MayaBlending* test)
 {
-	s_InitCacheIfNotPresent(window);
-
-	if (enable)
+	auto& b = s_bind_cache.at(window).Blending;
+	if (b != test)
 	{
-		if (!(s_bind_cache.at(window).Test & test)) {
-			glEnable(gltest);
-			s_bind_cache.at(window).Test |= test;
+		window->UseGraphicsContext();
+		if (test) {
+			if (!b)
+				glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, test->Func);
 		}
-	}
-	else
-	{
-		if (s_bind_cache.at(window).Test & test) {
-			glDisable(gltest);
-			s_bind_cache.at(window).Test &= ~test;
-		}
+		else if (!test && b)
+			glDisable(GL_BLEND);
+		b = test;
 	}
 }
 
-void MayaPushScissorRect(MayaWindow* window, MayaIvec2 pos, MayaIvec2 size)
+void Maya_s_BindScissorTest(MayaWindow* window, MayaScissorTest* test)
 {
-	Maya_s_SetEnableTest(window, MayaScissorTest, GL_SCISSOR_TEST, true);
-	auto& sr = s_bind_cache.at(window).ScissorRects;
-
-	if (!sr.empty())
+	auto& s = s_bind_cache.at(window).Scissor;
+	if (s != test)
 	{
-		auto p2 = pos + size;
-		auto prev = sr.top();
-		if (prev.x > pos.x) pos.x = prev.x;
-		if (prev.y > pos.y) pos.y = prev.y;
-		if (prev.x + prev.z < p2.x) p2.x = prev.x + prev.z;
-		if (prev.y + prev.w < p2.y) p2.y = prev.y + prev.w;
-		size = p2 - pos;
+		window->UseGraphicsContext();
+		if (test) {
+			if (!s)
+				glEnable(GL_SCISSOR_TEST);
+			glScissor(test->Position.x, window->GetSize().y - test->Position.y - test->Size.y,
+				test->Size.x, test->Size.y);
+		}
+		else if (!test && s)
+			glDisable(GL_SCISSOR_TEST);
+		s = test;
 	}
-
-	sr.push(MayaConcat(pos, size));
-	glScissor(pos.x, window->GetSize().y - pos.y - size.y, size.x, size.y);
-}
-
-void MayaPopScissorRect(MayaWindow* window)
-{
-	s_InitCacheIfNotPresent(window);
-	auto& sr = s_bind_cache.at(window).ScissorRects;
-	if (sr.empty())
-		return;
-	sr.pop();
-	if (sr.empty())
-		return;
-	auto s = sr.top();
-	glScissor(s.x, window->GetSize().y - s.y - s.w, s.z, s.w);
 }
 
 void MayaRenderer::ExecuteDraw()
@@ -128,8 +108,8 @@ void MayaRenderer::ExecuteDraw()
 	Maya_s_BindVertexArray(window, Input->vaoid);
 	Maya_s_BindShaderProgram(window, Program->programid);
 
-	Maya_s_SetEnableTest(window, MayaScissorTest, GL_SCISSOR_TEST, Test & MayaScissorTest);
-	Maya_s_SetEnableTest(window, MayaBlending, GL_BLEND, Test & MayaBlending);
+	Maya_s_BindBlending(window, Blending);
+	Maya_s_BindScissorTest(window, Scissor);
 
 	for (int i = 0; i < MAYA_TEXTURE_SLOTS_COUNT; i++)
 	{

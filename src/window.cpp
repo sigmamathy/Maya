@@ -83,8 +83,6 @@ static void s_SetupWindowEventCallback(GLFWwindow* window)
 	});
 }
 
-void Maya_s_SetEnableTest(MayaWindow* window, unsigned test, unsigned gltest, bool enable);
-
 static MayaWindow* s_CreateWindowPtr(MayaWindowParameters& param)
 {	
 	glfwWindowHint(GLFW_RESIZABLE,		param.Resizable);
@@ -159,8 +157,8 @@ MayaWindow::MayaWindow(void* pointer, int monitor, MayaStringCR title)
 	glfwSetWindowUserPointer(window, &event_callback);
 	s_SetupWindowEventCallback(window);
 	s_window_instances.insert(this);
-	Maya_s_SetEnableTest(this, MayaBlending, GL_BLEND, true);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	extern void Maya_s_InitCache(MayaWindow* window);
+	Maya_s_InitCache(this);
 }
 
 MayaWindow::~MayaWindow()
@@ -207,8 +205,8 @@ void MayaWindow::UseGraphicsContext()
 void MayaWindow::ClearBuffers()
 {
 	UseGraphicsContext();
-	Maya_s_SetEnableTest(this, MayaScissorTest, GL_SCISSOR_TEST, false);
-	glClear(GL_COLOR_BUFFER_BIT);
+	extern void Maya_s_BindScissorTest(MayaWindow* window, MayaScissorTest* test);
+	Maya_s_BindScissorTest(this, 0);
 }
 
 void MayaWindow::ResizeViewport(MayaIvec2 pos, MayaIvec2 size)

@@ -20,11 +20,8 @@ void MayaTextFieldGui::Draw(MayaGraphics2d& g2d)
 
 	auto tpos = epos + MayaFvec2(-size.x * 0.5f + 5 - scroll, -text.GetFont().GetMaxHeight() * 0.5f);
 
-	auto sp = epos - size * 0.5f + gui->Window->GetSize() * 0.5f;
-	sp.x += 5;
-	sp.y = gui->Window->GetSize().y - sp.y - size.y;
-	MayaPushScissorRect(gui->Window, sp, MayaIvec2(size.x - 10, size.y));
-	g2d.UseScissor(true);
+	
+	g2d.PushScissor(epos, MayaFvec2(size.x - 10, size.y));
 
 	if (text.GetLength() != 0)
 	{
@@ -39,8 +36,7 @@ void MayaTextFieldGui::Draw(MayaGraphics2d& g2d)
 		g2d.DrawText(description);
 	}
 
-	MayaPopScissorRect(gui->Window);
-	g2d.UseScissor(false);
+	g2d.PopScissor();
 
 	if (enabled && careti != -1)
 	{

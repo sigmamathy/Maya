@@ -4,16 +4,7 @@
 #include "./shader.hpp"
 #include "./vertexarray.hpp"
 #include "./texture.hpp"
-
-enum MayaPerFragTest : unsigned
-{
-	MayaNoTest			= 0x00,
-	MayaScissorTest		= 0x01,
-	MayaBlending		= 0x02
-};
-
-void MayaPushScissorRect(MayaWindow* window, MayaIvec2 pos, MayaIvec2 size);
-void MayaPopScissorRect(MayaWindow* window);
+#include "./fragtest.hpp"
 
 class MayaRenderer
 {
@@ -23,7 +14,8 @@ public:
 	MayaShaderProgram* Program		= 0; // REQUIRED
 	MayaTexture* Textures[16]		= {0};
 	
-	unsigned Test			= MayaNoTest;
+	MayaBlending* Blending = 0;
+	MayaScissorTest* Scissor = 0;
 
 	void ExecuteDraw();
 };

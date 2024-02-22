@@ -188,13 +188,18 @@ static MayaVertexArrayUptr s_CreateIsoTriangleVertexArray(MayaWindow& window)
 }
 
 MayaGraphics2d::MayaGraphics2d(MayaWindow& window)
-	: Window(&window), texture(nullptr), camera(nullptr), projection(1), color(MayaWhite), has_scissor(false)
+	: Window(&window), texture(nullptr), camera(nullptr), projection(1), color(MayaWhite)
 {
 	program = s_CreateShaderProgram(window);
 	vao[MAYA_SQUARE]		= s_CreateSquareVertexArray(window);
 	vao[MAYA_CIRCLE]		= s_CreateCircleVertexArray(window, 100);
 	vao[MAYA_TICK]			= s_CreateTickVertexArray(window);
 	vao[MAYA_ISO_TRIANGLE]	= s_CreateIsoTriangleVertexArray(window);
+	blend.Func = blend.OneMinusSrcAlpha;
+
+	r.Program = program.get();
+	r.Textures[0] = texture;
+	r.Blending = &blend;
 }
 
 void MayaGraphics2d::UseProjection(float width, float height)
@@ -257,21 +262,50 @@ void MayaGraphics2d::UseTexture(MayaTexture* texture)
 	program->SetUniform<int>("uHasTexture[0]", texture ? 1 : 0);
 }
 
-void MayaGraphics2d::UseScissor(bool use)
+void MayaGraphics2d::PushScissor(MayaFvec2 pos, MayaFvec2 size)
 {
-	has_scissor = use;
+	if (camera)
+	{
+		pos = pos - camera->position;
+		size.x = size.x * camera->zoom.x;
+		size.y = size.y * camera->zoom.y;
+	}
+
+	MayaFvec2 wsz = Window->GetSize();
+	float xs = wsz.x / projection.x, ys = wsz.y / projection.y;
+	pos.x *= xs;
+	pos.y *= ys;
+	size.x *= xs;
+	size.y *= ys;
+	pos = pos + wsz * 0.5f - size * 0.5f;
+	pos.y = wsz.y - pos.y - size.y;
+
+	if (!scissors.empty())
+	{
+		auto p2 = pos + size;
+		auto prev = scissors.back();
+		if (prev.Position.x > pos.x) pos.x = (float) prev.Position.x;
+		if (prev.Position.y > pos.y) pos.y = (float) prev.Position.y;
+		if (prev.Position.x + prev.Size.x < p2.x) p2.x = (float) prev.Position.x + prev.Size.x;
+		if (prev.Position.y + prev.Size.y < p2.y) p2.y = (float) prev.Position.y + prev.Size.y;
+		size = p2 - pos;
+	}
+
+	scissors.emplace_back(pos, size);
+	r.Scissor = &scissors.back();
+}
+
+void MayaGraphics2d::PopScissor()
+{
+	scissors.pop_back();
+	r.Scissor = scissors.empty() ? 0 : &scissors.back();
 }
 
 void MayaGraphics2d::DrawShape(int index)
 {
 	if (camera && camera->require_update)
 		program->SetUniformMatrix("uView", camera->GetViewMatrix());
-	MayaRenderer r;
 	r.Input = vao[index].get();
-	r.Program = program.get();
-	r.Textures[0] = texture;
-	r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
-	r.Test |= MayaBlending;
 	r.ExecuteDraw();
 }
 
@@ -382,16 +416,13 @@ void MayaGraphics2d::DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos, 
 		d.y = -tsize.y * ((align >> 2) - 1) * 0.5f;
 
 		program->SetUniformMatrix("uModel", MayaTranslate(pos + tpos + d) * MayaScale(glyph.Size));
-		MayaRenderer r;
 		r.Input = vao[MAYA_SQUARE].get();
-		r.Program = program.get();
-		r.Textures[0] = texture;
 		r.Textures[1] = glyph.Texture;
-		r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
-		r.Test |= MayaBlending;
 		r.ExecuteDraw();
 		advance += glyph.Advance;
 	}
+
+	r.Textures[1] = 0;
 	program->SetUniform<int>("uHasTexture[1]", 0);
 }
 
@@ -409,15 +440,12 @@ void MayaGraphics2d::DrawText(MayaTextDisplay2d& text, int start, int end)
 	for (int i = start; i < end; i++)
 	{
 		program->SetUniformMatrix("uModel", text.global_model * text.char_models[i]);
-		MayaRenderer r;
 		r.Input = vao[MAYA_SQUARE].get();
-		r.Program = program.get();
-		r.Textures[0] = texture;
 		r.Textures[1] = (*text.font)[text.string[i]].Texture;
-		r.Test = has_scissor ? MayaScissorTest : MayaNoTest;
-		r.Test |= MayaBlending;
 		r.ExecuteDraw();
 	}
+
+	r.Textures[1] = 0;
 	program->SetUniform<int>("uHasTexture[1]", 0);
 }
 

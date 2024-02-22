@@ -18,8 +18,8 @@ void MayaPanelGui::Draw(MayaGraphics2d& g2d)
 	g2d.UseColor(colors[1]);
 	g2d.DrawRect(epos, size);
 
+	g2d.PushScissor(epos, size);
 	for (int i = 0; i < childs.size(); i++)
-	{
 		childs[i]->Draw(g2d);
-	}
+	g2d.PopScissor();
 }

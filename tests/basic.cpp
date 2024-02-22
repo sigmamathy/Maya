@@ -16,14 +16,18 @@ int main()
 	window->SetSize(1920, 1080);
 
 	MayaGraphicsGui gui(*window);
-	auto& button = gui.CreateButton();
 
 	auto& pane = gui.CreatePanel();
-	pane.Add(button);
+
+	auto& button = gui.CreateButton();
 	button.SetPosition(350, -100);
+	pane.Add(button);
 	
 	//auto& label = gui.CreateLabel();
-	//auto& textfield = gui.CreateTextField();
+
+	auto& textfield = gui.CreateTextField();
+	pane.Add(textfield);
+
 	//auto& checkbox = gui.CreateCheckbox();
 	
 	//label.SetPosition(0, 100);
