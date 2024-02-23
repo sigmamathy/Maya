@@ -325,9 +325,11 @@ constexpr auto MayaNormalize(MayaVector<Ty, Dim> const& vec)
 	Ty sum = 0;
 	for (int i = 0; i < Dim; i++)
 		sum += vec[i] * vec[i];
-	MAYA_DIF(!sum)
+	MAYA_DIF(!sum) {
 		MayaSendError({ MAYA_DIVISION_BY_ZERO_ERROR,
 			"MayaNormalize(MayaVector const&): The required vector has norm equal to zero." });
+		return MayaVector<common_type, Dim>(0);
+	}
 	auto invsqrt = 1.0f / std::sqrt(static_cast<common_type>(sum));
 	MayaVector<common_type, Dim> res;
 	for (int i = 0; i < Dim; i++)

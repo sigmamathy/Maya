@@ -11,13 +11,16 @@ MayaCheckboxGui::MayaCheckboxGui(MayaGraphicsGui& gui)
 void MayaCheckboxGui::Draw(MayaGraphics2d& g2d)
 {
 	auto epos = GetExactPosition();
-	g2d.UseColor(colors[0]);
-	g2d.DrawRect(epos, size);
+
+	if (background_visible) {
+		g2d.UseColor(colors.Bg2);
+		g2d.DrawRect(epos, size);
+	}
 	
-	g2d.UseColor(colors[2]);
+	g2d.UseColor(colors.Border);
 	g2d.DrawRectBorder(epos, size, 2);
 
-	g2d.UseColor(colors[3]);
+	g2d.UseColor(colors.Fg1);
 	
 	if (selected)
 		g2d.DrawTick(epos, size * 0.8f);

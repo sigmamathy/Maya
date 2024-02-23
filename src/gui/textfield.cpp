@@ -15,23 +15,24 @@ void MayaTextFieldGui::Draw(MayaGraphics2d& g2d)
 		return;
 	auto epos = GetExactPosition();
 
-	g2d.UseColor(enabled ? colors[1] : MayaGray);
-	g2d.DrawRect(epos, size);
+	if (background_visible) {
+		g2d.UseColor(enabled ? colors.Bg2 : MayaGray);
+		g2d.DrawRect(epos, size);
+	}
 
 	auto tpos = epos + MayaFvec2(-size.x * 0.5f + 5 - scroll, -text.GetFont().GetMaxHeight() * 0.5f);
 
-	
 	g2d.PushScissor(epos, MayaFvec2(size.x - 10, size.y));
 
 	if (text.GetLength() != 0)
 	{
-		g2d.UseColor(colors[3]);
+		g2d.UseColor(colors.Fg1);
 		text.SetPosition(tpos);
 		g2d.DrawText(text);
 	}
 	else
 	{
-		g2d.UseColor(colors[4]);
+		g2d.UseColor(colors.Fg2);
 		description.SetPosition(tpos);
 		g2d.DrawText(description);
 	}
@@ -41,7 +42,7 @@ void MayaTextFieldGui::Draw(MayaGraphics2d& g2d)
 	if (enabled && careti != -1)
 	{
 
-		g2d.UseColor(colors[3]);
+		g2d.UseColor(colors.Fg1);
 		float crnt = MayaGetLibraryManager()->GetTimeSince();
 		if (crnt - caret_timer > 1.0f)
 			caret_timer += 1.0f;
@@ -49,7 +50,7 @@ void MayaTextFieldGui::Draw(MayaGraphics2d& g2d)
 			g2d.DrawLine(tpos.x + caretpos, epos.y + size.y * 0.5f - 10,
 				tpos.x + caretpos, epos.y - size.y * 0.5f + 10);
 
-		g2d.UseColor(colors[2]);
+		g2d.UseColor(colors.Border);
 		g2d.DrawRectBorder(epos, size, 1);
 	}
 }

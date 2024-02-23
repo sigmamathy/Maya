@@ -32,6 +32,12 @@ void MayaSendError(MayaError stat)
 		s_error_queue.push(stat);
 }
 
+void MayaLogErrorToStdCerr(MayaError& err)
+{
+	std::cerr << "ERROR 0x" << std::hex << std::uppercase << err.ErrorCode << std::dec;
+	std::cerr << " at " << err.Details << "\n\n";
+}
+
 static MayaLibraryManager* s_library_pointer = 0;
 static std::chrono::steady_clock::time_point s_library_start_tp;
 

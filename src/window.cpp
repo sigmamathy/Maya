@@ -204,9 +204,9 @@ void MayaWindow::UseGraphicsContext()
 
 void MayaWindow::ClearBuffers()
 {
-	UseGraphicsContext();
 	extern void Maya_s_BindScissorTest(MayaWindow* window, MayaScissorTest* test);
 	Maya_s_BindScissorTest(this, 0);
+	glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void MayaWindow::ResizeViewport(MayaIvec2 pos, MayaIvec2 size)

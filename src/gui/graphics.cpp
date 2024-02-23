@@ -39,6 +39,7 @@ MAYA_DEFINE_CREATE(MayaButtonGui, Button)
 MAYA_DEFINE_CREATE(MayaTextFieldGui, TextField)
 MAYA_DEFINE_CREATE(MayaCheckboxGui, Checkbox)
 MAYA_DEFINE_CREATE(MayaPanelGui, Panel)
+MAYA_DEFINE_CREATE(MayaTitlePanelGui, TitlePanel)
 
 void MayaGraphicsGui::Draw()
 {
@@ -61,13 +62,13 @@ MayaFont& MayaGraphicsGui::GetDefaultFont()
 MayaColorSchemeGui MayaColorSchemeGui::DefaultScheme()
 {
 	static MayaColorSchemeGui scheme = {
-		.Color = {
-			{ 90, 101, 107, 255 },
-			{ 65, 71, 74, 255 },
-			{ 109, 123, 130, 255 },
-			MayaWhite,
-			MayaGray,
-		}
+		.Bg1 = { 90, 101, 107, 255 },
+		.Bg2 = { 65, 71, 74, 255 },
+		.Bg3 = { 49, 51, 54, 255 },
+		.Fg1 = MayaWhite,
+		.Fg2 = MayaGray,
+		.Fg3 = { 94, 94, 94, 255 },
+		.Border = { 109, 123, 130, 255 }
 	};
 
 	return scheme;
@@ -75,25 +76,50 @@ MayaColorSchemeGui MayaColorSchemeGui::DefaultScheme()
 
 MayaIvec4& MayaColorSchemeGui::operator[](int index)
 {
-	return Color[index];
+	switch (index) {
+		case 0: return Bg1;
+		case 1: return Bg2;
+		case 2: return Bg3;
+		case 3: return Fg1;
+		case 4: return Fg2;
+		case 5: return Fg3;
+		case 6: return Border;
+	}
+
+	MayaSendError({ MAYA_BOUNDARY_ERROR,
+		"MayaColorSchemeGui::operator[](int): Not a valid index for color scheme." });
+	return Bg1;
 }
 
 MayaIvec4 const& MayaColorSchemeGui::operator[](int index) const
 {
-	return Color[index];
+	switch (index) {
+		case 0: return Bg1;
+		case 1: return Bg2;
+		case 2: return Bg3;
+		case 3: return Fg1;
+		case 4: return Fg2;
+		case 5: return Fg3;
+		case 6: return Border;
+	}
+
+	MayaSendError({ MAYA_BOUNDARY_ERROR,
+		"MayaColorSchemeGui::operator[](int) const: Not a valid index for color scheme." });
+	return Bg1;
 }
 
 MayaComponentGui::MayaComponentGui(MayaGraphicsGui& gui)
 	: position(0), size(50), gui(&gui),
 	visible(true), enabled(true),
-	parent(0)
+	parent(0), background_visible(1), bound_to_parent(1)
 {
 	colors = MayaColorSchemeGui::DefaultScheme();
 }
 
-void MayaComponentGui::SetParent(MayaContainerGui* container)
+void MayaComponentGui::SetParent(MayaContainerGui* container, bool bounded)
 {
 	parent = container;
+	bound_to_parent = bounded;
 }
 
 MayaContainerGui* MayaComponentGui::GetParent()
@@ -176,6 +202,16 @@ bool MayaComponentGui::IsEnabled() const
 	return enabled;
 }
 
+void MayaComponentGui::SetBackgroundVisible(bool visible)
+{
+	background_visible = visible;
+}
+
+bool MayaComponentGui::IsBackgroundVisible() const
+{
+	return background_visible;
+}
+
 void MayaComponentGui::SetEventCallback(MayaFunctionCR<void(MayaEventGui&)> callback)
 {
 	this->callback = callback;
@@ -192,20 +228,30 @@ void MayaComponentGui::SendCallback(MayaEventGui::EventType type)
 	callback(e);
 }
 
-bool MayaComponentGui::PointInArea(MayaFvec2 pt) const
+bool MayaComponentGui::PointInArea(MayaFvec2 pt, MayaFvec2 pos, MayaFvec2 size) const
 {
 	if (parent) {
 		pt = pt - parent->GetExactPosition();
-		auto ps = parent->GetSize();
-		bool inparent = pt.x >= -ps.x * 0.5f && pt.x <= ps.x * 0.5f
-			&& pt.y >= -ps.y * 0.5f && pt.y <= ps.y * 0.5f;
-		if (!inparent)
-			return false;
+		if (bound_to_parent) {
+			MayaFvec2 pp, ps;
+			parent->GetContainerView(pp, ps);
+			pt = pt - pp;
+			bool inparent = pt.x >= -ps.x * 0.5f && pt.x <= ps.x * 0.5f
+				&& pt.y >= -ps.y * 0.5f && pt.y <= ps.y * 0.5f;
+			if (!inparent)
+				return false;
+			pt = pt + pp;
+		}
 	}
 
-	pt = pt - position;
+	pt = pt - pos;
 	return pt.x >= -size.x * 0.5f && pt.x <= size.x * 0.5f
 		&& pt.y >= -size.y * 0.5f && pt.y <= size.y * 0.5f;
+}
+
+bool MayaComponentGui::PointInArea(MayaFvec2 pt) const
+{
+	return PointInArea(pt, position, size);
 }
 
 bool MayaComponentGui::CursorInArea() const
@@ -232,4 +278,10 @@ void MayaContainerGui::Remove(MayaComponentGui& comp)
 {
 	comp.SetParent(nullptr);
 	childs.erase(std::remove(childs.begin(), childs.end(), &comp), childs.end());
+}
+
+void MayaContainerGui::GetContainerView(MayaFvec2& pos, MayaFvec2& size) const
+{
+	pos = {0, 0};
+	size = this->size;
 }

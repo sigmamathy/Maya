@@ -18,6 +18,7 @@ public:
 	class MayaTextFieldGui& CreateTextField();
 	class MayaCheckboxGui& CreateCheckbox();
 	class MayaPanelGui& CreatePanel();
+	class MayaTitlePanelGui& CreateTitlePanel();
 
 	void Draw();
 
@@ -45,14 +46,9 @@ struct MayaEventGui
 
 struct MayaColorSchemeGui
 {
-	/*
-		0: background
-		1: background (dim)
-		2: border
-		3: foreground
-		4: foreground (dim)
-	*/
-	MayaIvec4 Color[16];
+	MayaIvec4 Bg1, Bg2, Bg3; // light, normal, dim
+	MayaIvec4 Fg1, Fg2, Fg3; // light, normal, dim
+	MayaIvec4 Border;
 
 	static MayaColorSchemeGui DefaultScheme();
 
@@ -69,7 +65,7 @@ public:
 	virtual void ReactEvent(MayaEvent& e) = 0;
 	virtual void Draw(MayaGraphics2d& g2d) = 0;
 
-	void SetParent(class MayaContainerGui* container);
+	void SetParent(class MayaContainerGui* container, bool bounded = true);
 	MayaContainerGui* GetParent();
 	MayaFvec2 GetExactPosition() const;
 
@@ -90,8 +86,12 @@ public:
 	bool IsVisible() const;
 	bool IsEnabled() const;
 
+	void SetBackgroundVisible(bool visible);
+	bool IsBackgroundVisible() const;
+
 	void SetEventCallback(MayaFunctionCR<void(MayaEventGui&)> callback);
 
+	bool PointInArea(MayaFvec2 pt, MayaFvec2 pos, MayaFvec2 size) const;
 	bool PointInArea(MayaFvec2 pt) const;
 	bool CursorInArea() const;
 
@@ -100,10 +100,11 @@ protected:
 	MayaGraphicsGui* gui;
 	MayaFvec2 position, size;
 	MayaColorSchemeGui colors;
-	bool visible, enabled;
+	bool visible, enabled, background_visible;
 	MayaFunction<void(MayaEventGui&)> callback;
 
 	MayaContainerGui* parent;
+	bool bound_to_parent;
 
 	void SendCallback(MayaEventGui::EventType type);
 };
@@ -116,6 +117,8 @@ public:
 
 	virtual void Add(MayaComponentGui& comp);
 	virtual void Remove(MayaComponentGui& comp);
+
+	virtual void GetContainerView(MayaFvec2& pos, MayaFvec2& size) const;
 
 protected:
 

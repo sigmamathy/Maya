@@ -3,7 +3,7 @@
 #include <maya/color.hpp>
 
 MayaButtonGui::MayaButtonGui(MayaGraphicsGui& gui)
-	: MayaComponentGui(gui), pressed(false), text(gui.GetDefaultFont(), "Button")
+	: MayaComponentGui(gui), pressed(false), text(gui.GetDefaultFont(), "Button"), icon(NoIcon)
 {
 	position = { 0, 0 };
 	size = { 160, 80 };
@@ -17,17 +17,36 @@ void MayaButtonGui::Draw(MayaGraphics2d& g2d)
 
 	auto epos = GetExactPosition();
 
-	g2d.UseColor(enabled ? (IsButtonPressed() ? colors[1] : colors[0]) : MayaGray);
-	g2d.DrawRect(epos, size);
+	if (background_visible) {
+		g2d.UseColor(enabled ? (IsButtonPressed() ? colors.Bg2 : colors.Bg1) : MayaGray);
+		g2d.DrawRect(epos, size);
+	}
 
-	g2d.UseColor(colors[3]);
-	text.SetPosition(epos);
-	g2d.DrawText(text);
+	g2d.UseColor(colors.Fg1);
 
-	if (enabled && CursorInArea())
+	switch (icon)
 	{
-		g2d.UseColor(colors[2]);
-		g2d.DrawRectBorder(epos, size, 3);
+		case TriangleUp:
+			g2d.DrawIsoTriangle(epos, size);
+			break;
+
+		case TriangleDown:
+			g2d.DrawIsoTriangle(epos, MayaFvec2(size.x, -size.y));
+			break;
+
+		case Tick:
+			g2d.DrawTick(epos, size);
+			break;
+
+		default:
+			text.SetPosition(epos);
+			g2d.DrawText(text);
+
+			if (enabled && CursorInArea())
+			{
+				g2d.UseColor(colors.Border);
+				g2d.DrawRectBorder(epos, size, 3);
+			}
 	}
 }
 
@@ -58,6 +77,16 @@ void MayaButtonGui::SetText(MayaStringCR text)
 MayaStringCR MayaButtonGui::GetText() const
 {
 	return text.GetString();
+}
+
+void MayaButtonGui::SetButtonIcon(ButtonIcon icon)
+{
+	this->icon = icon;
+}
+
+MayaButtonGui::ButtonIcon MayaButtonGui::GetButtonIcon() const
+{
+	return icon;
 }
 
 bool MayaButtonGui::IsButtonPressed() const

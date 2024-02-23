@@ -7,21 +7,18 @@
 int main()
 {
 	MayaLibraryManager manager(MAYA_LIBRARY_GLFW);
-
-	MayaSetErrorCallback([](MayaError& err) {
-		std::cout << err.Details << '\n';
-	});
+	MayaSetErrorCallback(MayaLogErrorToStdCerr);
 
 	MayaWindowUptr window = MayaCreateWindowUptr();
 	window->SetSize(1920, 1080);
 
 	MayaGraphicsGui gui(*window);
 
-	auto& pane = gui.CreatePanel();
+	auto& pane = gui.CreateTitlePanel();
 
-	auto& button = gui.CreateButton();
-	button.SetPosition(350, -100);
-	pane.Add(button);
+	//auto& button = gui.CreateButton();
+	//button.SetPosition(100, 250);
+	//pane.Add(button);
 	
 	//auto& label = gui.CreateLabel();
 

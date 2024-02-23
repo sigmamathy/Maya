@@ -17,7 +17,7 @@ add_library(${PROJECT_NAME}
     "src/shader.cpp"
     "src/vertexarray.cpp"
     "src/texture.cpp"
-    "src/renderer.cpp"
+    "tests/renderer.cpp"
     "src/transformation.cpp"
     "src/font.cpp"
     "src/color.cpp" 

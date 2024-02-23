@@ -264,13 +264,6 @@ void MayaGraphics2d::UseTexture(MayaTexture* texture)
 
 void MayaGraphics2d::PushScissor(MayaFvec2 pos, MayaFvec2 size)
 {
-	if (camera)
-	{
-		pos = pos - camera->position;
-		size.x = size.x * camera->zoom.x;
-		size.y = size.y * camera->zoom.y;
-	}
-
 	MayaFvec2 wsz = Window->GetSize();
 	float xs = wsz.x / projection.x, ys = wsz.y / projection.y;
 	pos.x *= xs;

@@ -9,8 +9,15 @@ MayaLabelGui::MayaLabelGui(MayaGraphicsGui& gui)
 
 void MayaLabelGui::Draw(MayaGraphics2d& g2d)
 {
-	text.SetPosition(GetExactPosition());
-	g2d.UseColor(colors[3]);
+	auto epos = GetExactPosition();
+
+	if (background_visible) {
+		g2d.UseColor(colors.Bg2);
+		g2d.DrawRect(epos, size);
+	}
+
+	text.SetPosition(epos);
+	g2d.UseColor(colors.Fg1);
 	g2d.DrawText(text);
 }
 

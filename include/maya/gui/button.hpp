@@ -7,6 +7,13 @@ class MayaButtonGui : public MayaComponentGui
 {
 public:
 
+	enum ButtonIcon {
+		NoIcon,
+		TriangleUp,
+		TriangleDown,
+		Tick,
+	};
+
 	MayaButtonGui(MayaGraphicsGui& gui);
 
 	virtual void Draw(MayaGraphics2d& g2d) override;
@@ -17,10 +24,15 @@ public:
 
 	MayaStringCR GetText() const;
 
+	void SetButtonIcon(ButtonIcon icon);
+
+	ButtonIcon GetButtonIcon() const;
+
 	bool IsButtonPressed() const;
 
 private:
 
 	MayaTextDisplay2d text;
 	bool pressed;
+	ButtonIcon icon;
 };

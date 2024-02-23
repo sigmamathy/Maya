@@ -137,6 +137,11 @@ MayaError MayaPollError();
 */
 void MayaSendError(MayaError err);
 
+/*
+	@brief Log error to console via std::cerr
+*/
+void MayaLogErrorToStdCerr(MayaError& err);
+
 // ---------- Bits field constants for specifying dependencies ---------- //
 
 #define MAYA_LIBRARY_GLFW 0x1
