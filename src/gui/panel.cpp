@@ -1,4 +1,5 @@
 #include <maya/gui/panel.hpp>
+#include <maya/color.hpp>
 
 static constexpr float s_title_height = 40.0f;
 
@@ -84,18 +85,19 @@ void MayaTitlePanelGui::ReactEvent(MayaEvent& e)
 void MayaTitlePanelGui::Draw(MayaGraphics2d& g2d)
 {
 	auto epos = GetExactPosition();
+	bool ac = IsAccessible();
 
 	if (background_visible)
 	{
 		if (!minimized) {
-			g2d.UseColor(colors.Bg3);
+			g2d.UseColor(ac ? colors.Bg3 : MayaDarkGray);
 			g2d.DrawRect(epos, size);
 		}
-		g2d.UseColor(colors.Bg2);
+		g2d.UseColor(ac ? colors.Bg2 : MayaGray);
 		g2d.DrawRect(epos + MayaFvec2(0, size.y / 2 - s_title_height / 2), MayaFvec2(size.x, s_title_height));
 	}
 
-	g2d.UseColor(colors.Fg1);
+	g2d.UseColor(ac ? colors.Fg1 : MayaWhite);
 	title.SetPosition(epos + MayaFvec2(-size.x / 2 + 50, size.y / 2 - s_title_height / 2));
 	g2d.DrawText(title);
 	expand->Draw(g2d);

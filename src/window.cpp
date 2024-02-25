@@ -90,6 +90,7 @@ static MayaWindow* s_CreateWindowPtr(MayaWindowParameters& param)
 	glfwWindowHint(GLFW_AUTO_ICONIFY,	param.AutoIconify);
 	glfwWindowHint(GLFW_FLOATING,		param.AlwaysOnTop);
 	glfwWindowHint(GLFW_MAXIMIZED,		param.Maximized);
+	glfwWindowHint(GLFW_SAMPLES,		param.MSAA);
 
 	GLFWwindow* window = 0;
 
@@ -113,6 +114,8 @@ static MayaWindow* s_CreateWindowPtr(MayaWindowParameters& param)
 
 	glfwMakeContextCurrent(window);
 	gladLoadGL();
+	if (param.MSAA > 1)
+		glEnable(GL_MULTISAMPLE);
 
 	return new MayaWindow(window, param.Monitor, param.Title);
 }

@@ -48,7 +48,7 @@ void Maya_s_BindBlending(MayaWindow* window, MayaBlending* test)
 		if (test) {
 			if (!b)
 				glEnable(GL_BLEND);
-			glBlendFunc(GL_SRC_ALPHA, test->Func);
+			glBlendFunc(test->SrcFactor, test->DestFactor);
 		}
 		else if (!test && b)
 			glDisable(GL_BLEND);

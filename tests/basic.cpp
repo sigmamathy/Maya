@@ -15,6 +15,7 @@ int main()
 	MayaGraphicsGui gui(*window);
 
 	auto& pane = gui.CreateTitlePanel();
+	//pane.SetEnabled(false);
 
 	//auto& button = gui.CreateButton();
 	//button.SetPosition(100, 250);
@@ -23,6 +24,7 @@ int main()
 	//auto& label = gui.CreateLabel();
 
 	auto& textfield = gui.CreateTextField();
+	textfield.SetSize(500, 60);
 	pane.Add(textfield);
 
 	//auto& checkbox = gui.CreateCheckbox();

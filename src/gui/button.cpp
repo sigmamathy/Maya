@@ -16,13 +16,14 @@ void MayaButtonGui::Draw(MayaGraphics2d& g2d)
 		return;
 
 	auto epos = GetExactPosition();
+	bool ac = IsAccessible();
 
 	if (background_visible) {
-		g2d.UseColor(enabled ? (IsButtonPressed() ? colors.Bg2 : colors.Bg1) : MayaGray);
+		g2d.UseColor(ac ? (IsButtonPressed() ? colors.Bg2 : colors.Bg1) : MayaGray);
 		g2d.DrawRect(epos, size);
 	}
 
-	g2d.UseColor(colors.Fg1);
+	g2d.UseColor(ac ? colors.Fg1 : MayaWhite);
 
 	switch (icon)
 	{
@@ -52,9 +53,6 @@ void MayaButtonGui::Draw(MayaGraphics2d& g2d)
 
 void MayaButtonGui::ReactEvent(MayaEvent& e)
 {
-	if (!visible || !enabled)
-		return;
-
 	if (auto* me = MayaEventCast<MayaMouseEvent>(e))
 	{
 		if (me->Down && me->Button == MayaMouseButtonLeft && CursorInArea())

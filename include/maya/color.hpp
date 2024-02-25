@@ -14,6 +14,8 @@ constexpr MayaIvec4 MayaMagenta		= { 255, 255, 0, 255 };
 constexpr MayaIvec4 MayaWhite		= { 255, 255, 255, 255 };
 constexpr MayaIvec4 MayaBlack		= { 0, 0, 0, 255 };
 constexpr MayaIvec4 MayaGray		= { 128, 128, 128, 255 };
+constexpr MayaIvec4 MayaDarkGray	= { 64, 64, 64, 255 };
+constexpr MayaIvec4 MayaLightGray	= { 192, 192, 192, 255 };
 
 /**
 	@brief Convert color hexcode to color vector.

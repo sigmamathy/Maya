@@ -86,6 +86,8 @@ public:
 	bool IsVisible() const;
 	bool IsEnabled() const;
 
+	bool IsAccessible() const;
+
 	void SetBackgroundVisible(bool visible);
 	bool IsBackgroundVisible() const;
 

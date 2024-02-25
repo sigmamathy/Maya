@@ -17,8 +17,10 @@ MayaGraphicsGui::MayaGraphicsGui(MayaWindow& window)
 	{
 		if (e.GetEventID() == MayaWindowResizedEvent::EventID)
 			g2d.UseWindowProjection();
-		for (auto& comp : components)
-			if (comp) comp->ReactEvent(e);
+		for (auto& comp : components) {
+			if (comp && comp->IsAccessible())
+				comp->ReactEvent(e);
+		}
 	};
 	
 	callbackid = Window->AddEventCallback(projupdate);
@@ -200,6 +202,13 @@ bool MayaComponentGui::IsVisible() const
 bool MayaComponentGui::IsEnabled() const
 {
 	return enabled;
+}
+
+bool MayaComponentGui::IsAccessible() const
+{
+	if (parent)
+		return parent->IsAccessible() && visible && enabled;
+	return visible && enabled;
 }
 
 void MayaComponentGui::SetBackgroundVisible(bool visible)

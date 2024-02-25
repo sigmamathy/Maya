@@ -195,7 +195,8 @@ MayaGraphics2d::MayaGraphics2d(MayaWindow& window)
 	vao[MAYA_CIRCLE]		= s_CreateCircleVertexArray(window, 100);
 	vao[MAYA_TICK]			= s_CreateTickVertexArray(window);
 	vao[MAYA_ISO_TRIANGLE]	= s_CreateIsoTriangleVertexArray(window);
-	blend.Func = blend.OneMinusSrcAlpha;
+	blend.SrcFactor = blend.SrcAlpha;
+	blend.DestFactor = blend.OneMinusSrcAlpha;
 
 	r.Program = program.get();
 	r.Textures[0] = texture;

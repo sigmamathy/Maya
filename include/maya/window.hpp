@@ -73,6 +73,13 @@ inline struct MayaWindowParameters
 	*/
 	int Monitor = -1;
 
+	/**
+		@brief Mulitsampling for anti-aliasing.
+
+		Cannot be changed once window is constructed.
+	*/
+	int MSAA = 1;
+
 // -------------------------- Window hints -------------------------- //
 
 	/**

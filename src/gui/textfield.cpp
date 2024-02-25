@@ -14,9 +14,10 @@ void MayaTextFieldGui::Draw(MayaGraphics2d& g2d)
 	if (!visible)
 		return;
 	auto epos = GetExactPosition();
+	auto ac = IsAccessible();
 
 	if (background_visible) {
-		g2d.UseColor(enabled ? colors.Bg2 : MayaGray);
+		g2d.UseColor(ac ? colors.Bg2 : MayaGray);
 		g2d.DrawRect(epos, size);
 	}
 
@@ -26,22 +27,21 @@ void MayaTextFieldGui::Draw(MayaGraphics2d& g2d)
 
 	if (text.GetLength() != 0)
 	{
-		g2d.UseColor(colors.Fg1);
+		g2d.UseColor(ac ? colors.Fg1 : MayaWhite);
 		text.SetPosition(tpos);
 		g2d.DrawText(text);
 	}
 	else
 	{
-		g2d.UseColor(colors.Fg2);
+		g2d.UseColor(ac ? colors.Fg2 : MayaLightGray);
 		description.SetPosition(tpos);
 		g2d.DrawText(description);
 	}
 
 	g2d.PopScissor();
 
-	if (enabled && careti != -1)
+	if (ac && careti != -1)
 	{
-
 		g2d.UseColor(colors.Fg1);
 		float crnt = MayaGetLibraryManager()->GetTimeSince();
 		if (crnt - caret_timer > 1.0f)
@@ -57,9 +57,6 @@ void MayaTextFieldGui::Draw(MayaGraphics2d& g2d)
 
 void MayaTextFieldGui::ReactEvent(MayaEvent& e)
 {
-	if (!visible || !enabled)
-		return;
-
 	if (auto* me = MayaEventCast<MayaMouseEvent>(e))
 	{
 		if (me->Down && me->Button == MayaMouseButton1)
