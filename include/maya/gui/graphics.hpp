@@ -19,6 +19,8 @@ public:
 	class MayaCheckboxGui& CreateCheckbox();
 	class MayaPanelGui& CreatePanel();
 	class MayaTitlePanelGui& CreateTitlePanel();
+	class MayaScrollBarGui& CreateScrollBar();
+	class MayaNumberScrollGui& CreateNumberScroll();
 
 	void Draw();
 
@@ -95,6 +97,7 @@ public:
 
 	bool PointInArea(MayaFvec2 pt, MayaFvec2 pos, MayaFvec2 size) const;
 	bool PointInArea(MayaFvec2 pt) const;
+	bool CursorInArea(MayaFvec2 pos, MayaFvec2 size) const;
 	bool CursorInArea() const;
 
 protected:
@@ -120,7 +123,8 @@ public:
 	virtual void Add(MayaComponentGui& comp);
 	virtual void Remove(MayaComponentGui& comp);
 
-	virtual void GetContainerView(MayaFvec2& pos, MayaFvec2& size) const;
+	virtual void GetContentView(MayaFvec2& pos, MayaFvec2& size) const;
+	virtual MayaFvec2 GetContentShift() const;
 
 protected:
 

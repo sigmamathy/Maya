@@ -31,7 +31,7 @@ void MayaPanelGui::Draw(MayaGraphics2d& g2d)
 
 MayaTitlePanelGui::MayaTitlePanelGui(MayaGraphicsGui& gui)
 	: MayaPanelGui(gui), title(gui.GetDefaultFont(), "Window"),
-	cursor_clicked_on_title(false), cursor_prev_pos(0), minimized(0)
+	cursor_clicked_on_title(false), cursor_prev_pos(0), minimized(0), scroll(0)
 {
 	title.SetTextAlign(MayaCornerCL);
 	expand = &gui.CreateButton();
@@ -57,7 +57,7 @@ void MayaTitlePanelGui::ReactEvent(MayaEvent& e)
 		{
 			auto cp = e.Window->GetCursorPosition() - e.Window->GetSize() / 2;
 			cp.y *= -1;
-			if (PointInArea(cp, position + MayaFvec2(0, size.y / 2 - s_title_height / 2),
+			if (PointInArea(cp, MayaFvec2(0, size.y / 2 - s_title_height / 2),
 				MayaFvec2(size.x, s_title_height)))
 			{
 				cursor_prev_pos = cp;
@@ -69,7 +69,7 @@ void MayaTitlePanelGui::ReactEvent(MayaEvent& e)
 			cursor_clicked_on_title = false;
 		}
 	}
-	if (auto* me = MayaEventCast<MayaMouseMovedEvent>(e))
+	else if (auto* me = MayaEventCast<MayaMouseMovedEvent>(e))
 	{
 		if (cursor_clicked_on_title)
 		{
@@ -79,6 +79,10 @@ void MayaTitlePanelGui::ReactEvent(MayaEvent& e)
 			position = d + position;
 			cursor_prev_pos = cp;
 		}
+	}
+	else if (auto* mse = MayaEventCast<MayaMouseScrolledEvent>(e))
+	{
+		scroll.y += mse->Offset.y * 10;
 	}
 }
 
@@ -105,7 +109,7 @@ void MayaTitlePanelGui::Draw(MayaGraphics2d& g2d)
 	if (!minimized)
 	{
 		MayaFvec2 cvp, cvs;
-		GetContainerView(cvp, cvs);
+		GetContentView(cvp, cvs);
 		g2d.PushScissor(epos + cvp, cvs);
 		for (int i = 0; i < childs.size(); i++)
 			childs[i]->Draw(g2d);
@@ -123,7 +127,7 @@ MayaStringCR MayaTitlePanelGui::GetTitle() const
 	return title.GetString();
 }
 
-void MayaTitlePanelGui::GetContainerView(MayaFvec2& pos, MayaFvec2& size) const
+void MayaTitlePanelGui::GetContentView(MayaFvec2& pos, MayaFvec2& size) const
 {
 	if (!minimized)
 	{
@@ -142,4 +146,9 @@ void MayaTitlePanelGui::SetSize(MayaFvec2 size)
 {
 	MayaComponentGui::SetSize(size);
 	expand->SetPosition(6 - size.x / 2 + s_title_height / 2, size.y / 2 - s_title_height / 2);
+}
+
+MayaFvec2 MayaTitlePanelGui::GetContentShift() const
+{
+	return -scroll;
 }

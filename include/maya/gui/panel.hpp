@@ -26,8 +26,9 @@ public:
 	void SetTitle(MayaStringCR title);
 	MayaStringCR GetTitle() const;
 
-	void GetContainerView(MayaFvec2& pos, MayaFvec2& size) const override;
+	void GetContentView(MayaFvec2& pos, MayaFvec2& size) const override;
 	void SetSize(MayaFvec2 size) override;
+	MayaFvec2 GetContentShift() const override;
 
 private:
 
@@ -36,4 +37,5 @@ private:
 	MayaFvec2 cursor_prev_pos;
 	MayaButtonGui* expand;
 	bool minimized;
+	MayaFvec2 scroll;
 };

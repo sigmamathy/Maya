@@ -4,6 +4,8 @@
 #include <maya/gui/textfield.hpp>
 #include <maya/gui/checkbox.hpp>
 #include <maya/gui/panel.hpp>
+#include <maya/gui/scrollbar.hpp>
+#include <maya/gui/numberscroll.hpp>
 #include <maya/color.hpp>
 #include <maya/transformation.hpp>
 #include <maya/font.hpp>
@@ -33,15 +35,17 @@ MayaGraphicsGui::~MayaGraphicsGui()
 		Window->RemoveEventCallback(callbackid);
 }
 
-#define MAYA_DEFINE_CREATE(x, y) x& MayaGraphicsGui::Create##y()\
-	{ auto comp = new x(*this); components.emplace_back(static_cast<MayaComponentGui*>(comp)); return *comp; }
+#define MAYA_DEFINE_CREATE(x) Maya##x##Gui& MayaGraphicsGui::Create##x()\
+	{ auto comp = new Maya##x##Gui(*this); components.emplace_back(static_cast<MayaComponentGui*>(comp)); return *comp; }
 
-MAYA_DEFINE_CREATE(MayaLabelGui, Label)
-MAYA_DEFINE_CREATE(MayaButtonGui, Button)
-MAYA_DEFINE_CREATE(MayaTextFieldGui, TextField)
-MAYA_DEFINE_CREATE(MayaCheckboxGui, Checkbox)
-MAYA_DEFINE_CREATE(MayaPanelGui, Panel)
-MAYA_DEFINE_CREATE(MayaTitlePanelGui, TitlePanel)
+MAYA_DEFINE_CREATE(Label)
+MAYA_DEFINE_CREATE(Button)
+MAYA_DEFINE_CREATE(TextField)
+MAYA_DEFINE_CREATE(Checkbox)
+MAYA_DEFINE_CREATE(Panel)
+MAYA_DEFINE_CREATE(TitlePanel)
+MAYA_DEFINE_CREATE(ScrollBar)
+MAYA_DEFINE_CREATE(NumberScroll)
 
 void MayaGraphicsGui::Draw()
 {
@@ -131,7 +135,12 @@ MayaContainerGui* MayaComponentGui::GetParent()
 
 MayaFvec2 MayaComponentGui::GetExactPosition() const
 {
-	return parent ? parent->GetExactPosition() + position : position;
+	if (parent)
+	{
+		MayaFvec2 res = parent->GetExactPosition() + position;
+		return bound_to_parent ? res + parent->GetContentShift() : res;
+	}
+	return position;
 }
 
 void MayaComponentGui::SetPosition(float x, float y)
@@ -243,24 +252,34 @@ bool MayaComponentGui::PointInArea(MayaFvec2 pt, MayaFvec2 pos, MayaFvec2 size) 
 		pt = pt - parent->GetExactPosition();
 		if (bound_to_parent) {
 			MayaFvec2 pp, ps;
-			parent->GetContainerView(pp, ps);
+			parent->GetContentView(pp, ps);
 			pt = pt - pp;
 			bool inparent = pt.x >= -ps.x * 0.5f && pt.x <= ps.x * 0.5f
 				&& pt.y >= -ps.y * 0.5f && pt.y <= ps.y * 0.5f;
 			if (!inparent)
 				return false;
 			pt = pt + pp;
+			pt = pt - parent->GetContentShift();
 		}
 	}
 
-	pt = pt - pos;
+	pt = pt - pos - position;
 	return pt.x >= -size.x * 0.5f && pt.x <= size.x * 0.5f
 		&& pt.y >= -size.y * 0.5f && pt.y <= size.y * 0.5f;
 }
 
 bool MayaComponentGui::PointInArea(MayaFvec2 pt) const
 {
-	return PointInArea(pt, position, size);
+	return PointInArea(pt, MayaFvec2(0), size);
+}
+
+bool MayaComponentGui::CursorInArea(MayaFvec2 pos, MayaFvec2 size) const
+{
+	auto* window = gui->Window;
+	MayaFvec2 cp = window->GetCursorPosition();
+	cp = cp - window->GetSize() / 2;
+	cp.y = -cp.y;
+	return PointInArea(cp, pos, size);
 }
 
 bool MayaComponentGui::CursorInArea() const
@@ -289,8 +308,13 @@ void MayaContainerGui::Remove(MayaComponentGui& comp)
 	childs.erase(std::remove(childs.begin(), childs.end(), &comp), childs.end());
 }
 
-void MayaContainerGui::GetContainerView(MayaFvec2& pos, MayaFvec2& size) const
+void MayaContainerGui::GetContentView(MayaFvec2& pos, MayaFvec2& size) const
 {
 	pos = {0, 0};
 	size = this->size;
+}
+
+MayaFvec2 MayaContainerGui::GetContentShift() const
+{
+	return { 0, 0 };
 }

@@ -1,6 +1,8 @@
 # Maya - Library for Everything
 
-![](https://static.wikia.nocookie.net/aceattorney/images/0/00/Maya-Angry-1-HD.gif/revision/latest/scale-to-width-down/250?cb=20210321173300)
+<p align="center">
+  <img src="https://static.wikia.nocookie.net/aceattorney/images/0/00/Maya-Angry-1-HD.gif/revision/latest/scale-to-width-down/250?cb=20210321173300" alt="Maya" width=300>
+</p>
 
 Maya is a library written in C++ focuses on graphics rendering and audio streaming,
 based on verbose C API such as OpenGL and PortAudio.

@@ -3,6 +3,8 @@
 #include <maya/gui/label.hpp>
 #include <maya/gui/checkbox.hpp>
 #include <maya/gui/panel.hpp>
+#include <maya/gui/scrollbar.hpp>
+#include <maya/gui/numberscroll.hpp>
 
 int main()
 {
@@ -27,16 +29,9 @@ int main()
 	textfield.SetSize(500, 60);
 	pane.Add(textfield);
 
-	//auto& checkbox = gui.CreateCheckbox();
-	
-	//label.SetPosition(0, 100);
-	//button.SetPosition(-100, -100);
-	//checkbox.SetPosition(100, -100);
-
-	//textfield.SetEventCallback([&](MayaEventGui& e) -> void {
-	//	if (e.Type == e.Interact)
-	//		label.SetText(textfield.GetText());
-	//});
+	auto& x = gui.CreateNumberScroll();
+	x.SetPosition(0, 100);
+	pane.Add(x);
 
 	while (!window->IsTimeToClose())
 	{
