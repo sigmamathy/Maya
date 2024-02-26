@@ -47,6 +47,7 @@ void MayaScrollBarGui::ReactEvent(MayaEvent& e)
 			value = prev_value + d / size[direction] * (max + 1);
 			if (value > max) value = max;
 			else if (value < 0) value = 0;
+			SendCallback(MayaEventGui::Interact);
 		}
 	}
 }
@@ -65,7 +66,7 @@ void MayaScrollBarGui::Draw(MayaGraphics2d& g2d)
 	scs[direction] /= max + 1;
 	scp[direction] += (direction ? -1 : 1) * ((scs[direction] - size[direction]) / 2 + value * scs[direction]);
 
-	g2d.UseColor(colors.Bg1);
+	g2d.UseColor(colors.Fg3);
 	g2d.DrawRect(scp, scs);
 }
 

@@ -67,7 +67,7 @@ main.cpp:
 
 int main()
 {
-	MayaLibrarySingleton _;
+	MayaLibraryManager manager(MAYA_LIBRARY_GLFW);
 
 	MayaWindowUptr window = MayaCreateWindowUptr();
 
@@ -77,6 +77,7 @@ int main()
 	while (!window->IsTimeToClose())
 	{
 		window->ClearBuffers();
+		window->PackViewport();
 		gui.Draw();
 		window->SwapBuffers();
 		MayaPollWindowEvents();

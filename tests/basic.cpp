@@ -17,13 +17,8 @@ int main()
 	MayaGraphicsGui gui(*window);
 
 	auto& pane = gui.CreateTitlePanel();
-	//pane.SetEnabled(false);
-
-	//auto& button = gui.CreateButton();
-	//button.SetPosition(100, 250);
-	//pane.Add(button);
-	
-	//auto& label = gui.CreateLabel();
+	pane.SetEnableScroll(1);
+	pane.SetContentSize(MayaFvec2(800, 800));
 
 	auto& textfield = gui.CreateTextField();
 	textfield.SetSize(500, 60);

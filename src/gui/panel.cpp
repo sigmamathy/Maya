@@ -1,6 +1,7 @@
 #include <maya/gui/panel.hpp>
 #include <maya/color.hpp>
 
+static constexpr float s_scroll_bar_width = 10.0f;
 static constexpr float s_title_height = 40.0f;
 
 MayaPanelGui::MayaPanelGui(MayaGraphicsGui& gui)
@@ -11,7 +12,7 @@ MayaPanelGui::MayaPanelGui(MayaGraphicsGui& gui)
 
 void MayaPanelGui::ReactEvent(MayaEvent& e)
 {
-
+	// nothing here :)
 }
 
 void MayaPanelGui::Draw(MayaGraphics2d& g2d)
@@ -31,7 +32,8 @@ void MayaPanelGui::Draw(MayaGraphics2d& g2d)
 
 MayaTitlePanelGui::MayaTitlePanelGui(MayaGraphicsGui& gui)
 	: MayaPanelGui(gui), title(gui.GetDefaultFont(), "Window"),
-	cursor_clicked_on_title(false), cursor_prev_pos(0), minimized(0), scroll(0)
+	cursor_clicked_on_title(false), cursor_prev_pos(0), minimized(0),
+	scroll(0), scrollbar(0), scroll_enabled(0), content_size(0)
 {
 	title.SetTextAlign(MayaCornerCL);
 	expand = &gui.CreateButton();
@@ -45,6 +47,9 @@ MayaTitlePanelGui::MayaTitlePanelGui(MayaGraphicsGui& gui)
 			if (e.Type == e.Interact) {
 				minimized = !minimized;
 				expand->SetButtonIcon(minimized ? expand->TriangleUp : expand->TriangleDown);
+				if (scroll_enabled) {
+					scrollbar->SetVisible(!minimized);
+				}
 			}
 		});
 }
@@ -80,10 +85,6 @@ void MayaTitlePanelGui::ReactEvent(MayaEvent& e)
 			cursor_prev_pos = cp;
 		}
 	}
-	else if (auto* mse = MayaEventCast<MayaMouseScrolledEvent>(e))
-	{
-		scroll.y += mse->Offset.y * 10;
-	}
 }
 
 void MayaTitlePanelGui::Draw(MayaGraphics2d& g2d)
@@ -105,6 +106,8 @@ void MayaTitlePanelGui::Draw(MayaGraphics2d& g2d)
 	title.SetPosition(epos + MayaFvec2(-size.x / 2 + 50, size.y / 2 - s_title_height / 2));
 	g2d.DrawText(title);
 	expand->Draw(g2d);
+	if (scrollbar && !minimized)
+		scrollbar->Draw(g2d);
 
 	if (!minimized)
 	{
@@ -127,6 +130,32 @@ MayaStringCR MayaTitlePanelGui::GetTitle() const
 	return title.GetString();
 }
 
+void MayaTitlePanelGui::SetEnableScroll(bool enable)
+{
+	if (enable && !scrollbar)
+	{
+		scrollbar = &gui->CreateScrollBar();
+		scrollbar->SetParent(this, false);
+		scrollbar->SetBackgroundVisible(false);
+		scrollbar->SetPosition((size.x - s_scroll_bar_width) / 2, -s_title_height / 2 + s_scroll_bar_width / 2);
+		scrollbar->SetSize(s_scroll_bar_width, size.y - s_title_height - s_scroll_bar_width);
+		scrollbar->SetScrollMax(0);
+		scrollbar->SetEventCallback([&](MayaEventGui& e) {
+			if (e.Type == e.Interact)
+				scroll.y = -scrollbar->GetValue() * size.y;
+			});
+	}
+
+	scroll_enabled = enable;
+	if (scrollbar)
+		scrollbar->SetVisible(enable && !minimized);
+}
+
+bool MayaTitlePanelGui::IsScrollEnabled() const
+{
+	return scroll_enabled;
+}
+
 void MayaTitlePanelGui::GetContentView(MayaFvec2& pos, MayaFvec2& size) const
 {
 	if (!minimized)
@@ -134,6 +163,12 @@ void MayaTitlePanelGui::GetContentView(MayaFvec2& pos, MayaFvec2& size) const
 		pos = { 0, -s_title_height / 2 };
 		size = this->size;
 		size.y -= s_title_height;
+
+		if (scroll_enabled)
+		{
+			size.x -= s_scroll_bar_width;
+			pos.x -= s_scroll_bar_width / 2;
+		}
 	}
 	else
 	{
@@ -144,8 +179,26 @@ void MayaTitlePanelGui::GetContentView(MayaFvec2& pos, MayaFvec2& size) const
 
 void MayaTitlePanelGui::SetSize(MayaFvec2 size)
 {
-	MayaComponentGui::SetSize(size);
+	MayaPanelGui::SetSize(size);
 	expand->SetPosition(6 - size.x / 2 + s_title_height / 2, size.y / 2 - s_title_height / 2);
+	if (scrollbar) {
+		scrollbar->SetPosition((size.x - s_scroll_bar_width) / 2, -s_title_height / 2 + s_scroll_bar_width / 2);
+		scrollbar->SetSize(s_scroll_bar_width, size.y - s_title_height - s_scroll_bar_width);
+		auto max = size.y / this->size.y - 1;
+		scrollbar->SetScrollMax(max > 0 ? max : 0.f);
+	}
+}
+
+void MayaTitlePanelGui::SetContentSize(MayaFvec2 size)
+{
+	content_size = size;
+	auto max = size.y / this->size.y - 1;
+	scrollbar->SetScrollMax(max > 0 ? max : 0.f);
+}
+
+MayaFvec2 MayaTitlePanelGui::GetContentSize() const
+{
+	return content_size;
 }
 
 MayaFvec2 MayaTitlePanelGui::GetContentShift() const
