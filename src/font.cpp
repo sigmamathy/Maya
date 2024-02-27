@@ -51,6 +51,7 @@ MayaFont::MayaFont(MayaWindow& window, MayaStringCR path, int pixelsize)
         param.RawData.Data = image.data();
         param.RawData.Size = MayaIvec2(map.width, map.rows);
         param.RawData.Channels = 4;
+        param.Repeat = false;
         textures[c] = MayaCreateTextureUptr(window, param);
 
         glyph_infos[c] = {

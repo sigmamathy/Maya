@@ -1,7 +1,7 @@
 #include <maya/gui/panel.hpp>
 #include <maya/color.hpp>
 
-static constexpr float s_scroll_bar_width = 10.0f;
+static constexpr float s_scroll_bar_width = 20.0f;
 static constexpr float s_title_height = 40.0f;
 
 MayaPanelGui::MayaPanelGui(MayaGraphicsGui& gui)
@@ -139,10 +139,11 @@ void MayaTitlePanelGui::SetEnableScroll(bool enable)
 		scrollbar->SetBackgroundVisible(false);
 		scrollbar->SetPosition((size.x - s_scroll_bar_width) / 2, -s_title_height / 2 + s_scroll_bar_width / 2);
 		scrollbar->SetSize(s_scroll_bar_width, size.y - s_title_height - s_scroll_bar_width);
-		scrollbar->SetScrollMax(0);
+		scrollbar->SetScrollMax(size.y);
+		scrollbar->SetScrollView(size.y);
 		scrollbar->SetEventCallback([&](MayaEventGui& e) {
 			if (e.Type == e.Interact)
-				scroll.y = -scrollbar->GetValue() * size.y;
+				scroll.y = -scrollbar->GetValue();
 			});
 	}
 
@@ -184,16 +185,14 @@ void MayaTitlePanelGui::SetSize(MayaFvec2 size)
 	if (scrollbar) {
 		scrollbar->SetPosition((size.x - s_scroll_bar_width) / 2, -s_title_height / 2 + s_scroll_bar_width / 2);
 		scrollbar->SetSize(s_scroll_bar_width, size.y - s_title_height - s_scroll_bar_width);
-		auto max = size.y / this->size.y - 1;
-		scrollbar->SetScrollMax(max > 0 ? max : 0.f);
+		scrollbar->SetScrollView(size.y);
 	}
 }
 
 void MayaTitlePanelGui::SetContentSize(MayaFvec2 size)
 {
 	content_size = size;
-	auto max = size.y / this->size.y - 1;
-	scrollbar->SetScrollMax(max > 0 ? max : 0.f);
+	scrollbar->SetScrollMax(size.y);
 }
 
 MayaFvec2 MayaTitlePanelGui::GetContentSize() const

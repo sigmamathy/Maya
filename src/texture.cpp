@@ -16,7 +16,7 @@ static constexpr int s_TextureFormat(int channels)
 	}
 }
 
-static unsigned s_CreateTexture(void const* data, MayaIvec2 size, int channels)
+static unsigned s_CreateTexture(void const* data, MayaIvec2 size, int channels, bool repeat)
 {
 	unsigned textureid;
 	glGenTextures(1, &textureid);
@@ -24,15 +24,15 @@ static unsigned s_CreateTexture(void const* data, MayaIvec2 size, int channels)
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size.x, size.y, 0, s_TextureFormat(channels), GL_UNSIGNED_BYTE, data);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 	return textureid;
 }
 
-static unsigned s_CreateTextureFromImageFile(MayaStringCR path, int channels, MayaIvec2& size)
+static unsigned s_CreateTextureFromImageFile(MayaStringCR path, int channels, MayaIvec2& size, bool repeat)
 {
 	stbi_set_flip_vertically_on_load(true);
 	int ch;
@@ -40,7 +40,7 @@ static unsigned s_CreateTextureFromImageFile(MayaStringCR path, int channels, Ma
 	if (!data)
 		return 0;
 	channels = channels == 0 || ch < channels ? ch : channels;
-	unsigned id = s_CreateTexture(data, size, channels);
+	unsigned id = s_CreateTexture(data, size, channels, repeat);
 	stbi_image_free(data);
 	return id;
 }
@@ -51,13 +51,13 @@ MayaTexture* s_CreateTexturePtr(MayaWindow& window, MayaTextureParameters& param
 
 	if (param.Source == MayaTextureParameters::FromMemory)
 	{
-		unsigned id = s_CreateTexture(param.RawData.Data, param.RawData.Size, param.RawData.Channels);
+		unsigned id = s_CreateTexture(param.RawData.Data, param.RawData.Size, param.RawData.Channels, param.Repeat);
 		return new MayaTexture(id, &window, param.RawData.Size);
 	}
 	else
 	{
 		MayaIvec2 size;
-		unsigned id = s_CreateTextureFromImageFile(param.FileLoad.Path, param.FileLoad.Channels, size);
+		unsigned id = s_CreateTextureFromImageFile(param.FileLoad.Path, param.FileLoad.Channels, size, param.Repeat);
 		return id ? new MayaTexture(id, &window, size) : nullptr;
 	}
 }

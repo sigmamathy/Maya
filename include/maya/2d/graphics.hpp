@@ -23,6 +23,8 @@ public:
 
 	void UseCamera(class MayaCamera2d* camera);
 
+	void UseRotation(float rot);
+
 	void UseColor(int r, int g, int b, int a = 255);
 	void UseColor(MayaIvec3 color);
 	void UseColor(MayaIvec4 color);
@@ -64,12 +66,14 @@ private:
 	MayaArrayList<MayaScissorTest> scissors;
 	MayaRenderer r;
 
-	void DrawShape(int index);
-	void DrawShape(int index, MayaFvec2 pos, MayaFvec2 size);
+	void UpdateCameraOnDraw();
+	void SetModel(MayaFvec2 pos, MayaFvec2 size);
+	void SetModelRotate(MayaFvec2 pos, MayaFvec2 size);
 
 	// cache
 	MayaFvec2 projection;
-	MayaCamera2d* camera;
+	class MayaCamera2d* camera;
+	float rotation;
 	MayaIvec4 color;
 	MayaTexture* texture;
 };

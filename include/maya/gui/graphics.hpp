@@ -123,6 +123,9 @@ public:
 	virtual void Add(MayaComponentGui& comp);
 	virtual void Remove(MayaComponentGui& comp);
 
+	template<class... Ty> requires (sizeof...(Ty) > 1)
+	inline void Add(Ty&... comps);
+
 	virtual void GetContentView(MayaFvec2& pos, MayaFvec2& size) const;
 	virtual MayaFvec2 GetContentShift() const;
 
@@ -130,3 +133,9 @@ protected:
 
 	MayaArrayList<MayaComponentGui*> childs;
 };
+
+template<class... Ty> requires (sizeof...(Ty) > 1)
+void MayaContainerGui::Add(Ty&... comps)
+{
+	(Add(comps), ...);
+}

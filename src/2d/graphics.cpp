@@ -188,7 +188,7 @@ static MayaVertexArrayUptr s_CreateIsoTriangleVertexArray(MayaWindow& window)
 }
 
 MayaGraphics2d::MayaGraphics2d(MayaWindow& window)
-	: Window(&window), texture(nullptr), camera(nullptr), projection(1), color(MayaWhite)
+	: Window(&window), texture(nullptr), camera(nullptr), rotation(0), projection(1), color(MayaWhite)
 {
 	program = s_CreateShaderProgram(window);
 	vao[MAYA_SQUARE]		= s_CreateSquareVertexArray(window);
@@ -228,6 +228,11 @@ void MayaGraphics2d::UseCamera(MayaCamera2d* camera)
 		return;
 	this->camera = camera;
 	program->SetUniformMatrix("uView", camera ? camera->GetViewMatrix() : MayaFmat4(1));
+}
+
+void MayaGraphics2d::UseRotation(float rot)
+{
+	rotation = rot;
 }
 
 void MayaGraphics2d::UseColor(int r, int g, int b, int a)
@@ -295,18 +300,20 @@ void MayaGraphics2d::PopScissor()
 	r.Scissor = scissors.empty() ? 0 : &scissors.back();
 }
 
-void MayaGraphics2d::DrawShape(int index)
+void MayaGraphics2d::UpdateCameraOnDraw()
 {
 	if (camera && camera->require_update)
 		program->SetUniformMatrix("uView", camera->GetViewMatrix());
-	r.Input = vao[index].get();
-	r.ExecuteDraw();
 }
 
-void MayaGraphics2d::DrawShape(int index, MayaFvec2 pos, MayaFvec2 size)
+void MayaGraphics2d::SetModel(MayaFvec2 pos, MayaFvec2 size)
 {
 	program->SetUniformMatrix("uModel", MayaTranslate(pos) * MayaScale(size));
-	DrawShape(index);
+}
+
+void MayaGraphics2d::SetModelRotate(MayaFvec2 pos, MayaFvec2 size)
+{
+	program->SetUniformMatrix("uModel", MayaTranslate(pos) * MayaRotate(rotation) * MayaScale(size));
 }
 
 void MayaGraphics2d::DrawRect(float x, float y, float width, float height)
@@ -316,7 +323,10 @@ void MayaGraphics2d::DrawRect(float x, float y, float width, float height)
 
 void MayaGraphics2d::DrawRect(MayaFvec2 pos, MayaFvec2 size)
 {
-	DrawShape(MAYA_SQUARE, pos, size);
+	UpdateCameraOnDraw();
+	SetModelRotate(pos, size);
+	r.Input = vao[MAYA_SQUARE].get();
+	r.ExecuteDraw();
 }
 
 void MayaGraphics2d::DrawRectBorder(float x, float y, float width, float height, int linewidth)
@@ -326,11 +336,19 @@ void MayaGraphics2d::DrawRectBorder(float x, float y, float width, float height,
 
 void MayaGraphics2d::DrawRectBorder(MayaFvec2 pos, MayaFvec2 size, int linewidth)
 {
+	UpdateCameraOnDraw();
+	r.Input = vao[MAYA_SQUARE].get();
 	program->SetUniform<int>("uHasTexture[0]", 0);
-	DrawShape(MAYA_SQUARE, MayaFvec2(pos.x - (size.x - linewidth) * 0.5f, pos.y), MayaFvec2(linewidth, size.y));
-	DrawShape(MAYA_SQUARE, MayaFvec2(pos.x + (size.x - linewidth) * 0.5f, pos.y), MayaFvec2(linewidth, size.y));
-	DrawShape(MAYA_SQUARE, MayaFvec2(pos.x, pos.y - (size.y - linewidth) * 0.5f), MayaFvec2(size.x, linewidth));
-	DrawShape(MAYA_SQUARE, MayaFvec2(pos.x, pos.y + (size.y - linewidth) * 0.5f), MayaFvec2(size.x, linewidth));
+
+	SetModelRotate(MayaFvec2(pos.x - (size.x - linewidth) * 0.5f, pos.y), MayaFvec2(linewidth, size.y));
+	r.ExecuteDraw(); // left
+	SetModelRotate(MayaFvec2(pos.x + (size.x - linewidth) * 0.5f, pos.y), MayaFvec2(linewidth, size.y));
+	r.ExecuteDraw(); // right
+	SetModelRotate(MayaFvec2(pos.x, pos.y - (size.y - linewidth) * 0.5f), MayaFvec2(size.x, linewidth));
+	r.ExecuteDraw(); // bottom
+	SetModelRotate(MayaFvec2(pos.x, pos.y + (size.y - linewidth) * 0.5f), MayaFvec2(size.x, linewidth));
+	r.ExecuteDraw(); // top
+
 	program->SetUniform<int>("uHasTexture[0]", texture ? 1 : 0);
 }
 
@@ -342,13 +360,15 @@ void MayaGraphics2d::DrawLine(float startx, float starty, float endx, float endy
 void MayaGraphics2d::DrawLine(MayaFvec2 start, MayaFvec2 end)
 {
 	if (start == end) return;
+	UpdateCameraOnDraw();
+	r.Input = vao[MAYA_SQUARE].get();
 	MayaFmat4 pos = MayaTranslate((start + end) / 2.0f);
 	MayaFvec2 dv = end - start;
 	MayaFmat4 scale = MayaScale(MayaFvec2(dv.Norm(), 1));
 	MayaFmat4 rot = MayaRotate(std::atan2(dv[1], dv[0]));
 	program->SetUniformMatrix("uModel", pos * rot * scale);
 	program->SetUniform<int>("uHasTexture[0]", 0);
-	DrawShape(MAYA_SQUARE);
+	r.ExecuteDraw();
 	program->SetUniform<int>("uHasTexture[0]", texture ? 1 : 0);
 }
 
@@ -359,8 +379,11 @@ void MayaGraphics2d::DrawOval(float x, float y, float width, float height, int c
 
 void MayaGraphics2d::DrawOval(MayaFvec2 pos, MayaFvec2 size, int completion)
 {
+	UpdateCameraOnDraw();
+	r.Input = vao[MAYA_CIRCLE].get();
 	vao[MAYA_CIRCLE]->SetDrawRange(0, completion);
-	DrawShape(MAYA_CIRCLE, pos, size);
+	SetModelRotate(pos, size);
+	r.ExecuteDraw();
 }
 
 void MayaGraphics2d::DrawIsoTriangle(float x, float y, float width, float height)
@@ -370,7 +393,10 @@ void MayaGraphics2d::DrawIsoTriangle(float x, float y, float width, float height
 
 void MayaGraphics2d::DrawIsoTriangle(MayaFvec2 pos, MayaFvec2 size)
 {
-	DrawShape(MAYA_ISO_TRIANGLE, pos, size);
+	UpdateCameraOnDraw();
+	r.Input = vao[MAYA_ISO_TRIANGLE].get();
+	SetModelRotate(pos, size);
+	r.ExecuteDraw();
 }
 
 void MayaGraphics2d::DrawText(MayaFont& font, MayaStringCR text, float x, float y, MayaCorner align)
@@ -381,8 +407,8 @@ void MayaGraphics2d::DrawText(MayaFont& font, MayaStringCR text, float x, float 
 void MayaGraphics2d::DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos, MayaCorner align)
 {
 	program->SetUniform<int>("uHasTexture[1]", 1);
-	if (camera && camera->require_update)
-		program->SetUniformMatrix("uView", camera->GetViewMatrix());
+	UpdateCameraOnDraw();
+	r.Input = vao[MAYA_SQUARE].get();
 	MayaFvec2 tsize(0);
 
 	if (align != MayaCornerBL) {
@@ -409,8 +435,7 @@ void MayaGraphics2d::DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos, 
 		d.x = -tsize.x * ((align & 0b11) - 1) * 0.5f;
 		d.y = -tsize.y * ((align >> 2) - 1) * 0.5f;
 
-		program->SetUniformMatrix("uModel", MayaTranslate(pos + tpos + d) * MayaScale(glyph.Size));
-		r.Input = vao[MAYA_SQUARE].get();
+		SetModelRotate(pos + tpos + d, glyph.Size);
 		r.Textures[1] = glyph.Texture;
 		r.ExecuteDraw();
 		advance += glyph.Advance;
@@ -429,12 +454,12 @@ void MayaGraphics2d::DrawText(MayaTextDisplay2d& text, int start, int end)
 {
 	text.ComputeGlobalModel();
 	program->SetUniform<int>("uHasTexture[1]", 1);
-	if (camera && camera->require_update)
-		program->SetUniformMatrix("uView", camera->GetViewMatrix());
+	UpdateCameraOnDraw();
+	r.Input = vao[MAYA_SQUARE].get();
+
 	for (int i = start; i < end; i++)
 	{
 		program->SetUniformMatrix("uModel", text.global_model * text.char_models[i]);
-		r.Input = vao[MAYA_SQUARE].get();
 		r.Textures[1] = (*text.font)[text.string[i]].Texture;
 		r.ExecuteDraw();
 	}
@@ -450,5 +475,8 @@ void MayaGraphics2d::DrawTick(float x, float y, float width, float height)
 
 void MayaGraphics2d::DrawTick(MayaFvec2 pos, MayaFvec2 size)
 {
-	DrawShape(MAYA_TICK, pos, size);
+	UpdateCameraOnDraw();
+	r.Input = vao[MAYA_TICK].get();
+	SetModelRotate(pos, size);
+	r.ExecuteDraw();
 }

@@ -22,6 +22,8 @@ struct MayaTextureParameters
 	enum DataSource {
 		FromMemory, FromFile
 	} Source;
+
+	bool Repeat = true;
 };
 
 MayaTextureUptr MayaCreateTextureUptr(MayaWindow& window, MayaTextureParameters& param);
