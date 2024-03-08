@@ -1,7 +1,7 @@
 #include <maya/2d/textdisplay.hpp>
 #include <maya/transformation.hpp>
 
-MayaTextDisplay2d::MayaTextDisplay2d(MayaFont& font, MayaStringCR text)
+MayaTextDisplay2d::MayaTextDisplay2d(Font& font, MayaStringCR text)
 	: font(&font), string(""), require_update_char(false), text_size(0),
 	text_align(MayaCornerBL), global_model(1), require_update_global(0),
 	position(0), scale(1), rotation(0)
@@ -37,7 +37,7 @@ void MayaTextDisplay2d::InsertStringAt(int index, MayaStringCR str)
 	require_update_char = true;
 }
 
-void MayaTextDisplay2d::SetFont(MayaFont& font)
+void MayaTextDisplay2d::SetFont(Font& font)
 {
 	if (this->font != &font)
 	{
@@ -46,7 +46,7 @@ void MayaTextDisplay2d::SetFont(MayaFont& font)
 	}
 }
 
-MayaFont& MayaTextDisplay2d::GetFont() const
+Font& MayaTextDisplay2d::GetFont() const
 {
 	return *font;
 }

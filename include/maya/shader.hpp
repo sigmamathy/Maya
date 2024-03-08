@@ -1,58 +1,67 @@
 #pragma once
 
-#include "./core.hpp"
-#include "./math.hpp"
+#include "./render.hpp"
 
-struct MayaShaderProgramParameters
+namespace maya
 {
-	MayaString Vertex;
-	MayaString Fragment;
-	MayaString Geometry;
+
+enum ShaderType
+{
+	VertexShader,
+	FragmentShader,
+	GeometryShader
 };
 
-class MayaWindow;
-MAYA_TYPEDEFPTR(MayaShaderProgram);
-
-void MayaLoadShaderFromFile(MayaShaderProgramParameters& param, MayaStringCR target);
-
-MayaShaderProgramUptr MayaCreateShaderProgramUptr(MayaWindow& window, MayaShaderProgramParameters& param);
-
-MayaShaderProgramSptr MayaCreateShaderProgramSptr(MayaWindow& window, MayaShaderProgramParameters& param);
-
-class MayaShaderProgram
+class ShaderProgram : public RenderResource
 {
 public:
 
-	MayaShaderProgram(unsigned program, MayaWindow* window);
+	using uptr = stl::uptr<ShaderProgram>;
+	using sptr = stl::sptr<ShaderProgram>;
 
-	~MayaShaderProgram();
+	ShaderProgram(RenderContext& rc);
 
-	MayaShaderProgram(MayaShaderProgram const&) = delete;
+	~ShaderProgram();
 
-	MayaShaderProgram& operator=(MayaShaderProgram const&) = delete;
+	// No copy construct.
+	ShaderProgram(ShaderProgram const&) = delete;
+	ShaderProgram& operator=(ShaderProgram const&) = delete;
+
+	static uptr MakeUnique(RenderContext& rc);
+
+	static sptr MakeShared(RenderContext& rc);
+
+	void CompileShader(ShaderType type, char const* source);
+
+	void LinkProgram();
+
+	void CleanUp() override;
 
 	template<class Ty, class... Tys> requires (std::is_convertible_v<Tys, Ty> && ...)
-	void SetUniform(MayaStringCR name, Tys... args);
+	void SetUniform(stl::strview name, Tys... args);
 
 	template<class Ty, int Sz>
-	void SetUniformVector(MayaStringCR name, MayaVector<Ty, Sz> const& vec);
+	void SetUniformVector(stl::strview name, Vector<Ty, Sz> const& vec);
 
 	template<int Rw, int Cn>
-	void SetUniformMatrix(MayaStringCR name, MayaMatrix<float, Rw, Cn> const& mat);
+	void SetUniformMatrix(stl::strview name, Matrix<float, Rw, Cn> const& mat);
 
 private:
 
 	int programid;
-	MayaWindow* window;
-	MayaHashMap<MayaString, int> uniform_location_cache;
-	friend class MayaRenderer;
+	stl::array<unsigned, 3> shaderids;
 
-	int FindUniformLocation(MayaStringCR name);
+	stl::hashmap<stl::strview, int> uniform_location_cache;
+	friend class RenderContext;
+
+	int FindUniformLocation(stl::strview name);
 };
 
 template<class Ty, class... Tys> requires (std::is_convertible_v<Tys, Ty> && ...)
-void MayaShaderProgram::SetUniform(MayaStringCR name, Tys... args)
+void ShaderProgram::SetUniform(stl::strview name, Tys... args)
 {
-	MayaVector<Ty, sizeof...(Tys)> vec = { static_cast<Ty>(args)... };
+	Vector<Ty, sizeof...(Tys)> vec = { static_cast<Ty>(args)... };
 	SetUniformVector(name, vec);
+}
+
 }

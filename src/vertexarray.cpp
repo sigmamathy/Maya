@@ -3,82 +3,89 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-MayaVertexLayout::MayaVertexLayout(int location, int count)
+namespace maya
 {
-	this->operator()(location, count);
+
+VertexLayout::VertexLayout(int location, int count)
+{
+	Push(location, count);
 }
 
-MayaVertexLayout& MayaVertexLayout::operator()(int location, int count)
+VertexLayout& VertexLayout::Push(int location, int count)
 {
 	attributes.emplace_back(location, count, stride);
 	stride += count;
 	return *this;
 }
 
-MayaVertexArrayUptr MayaCreateVertexArrayUptr(MayaWindow& window)
+VertexArray::VertexArray(RenderContext& rc)
+	: RenderResource(rc), iboid(0), vertex_count(0), indices_count(0), draw_range(-1)
 {
-	window.UseGraphicsContext();
-	unsigned vaoid;
 	glGenVertexArrays(1, &vaoid);
-	return std::make_unique<MayaVertexArray>(vaoid, &window);
 }
 
-MayaVertexArraySptr MayaCreateVertexArraySptr(MayaWindow& window)
+VertexArray::~VertexArray()
 {
-	window.UseGraphicsContext();
-	unsigned vaoid;
-	glGenVertexArrays(1, &vaoid);
-	return std::make_shared<MayaVertexArray>(vaoid, &window);
+	CleanUp();
 }
 
-MayaVertexArray::MayaVertexArray(unsigned vao, MayaWindow* window)
-	: vaoid(vao), window(window), vertex_count(0), iboid(0), indices_count(0), draw_range(-1)
+VertexArray::uptr VertexArray::MakeUnique(RenderContext& rc)
 {
-	vboids.reserve(1);
+	return uptr(new VertexArray(rc));
 }
 
-MayaVertexArray::~MayaVertexArray()
+VertexArray::sptr VertexArray::MakeShared(RenderContext& rc)
 {
-	if (!MayaWindow::Exists(window))
-		return;
-	window->UseGraphicsContext();
-	glDeleteVertexArrays(1, &vaoid);
-	if (!vboids.empty())
-		glDeleteBuffers((GLsizei)vboids.size(), vboids.data());
-	if (iboid)
-		glDeleteBuffers(1, &iboid);
+	return sptr(new VertexArray(rc));
 }
 
-void Maya_s_BindVertexArray(MayaWindow* window, unsigned vaoid);
+void VertexArray::CleanUp()
+{
+	if (vaoid)
+	{
+		RenderResource::CleanUp();
+		glDeleteVertexArrays(1, &vaoid);
+		if (!vboids.empty())
+			glDeleteBuffers(static_cast<GLsizei>(vboids.size()), vboids.data());
+		if (iboid)
+			glDeleteBuffers(1, &iboid);
+		vaoid = 0;
+	}
+}
 
-void MayaVertexArray::SetDrawRange(int start, int end)
+void RenderContext::SetInput(VertexArray* resource)
+{
+	if (crntvao == resource) return;
+	crntvao = resource;
+	glBindVertexArray(resource ? resource->vaoid : 0);
+}
+
+void VertexArray::SetDrawRange(int start, int end)
 {
 	draw_range = { start, end };
 }
 
-void MayaVertexArray::ResetDrawRange()
+void VertexArray::ResetDrawRange()
 {
 	draw_range = { -1, -1 };
 }
 
 template<class Ty>
-void MayaVertexArray::LinkVertexBuffer(MayaBuffer<Ty> buffer, MayaVertexLayout& layout, bool MaySubjectToChange)
+void VertexArray::PushBuffer(ConstBuffer<Ty> buffer, VertexLayout& layout, bool MaySubjectToChange)
 {
-	window->UseGraphicsContext();
 	unsigned& vboid = vboids.emplace_back();
 
 	glGenBuffers(1, &vboid);
-	glBindVertexArray(vaoid);
-	Maya_s_BindVertexArray(window, vaoid);
+	rc.SetInput(this);
 	glBindBuffer(GL_ARRAY_BUFFER, vboid);
 	glBufferData(GL_ARRAY_BUFFER, buffer.Size, buffer.Data,
 		MaySubjectToChange ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
-	
-	GLenum datatype;
+
+	GLenum datatype = 0;
 	if (std::is_same_v<Ty, float>)			datatype = GL_FLOAT;
-	else if (std::is_same_v<Ty, unsigned>)	datatype = GL_UNSIGNED_INT;
-	else if (std::is_same_v<Ty, int>)		datatype = GL_INT;
-	
+	if (std::is_same_v<Ty, unsigned>)		datatype = GL_UNSIGNED_INT;
+	if (std::is_same_v<Ty, int>)			datatype = GL_INT;
+
 	for (int i = 0; i < layout.attributes.size(); i++)
 	{
 		auto& x = layout.attributes[i];
@@ -86,7 +93,7 @@ void MayaVertexArray::LinkVertexBuffer(MayaBuffer<Ty> buffer, MayaVertexLayout& 
 		glVertexAttribPointer(x.Location, x.Count, datatype, false,
 			layout.stride * sizeof(Ty), (void*)(x.Offset * sizeof(Ty)));
 	}
-	
+
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	int vc = buffer.Size / layout.stride / sizeof(Ty);
@@ -97,43 +104,43 @@ void MayaVertexArray::LinkVertexBuffer(MayaBuffer<Ty> buffer, MayaVertexLayout& 
 	}
 	else MAYA_DIF(vertex_count != vc)
 	{
-		MayaSendError({ MAYA_INCONSISTENTENCY_ERROR,
-			"MayaVertexArray::LinkVertexBuffer(MayaVertexLayout&): "
-			"Number of vertices is inconsistence with the existsing buffers." });
+		Error::Send(Error::Inconsistence,
+			"VertexArray::PushBuffer(Buffer<Ty const>, VertexLayout&, bool): "
+			"Number of vertices is inconsistence with the existsing buffers.");
 	}
 }
 
-template void MayaVertexArray::LinkVertexBuffer(MayaBuffer<float>, MayaVertexLayout&, bool);
-template void MayaVertexArray::LinkVertexBuffer(MayaBuffer<int>, MayaVertexLayout&, bool);
-template void MayaVertexArray::LinkVertexBuffer(MayaBuffer<unsigned>, MayaVertexLayout&, bool);
+template void VertexArray::PushBuffer(Buffer<float const>, VertexLayout&, bool);
+template void VertexArray::PushBuffer(Buffer<int const>, VertexLayout&, bool);
+template void VertexArray::PushBuffer(Buffer<unsigned const>, VertexLayout&, bool);
 
-void MayaVertexArray::LinkIndexBuffer(MayaBuffer<unsigned> buffer)
+void VertexArray::LinkIndexBuffer(ConstBuffer<unsigned> buffer)
 {
-	window->UseGraphicsContext();
 	if (iboid)
 		glDeleteBuffers(1, &iboid);
 	glGenBuffers(1, &iboid);
-	Maya_s_BindVertexArray(window, vaoid);
+	rc.SetInput(this);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboid);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, buffer.Size, buffer.Data, GL_STATIC_DRAW);
-	Maya_s_BindVertexArray(window, 0);
+	rc.SetInput(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	indices_count = buffer.Size / sizeof(unsigned);
 }
 
 template<class Ty>
-void MayaVertexArray::UpdateVertexBuffer(int index, MayaBuffer<Ty> buffer)
+void VertexArray::UpdateBuffer(int index, ConstBuffer<Ty> buffer)
 {
 	MAYA_DIF(index >= vboids.size())
 	{
-		MayaSendError({ MAYA_BOUNDARY_ERROR,
-			"MayaVertexArray::UpdateVertexBuffer(int, MayaBuffer<Ty>): Required buffer does not exists." });
+		Error::Send(Error::OutOfBounds,
+			"VertexArray::UpdateBuffer(int, Buffer<Ty const>): Required buffer does not exists.");
 		return;
 	}
 
-	window->UseGraphicsContext();
 	auto id = vboids[index];
 	glBindBuffer(GL_ARRAY_BUFFER, id);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, buffer.Size, buffer.Data);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
 }

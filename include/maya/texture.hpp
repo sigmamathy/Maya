@@ -1,54 +1,44 @@
 #pragma once
 
-#include "./core.hpp"
-#include "./math.hpp"
+#include "./render.hpp"
 
-class MayaWindow;
-MAYA_TYPEDEFPTR(MayaTexture);
-
-struct MayaTextureParameters
+namespace maya
 {
-	union {
-		struct {
-			void const* Data;
-			MayaIvec2 Size;
-			int Channels;
-		} RawData;
-		struct {
-			char const* Path;
-			int Channels;
-		} FileLoad;
-	};
-	enum DataSource {
-		FromMemory, FromFile
-	} Source;
 
-	bool Repeat = true;
-};
-
-MayaTextureUptr MayaCreateTextureUptr(MayaWindow& window, MayaTextureParameters& param);
-
-MayaTextureSptr MayaCreateTextureSptr(MayaWindow& window, MayaTextureParameters& param);
-
-class MayaTexture
+class Texture : public RenderResource
 {
 public:
 
-	MayaTexture(unsigned texture, MayaWindow* window, MayaIvec2 size);
+	using uptr = stl::uptr<Texture>;
+	using sptr = stl::sptr<Texture>;
 
-	~MayaTexture();
+	Texture(RenderContext& rc);
 
-	MayaTexture(MayaTexture const&) = delete;
+	~Texture();
 
-	MayaTexture& operator=(MayaTexture const&) = delete;
+	static uptr MakeUnique(RenderContext& rc);
 
-	MayaIvec2 GetSize() const;
+	static sptr MakeShared(RenderContext& rc);
+
+	void CleanUp() override;
+
+	void CreateContent(void const* data, Ivec2 size, int channels);
+
+	void SetRepeat();
+
+	void SetFilterLinear();
+
+	Ivec2 GetSize() const;
+
+	int GetChannels() const;
 
 private:
 
 	unsigned textureid;
-	MayaWindow* window;
-	MayaIvec2 size;
-	friend class MayaRenderer;
+	Ivec2 size;
+	int channels;
+	friend class RenderContext;
 
 };
+
+}

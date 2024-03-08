@@ -3,240 +3,245 @@
 #include "./core.hpp"
 #include "./math.hpp"
 
+namespace maya
+{
+
 // List of all key code available
-enum MayaKeyCode : int
+enum KeyCode : int
 {
 	// ----------- The unknown key ------------ //
-	MayaKeyUnknown			= -1,
+	KeyUnknown = -1,
 	// ----------- Printable keys ------------- //
-	MayaKeySpace			= 32,
-	MayaKeyApostrophe		= 39,
-	MayaKeyComma			= 44,
-	MayaKeyMinus			= 45,
-	MayaKeyPeriod			= 46,
-	MayaKeySlash			= 47,
-	MayaKey0				= 48,
-	MayaKey1				= 49,
-	MayaKey2				= 50,
-	MayaKey3				= 51,
-	MayaKey4				= 52,
-	MayaKey5				= 53,
-	MayaKey6				= 54,
-	MayaKey7				= 55,
-	MayaKey8				= 56,
-	MayaKey9				= 57,
-	MayaKeySemiColon		= 59,
-	MayaKeyEqual			= 61,
-	MayaKeyA				= 65,
-	MayaKeyB				= 66,
-	MayaKeyC				= 67,
-	MayaKeyD				= 68,
-	MayaKeyE				= 69,
-	MayaKeyF				= 70,
-	MayaKeyG				= 71,
-	MayaKeyH				= 72,
-	MayaKeyI				= 73,
-	MayaKeyJ				= 74,
-	MayaKeyK				= 75,
-	MayaKeyL				= 76,
-	MayaKeyM				= 77,
-	MayaKeyN				= 78,
-	MayaKeyO				= 79,
-	MayaKeyP				= 80,
-	MayaKeyQ				= 81,
-	MayaKeyR				= 82,
-	MayaKeyS				= 83,
-	MayaKeyT				= 84,
-	MayaKeyU				= 85,
-	MayaKeyV				= 86,
-	MayaKeyW				= 87,
-	MayaKeyX				= 88,
-	MayaKeyY				= 89,
-	MayaKeyZ				= 90,
-	MayaKeyLeftBracket		= 91,
-	MayaKeyBackSlash		= 92,
-	MayaKeyRightBracket		= 93,
-	MayaKeyGraveAccent		= 96,
-	MayaKeyWorld1			= 161,
-	MayaKeyWorld2			= 162,
+	KeySpace = 32,
+	KeyApostrophe = 39,
+	KeyComma = 44,
+	KeyMinus = 45,
+	KeyPeriod = 46,
+	KeySlash = 47,
+	Key0 = 48,
+	Key1 = 49,
+	Key2 = 50,
+	Key3 = 51,
+	Key4 = 52,
+	Key5 = 53,
+	Key6 = 54,
+	Key7 = 55,
+	Key8 = 56,
+	Key9 = 57,
+	KeySemiColon = 59,
+	KeyEqual = 61,
+	KeyA = 65,
+	KeyB = 66,
+	KeyC = 67,
+	KeyD = 68,
+	KeyE = 69,
+	KeyF = 70,
+	KeyG = 71,
+	KeyH = 72,
+	KeyI = 73,
+	KeyJ = 74,
+	KeyK = 75,
+	KeyL = 76,
+	KeyM = 77,
+	KeyN = 78,
+	KeyO = 79,
+	KeyP = 80,
+	KeyQ = 81,
+	KeyR = 82,
+	KeyS = 83,
+	KeyT = 84,
+	KeyU = 85,
+	KeyV = 86,
+	KeyW = 87,
+	KeyX = 88,
+	KeyY = 89,
+	KeyZ = 90,
+	KeyLeftBracket = 91,
+	KeyBackSlash = 92,
+	KeyRightBracket = 93,
+	KeyGraveAccent = 96,
+	KeyWorld1 = 161,
+	KeyWorld2 = 162,
 	// ----------- Function keys -------------- //
-	MayaKeyEscape			= 256,
-	MayaKeyEnter			= 257,
-	MayaKeyTab				= 258,
-	MayaKeyBackspace		= 259,
-	MayaKeyInsert			= 260,
-	MayaKeyDelete			= 261,
-	MayaKeyRight			= 262,
-	MayaKeyLeft				= 263,
-	MayaKeyDown				= 264,
-	MayaKeyUp				= 265,
-	MayaKeyPageUp			= 266,
-	MayaKeyPageDown			= 267,
-	MayaKeyHome				= 268,
-	MayaKeyEnd				= 269,
-	MayaKeyCapsLock			= 280,
-	MayaKeyScrollLock		= 281,
-	MayaKeyNumLock			= 282,
-	MayaKeyPrintScreen		= 283,
-	MayaKeyPause			= 284,
-	MayaKeyF1				= 290,
-	MayaKeyF2				= 291,
-	MayaKeyF3				= 292,
-	MayaKeyF4				= 293,
-	MayaKeyF5				= 294,
-	MayaKeyF6				= 295,
-	MayaKeyF7				= 296,
-	MayaKeyF8				= 297,
-	MayaKeyF9				= 298,
-	MayaKeyF10				= 299,
-	MayaKeyF11				= 300,
-	MayaKeyF12				= 301,
-	MayaKeyF13				= 302,
-	MayaKeyF14				= 303,
-	MayaKeyF15				= 304,
-	MayaKeyF16				= 305,
-	MayaKeyF17				= 306,
-	MayaKeyF18				= 307,
-	MayaKeyF19				= 308,
-	MayaKeyF20				= 309,
-	MayaKeyF21				= 310,
-	MayaKeyF22				= 311,
-	MayaKeyF23				= 312,
-	MayaKeyF24				= 313,
-	MayaKeyF25				= 314,
-	MayaKeyKP0				= 320,
-	MayaKeyKP1				= 321,
-	MayaKeyKP2				= 322,
-	MayaKeyKP3				= 323,
-	MayaKeyKP4				= 324,
-	MayaKeyKP5				= 325,
-	MayaKeyKP6				= 326,
-	MayaKeyKP7				= 327,
-	MayaKeyKP8				= 328,
-	MayaKeyKP9				= 329,
-	MayaKeyKPDecimal		= 330,
-	MayaKeyKPDivide			= 331,
-	MayaKeyKPMultiply		= 332,
-	MayaKeyKPSubtract		= 333,
-	MayaKeyKPAdd			= 334,
-	MayaKeyKPEnter			= 335,
-	MayaKeyKPEqual			= 336,
-	MayaKeyLeftShift		= 340,
-	MayaKeyLeftControl		= 341,
-	MayaKeyLeftAlt			= 342,
-	MayaKeyLeftSuper		= 343,
-	MayaKeyRightShift		= 344,
-	MayaKeyRightControl		= 345,
-	MayaKeyRightAlt			= 346,
-	MayaKeyRightSuper		= 347,
-	MayaKeyMenu				= 348
+	KeyEscape = 256,
+	KeyEnter = 257,
+	KeyTab = 258,
+	KeyBackspace = 259,
+	KeyInsert = 260,
+	KeyDelete = 261,
+	KeyRight = 262,
+	KeyLeft = 263,
+	KeyDown = 264,
+	KeyUp = 265,
+	KeyPageUp = 266,
+	KeyPageDown = 267,
+	KeyHome = 268,
+	KeyEnd = 269,
+	KeyCapsLock = 280,
+	KeyScrollLock = 281,
+	KeyNumLock = 282,
+	KeyPrintScreen = 283,
+	KeyPause = 284,
+	KeyF1 = 290,
+	KeyF2 = 291,
+	KeyF3 = 292,
+	KeyF4 = 293,
+	KeyF5 = 294,
+	KeyF6 = 295,
+	KeyF7 = 296,
+	KeyF8 = 297,
+	KeyF9 = 298,
+	KeyF10 = 299,
+	KeyF11 = 300,
+	KeyF12 = 301,
+	KeyF13 = 302,
+	KeyF14 = 303,
+	KeyF15 = 304,
+	KeyF16 = 305,
+	KeyF17 = 306,
+	KeyF18 = 307,
+	KeyF19 = 308,
+	KeyF20 = 309,
+	KeyF21 = 310,
+	KeyF22 = 311,
+	KeyF23 = 312,
+	KeyF24 = 313,
+	KeyF25 = 314,
+	KeyKP0 = 320,
+	KeyKP1 = 321,
+	KeyKP2 = 322,
+	KeyKP3 = 323,
+	KeyKP4 = 324,
+	KeyKP5 = 325,
+	KeyKP6 = 326,
+	KeyKP7 = 327,
+	KeyKP8 = 328,
+	KeyKP9 = 329,
+	KeyKPDecimal = 330,
+	KeyKPDivide = 331,
+	KeyKPMultiply = 332,
+	KeyKPSubtract = 333,
+	KeyKPAdd = 334,
+	KeyKPEnter = 335,
+	KeyKPEqual = 336,
+	KeyLeftShift = 340,
+	KeyLeftControl = 341,
+	KeyLeftAlt = 342,
+	KeyLeftSuper = 343,
+	KeyRightShift = 344,
+	KeyRightControl = 345,
+	KeyRightAlt = 346,
+	KeyRightSuper = 347,
+	KeyMenu = 348
 };
 
-enum MayaModifierKeys : int
+enum ModifierKeys : int
 {
-	MayaModShift		= 0x01,
-	MayaModControl		= 0x02,
-	MayaModAlt			= 0x04,
-	MayaModSuper		= 0x08,
-	MayaModCapsLock		= 0x10,
-	MayaModNumLock		= 0x20
+	ModShift = 0x01,
+	ModControl = 0x02,
+	ModAlt = 0x04,
+	ModSuper = 0x08,
+	ModCapsLock = 0x10,
+	ModNumLock = 0x20
 };
 
 // List of all mouse button code available
-enum MayaMouseButton : int
+enum MouseButton : int
 {
-	MayaMouseButton1			= 0,
-	MayaMouseButton2			= 1,
-	MayaMouseButton3			= 2,
-	MayaMouseButton4			= 3,
-	MayaMouseButton5			= 4,
-	MayaMouseButton6			= 5,
-	MayaMouseButton7			= 6,
-	MayaMouseButton8			= 7,
-	MayaMouseButtonLast			= MayaMouseButton8,
-	MayaMouseButtonLeft			= MayaMouseButton1,
-	MayaMouseButtonRight		= MayaMouseButton2,
-	MayaMouseButtonMiddle		= MayaMouseButton3
+	MouseButton1 = 0,
+	MouseButton2 = 1,
+	MouseButton3 = 2,
+	MouseButton4 = 3,
+	MouseButton5 = 4,
+	MouseButton6 = 5,
+	MouseButton7 = 6,
+	MouseButton8 = 7,
+	MouseButtonLast = MouseButton8,
+	MouseButtonLeft = MouseButton1,
+	MouseButtonRight = MouseButton2,
+	MouseButtonMiddle = MouseButton3
 };
 
-struct MayaEvent
+struct Event
 {
-	class MayaWindow* Window;
+	class Window* Window;
 	virtual int GetEventID() const = 0; // 0x00 - 0xFF is reserved
 };
 
-MAYA_TYPEDEF0(MayaEventCallback, MayaFunction<void(MayaEvent&)>);
+using EventCallback = stl::fnptr<void(Event&)>;
 
 #define MAYA_DEFINE_EVENT_ID(x) static constexpr int EventID = x; inline int GetEventID() const override { return x; }
 
 template<class Ty>
-Ty* MayaEventCast(MayaEvent& e)
+Ty* EventCast(Event& e)
 {
 	if (e.GetEventID() == Ty::EventID)
 		return static_cast<Ty*>(&e);
-	return nullptr;
+	return 0;
 }
 
-struct MayaKeyEvent : public MayaEvent
+struct KeyEvent : public Event
 {
 	MAYA_DEFINE_EVENT_ID(0x01)
-	MayaKeyCode KeyCode; // the keycode
-	MayaModifierKeys Mods;
+	KeyCode Keycode; // the keycode
+	ModifierKeys Mods;
 	bool Down; // true if key is pressed
 	bool Repeat;
 };
 
-struct MayaCharEvent : public MayaEvent
+struct CharEvent : public Event
 {
 	MAYA_DEFINE_EVENT_ID(0x09)
 	char Char;
 };
 
-struct MayaMouseEvent : public MayaEvent
+struct MouseEvent : public Event
 {
 	MAYA_DEFINE_EVENT_ID(0x02);
-	MayaMouseButton Button; // the mouse button
-	MayaModifierKeys Mods;
+	MouseButton Button; // the mouse button
+	ModifierKeys Mods;
 	bool Down; // true if button is pressed
 };
 
 // When users moves the mouse
-struct MayaMouseMovedEvent : public MayaEvent
+struct MouseMovedEvent : public Event
 {
 	MAYA_DEFINE_EVENT_ID(0x03);
-	MayaIvec2 Position; // cursor position
+	Ivec2 Position; // cursor position
 };
 
 // When users scroll the mouse (mouse wheel)
-struct MayaMouseScrolledEvent : public MayaEvent
+struct MouseScrolledEvent : public Event
 {
 	MAYA_DEFINE_EVENT_ID(0x04);
-	MayaIvec2 Offset; // mouse offset
+	Ivec2 Offset; // mouse offset
 };
 
 // When the window is focused or unfocused by the user
-struct MayaWindowFocusedEvent : public MayaEvent
+struct WindowFocusedEvent : public Event
 {
 	MAYA_DEFINE_EVENT_ID(0x05);
 	bool Focused; // true if focused
 };
 
 // When the window is closed by the user
-struct MayaWindowClosedEvent : public MayaEvent
+struct WindowClosedEvent : public Event
 {
 	MAYA_DEFINE_EVENT_ID(0x06);
 };
 
 // When the window is resized by the user
-struct MayaWindowResizedEvent : public MayaEvent
+struct WindowResizedEvent : public Event
 {
 	MAYA_DEFINE_EVENT_ID(0x07);
-	MayaIvec2 Size; // current window size
+	Ivec2 Size; // current window size
 };
 
 // When the window is moved by the user
-struct MayaWindowMovedEvent : public MayaEvent
+struct WindowMovedEvent : public Event
 {
 	MAYA_DEFINE_EVENT_ID(0x08);
-	MayaIvec2 Position; // current window position
+	Ivec2 Position; // current window position
 };
+
+}

@@ -8,25 +8,35 @@ set(CMAKE_TOOLCHAIN_FILE "C:/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE FILEP
 find_package(glfw3 CONFIG REQUIRED)
 find_package(Freetype REQUIRED)
 
-add_library(${PROJECT_NAME}
+add_library(
+    ${PROJECT_NAME}
     "external/glad/src/glad.c"
     "external/stb/src/stb_image.c"
+
     "src/core.cpp"
-    "src/window.cpp"
     "src/deviceinfo.cpp"
+    "src/window.cpp"
+    "src/render.cpp"
+    "src/dataio.cpp"
     "src/shader.cpp"
     "src/vertexarray.cpp"
     "src/texture.cpp"
-    "tests/renderer.cpp"
     "src/transformation.cpp"
     "src/font.cpp"
-    "src/color.cpp" 
-    "src/2d/graphics.cpp"
-    "src/2d/camera.cpp" 
-    "src/2d/textdisplay.cpp"
-    "src/gui/graphics.cpp"
-    "src/gui/button.cpp"
-  "src/gui/textfield.cpp" "src/gui/checkbox.cpp" "src/gui/label.cpp" "src/gui/panel.cpp" "src/gui/scrollbar.cpp" "src/gui/numberscroll.cpp")
+     
+    # "src/2d/graphics.cpp"
+    # "src/2d/camera.cpp" 
+    # "src/2d/textdisplay.cpp"
+    # 
+    # "src/gui/graphics.cpp"
+    # "src/gui/button.cpp"
+    # "src/gui/textfield.cpp"
+    # "src/gui/checkbox.cpp"
+    # "src/gui/label.cpp"
+    # "src/gui/panel.cpp"
+    # "src/gui/scrollbar.cpp"
+    # "src/gui/numberscroll.cpp"
+)
  
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 add_compile_definitions(MAYA_PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")

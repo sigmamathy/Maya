@@ -1,19 +1,21 @@
 #pragma once
 
-#include "./core.hpp"
-#include "./math.hpp"
+#include "./render.hpp"
 
-class MayaWindow;
-MAYA_TYPEDEFPTR(MayaVertexArray);
+namespace maya
+{
 
 template<class Ty>
-struct MayaBuffer
+struct Buffer
 {
-	Ty const* Data = 0;
+	Ty* Data = 0;
 	unsigned Size = 0;
 };
 
-class MayaVertexLayout
+template<class Ty>
+using ConstBuffer = Buffer<Ty const>;
+
+class VertexLayout
 {
 public:
 	struct Attribute {
@@ -22,53 +24,58 @@ public:
 		int Offset;
 	};
 
-	MayaVertexLayout() = default;
-	MayaVertexLayout(int location, int count);
-	MayaVertexLayout& operator()(int location, int count);
+	VertexLayout() = default;
+	VertexLayout(int location, int count);
+	VertexLayout& Push(int location, int count);
 
 private:
-	MayaArrayList<Attribute> attributes;
+	stl::list<Attribute> attributes;
 	int stride = 0;
-	friend class MayaVertexArray;
+	friend class VertexArray;
 };
 
-MayaVertexArrayUptr MayaCreateVertexArrayUptr(MayaWindow& window);
-
-MayaVertexArraySptr MayaCreateVertexArraySptr(MayaWindow& window);
-
-class MayaVertexArray 
+class VertexArray : public RenderResource
 {
 public:
 
-	MayaVertexArray(unsigned vao, MayaWindow* window);
+	using uptr = stl::uptr<VertexArray>;
+	using sptr = stl::sptr<VertexArray>;
 
-	~MayaVertexArray();
+	VertexArray(RenderContext& rc);
 
-	MayaVertexArray(MayaVertexArray const&) = delete;
+	~VertexArray();
 
-	MayaVertexArray& operator=(MayaVertexArray const&) = delete;
+	// No copy construct.
+	VertexArray(VertexArray const&) = delete;
+	VertexArray& operator=(VertexArray const&) = delete;
+
+	static uptr MakeUnique(RenderContext& rc);
+
+	static sptr MakeShared(RenderContext& rc);
+
+	void CleanUp() override;
+
+	template<class Ty>
+	void PushBuffer(ConstBuffer<Ty> buffer, VertexLayout& layout, bool MaySubjectToChange = false);
+
+	void LinkIndexBuffer(ConstBuffer<unsigned> buffer);
 
 	void SetDrawRange(int start, int end);
 
 	void ResetDrawRange();
 
 	template<class Ty>
-	void LinkVertexBuffer(MayaBuffer<Ty> buffer, MayaVertexLayout& layout, bool MaySubjectToChange = false);
-
-	void LinkIndexBuffer(MayaBuffer<unsigned> buffer);
-
-	template<class Ty>
-	void UpdateVertexBuffer(int index, MayaBuffer<Ty> buffer);
+	void UpdateBuffer(int index, ConstBuffer<Ty> buffer);
 
 public:
 
 	unsigned vaoid;
-	MayaWindow* window;
-	MayaArrayList<unsigned> vboids;
+	stl::list<unsigned> vboids;
 	unsigned iboid;
 
 	int vertex_count, indices_count;
-	MayaIvec2 draw_range;
-
-	friend class MayaRenderer;
+	Ivec2 draw_range;
+	friend class RenderContext;
 };
+
+}

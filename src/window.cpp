@@ -2,95 +2,97 @@
 #include <maya/deviceinfo.hpp>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <maya/renderer.hpp>
 #include <unordered_set>
+
+namespace maya
+{
 
 static void s_SetupWindowEventCallback(GLFWwindow* window)
 {
 	glfwSetKeyCallback(window,
-	[](GLFWwindow* window, int key, int scancode, int act, int modes) {
-		auto& callback = *static_cast<MayaEventCallback*>(glfwGetWindowUserPointer(window));
-		MayaKeyEvent e;
-		e.KeyCode = static_cast<MayaKeyCode>(key);
-		e.Down = act != GLFW_RELEASE;
-		e.Repeat = act == GLFW_REPEAT;
-		e.Mods = static_cast<MayaModifierKeys>(modes);
-		callback(e);
-	});
+		[](GLFWwindow* window, int key, int scancode, int act, int modes) {
+			auto& callback = *static_cast<EventCallback*>(glfwGetWindowUserPointer(window));
+			KeyEvent e;
+			e.Keycode = static_cast<KeyCode>(key);
+			e.Down = act != GLFW_RELEASE;
+			e.Repeat = act == GLFW_REPEAT;
+			e.Mods = static_cast<ModifierKeys>(modes);
+			callback(e);
+		});
 
 	glfwSetMouseButtonCallback(window,
-	[](GLFWwindow* window, int button, int act, int modes) {
-		auto& callback = *static_cast<MayaEventCallback*>(glfwGetWindowUserPointer(window));
-		MayaMouseEvent e;
-		e.Button = static_cast<MayaMouseButton>(button);
-		e.Down = act != GLFW_RELEASE;
-		e.Mods = static_cast<MayaModifierKeys>(modes);
-		callback(e);
-	});
+		[](GLFWwindow* window, int button, int act, int modes) {
+			auto& callback = *static_cast<EventCallback*>(glfwGetWindowUserPointer(window));
+			MouseEvent e;
+			e.Button = static_cast<MouseButton>(button);
+			e.Down = act != GLFW_RELEASE;
+			e.Mods = static_cast<ModifierKeys>(modes);
+			callback(e);
+		});
 
 	glfwSetCursorPosCallback(window,
-	[](GLFWwindow* window, double x, double y) {
-		auto& callback = *static_cast<MayaEventCallback*>(glfwGetWindowUserPointer(window));
-		MayaMouseMovedEvent e;
-		e.Position = { (int) x, (int) y };
-		callback(e);
-	});
+		[](GLFWwindow* window, double x, double y) {
+			auto& callback = *static_cast<EventCallback*>(glfwGetWindowUserPointer(window));
+			MouseMovedEvent e;
+			e.Position = { (int)x, (int)y };
+			callback(e);
+		});
 
 	glfwSetScrollCallback(window,
-	[](GLFWwindow* window, double x, double y) {
-		auto& callback = *static_cast<MayaEventCallback*>(glfwGetWindowUserPointer(window));
-		MayaMouseScrolledEvent e;
-		e.Offset = { (int) x, (int) y };
-		callback(e);
-	});
+		[](GLFWwindow* window, double x, double y) {
+			auto& callback = *static_cast<EventCallback*>(glfwGetWindowUserPointer(window));
+			MouseScrolledEvent e;
+			e.Offset = { (int)x, (int)y };
+			callback(e);
+		});
 
 	glfwSetWindowFocusCallback(window,
-	[](GLFWwindow* window, int focus) {
-		auto& callback = *static_cast<MayaEventCallback*>(glfwGetWindowUserPointer(window));
-		MayaWindowFocusedEvent e;
-		e.Focused = focus;
-		callback(e);
-	});
+		[](GLFWwindow* window, int focus) {
+			auto& callback = *static_cast<EventCallback*>(glfwGetWindowUserPointer(window));
+			WindowFocusedEvent e;
+			e.Focused = focus;
+			callback(e);
+		});
 
 	glfwSetWindowCloseCallback(window,
-	[](GLFWwindow* window) {
-		auto& callback = *static_cast<MayaEventCallback*>(glfwGetWindowUserPointer(window));
-		MayaWindowClosedEvent e;
-		callback(e);
-	});
+		[](GLFWwindow* window) {
+			auto& callback = *static_cast<EventCallback*>(glfwGetWindowUserPointer(window));
+			WindowClosedEvent e;
+			callback(e);
+		});
 
 	glfwSetWindowSizeCallback(window,
-	[](GLFWwindow* window, int width, int height) {
-		auto& callback = *static_cast<MayaEventCallback*>(glfwGetWindowUserPointer(window));
-		MayaWindowResizedEvent e;
-		e.Size = { width, height };
-		callback(e);
-	});
+		[](GLFWwindow* window, int width, int height) {
+			auto& callback = *static_cast<EventCallback*>(glfwGetWindowUserPointer(window));
+			WindowResizedEvent e;
+			e.Size = { width, height };
+			callback(e);
+		});
 
 	glfwSetWindowPosCallback(window,
-	[](GLFWwindow* window, int x, int y) {
-		auto& callback = *static_cast<MayaEventCallback*>(glfwGetWindowUserPointer(window));
-		MayaWindowMovedEvent e;
-		e.Position = { x, y };
-		callback(e);
-	});
+		[](GLFWwindow* window, int x, int y) {
+			auto& callback = *static_cast<EventCallback*>(glfwGetWindowUserPointer(window));
+			WindowMovedEvent e;
+			e.Position = { x, y };
+			callback(e);
+		});
 
 	glfwSetCharCallback(window, [](GLFWwindow* window, unsigned codepoint) {
-		auto& callback = *static_cast<MayaEventCallback*>(glfwGetWindowUserPointer(window));
-		MayaCharEvent e;
-		e.Char = (char) codepoint;
+		auto& callback = *static_cast<EventCallback*>(glfwGetWindowUserPointer(window));
+		CharEvent e;
+		e.Char = (char)codepoint;
 		callback(e);
-	});
+		});
 }
 
-static MayaWindow* s_CreateWindowPtr(MayaWindowParameters& param)
-{	
-	glfwWindowHint(GLFW_RESIZABLE,		param.Resizable);
-	glfwWindowHint(GLFW_DECORATED,		param.Decorated);
-	glfwWindowHint(GLFW_AUTO_ICONIFY,	param.AutoIconify);
-	glfwWindowHint(GLFW_FLOATING,		param.AlwaysOnTop);
-	glfwWindowHint(GLFW_MAXIMIZED,		param.Maximized);
-	glfwWindowHint(GLFW_SAMPLES,		param.MSAA);
+bool Window::Initialize(WindowParams const& param)
+{
+	glfwWindowHint(GLFW_RESIZABLE, param.Resizable);
+	glfwWindowHint(GLFW_DECORATED, param.Decorated);
+	glfwWindowHint(GLFW_AUTO_ICONIFY, param.AutoIconify);
+	glfwWindowHint(GLFW_FLOATING, param.AlwaysOnTop);
+	glfwWindowHint(GLFW_MAXIMIZED, param.Maximized);
+	glfwWindowHint(GLFW_SAMPLES, param.MSAA);
 
 	GLFWwindow* window = 0;
 
@@ -99,212 +101,200 @@ static MayaWindow* s_CreateWindowPtr(MayaWindowParameters& param)
 		int sx = param.Size.x, sy = param.Size.y;
 		if (sx == -1) sx = 1280;
 		if (sy == -1) sy = 720;
-		window = glfwCreateWindow(sx, sy, param.Title.c_str(), nullptr, nullptr);
+		window = glfwCreateWindow(sx, sy, param.Title, nullptr, nullptr);
 	}
 	else {
 		int sx = param.Size.x, sy = param.Size.y;
-		MayaMonitorsInfo info;
-		MayaGetDeviceInfo(&info);
+		auto info = MonitorsInfo::Retrieve();
 		auto m = info.Monitors[param.Monitor];
 		if (sx == -1) sx = m.Resolution.x;
 		if (sy == -1) sy = m.Resolution.y;
-		window = glfwCreateWindow(sx, sy, param.Title.c_str(),
+		window = glfwCreateWindow(sx, sy, param.Title,
 			static_cast<GLFWmonitor*>(m.Resptr), nullptr);
 	}
 
+	if (!window)
+		return false;
+
 	glfwMakeContextCurrent(window);
 	gladLoadGL();
-	if (param.MSAA > 1)
-		glEnable(GL_MULTISAMPLE);
-
-	return new MayaWindow(window, param.Monitor, param.Title);
-}
-
-MayaWindowUptr MayaCreateWindowUptr(MayaWindowParameters& param)
-{
-	MAYA_DIF(!MayaGetLibraryManager()
-		|| !MayaGetLibraryManager()->FoundDependency(MAYA_LIBRARY_GLFW))
-	{
-		MayaSendError({ MAYA_MISSING_LIBRARY_ERROR,
-			"MayaCreateWindowUptr(MayaWindowParameters&): GLFW is not initialized." });
-		return nullptr;
-	}
-
-	return MayaWindowUptr(s_CreateWindowPtr(param));
-}
-
-MayaWindowSptr MayaCreateWindowSptr(MayaWindowParameters& param)
-{
-	MAYA_DIF(!MayaGetLibraryManager()
-		|| !MayaGetLibraryManager()->FoundDependency(MAYA_LIBRARY_GLFW))
-	{
-		MayaSendError({ MAYA_MISSING_LIBRARY_ERROR,
-			"MayaCreateWindowSptr(MayaWindowParameters&): GLFW is not initialized." });
-		return nullptr;
-	}
-
-	return MayaWindowSptr(s_CreateWindowPtr(param));
-}
-
-static std::unordered_set<MayaWindow*> s_window_instances;
-
-MayaWindow::MayaWindow(void* pointer, int monitor, MayaStringCR title)
-	: resptr(pointer), monitor(monitor), title(title)
-{
-	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
-	event_callback = [this](MayaEvent& e) {
-		e.Window = this;
-		for (auto& call : callbacks)
-			if(call) call(e);
-	};
-	glfwSetWindowUserPointer(window, &event_callback);
+	if (param.MSAA > 1) glEnable(GL_MULTISAMPLE);
+	glfwSetWindowUserPointer(window, &callback);
 	s_SetupWindowEventCallback(window);
-	s_window_instances.insert(this);
-	extern void Maya_s_InitCache(MayaWindow* window);
-	Maya_s_InitCache(this);
+
+	resptr = window;
+	monitor = param.Monitor;
+	title = param.Title;
+	callback = [this](Event& e) {
+		e.Window = this;
+		for (auto& call : user_callbacks)
+			if (call) call(e);
+	};
+
+	rc.window = this;
+
+	return true;
 }
 
-MayaWindow::~MayaWindow()
+Window::Window(WindowParams const& param)
 {
+	MAYA_DIF(!MAYA_FOUND_DEPS(GraphicsDep))
+	{
+		Error::Send(Error::MissingDependencies,
+			"Window::Window(WindowParams const&): Graphics dependency not found.");
+		MAYA_DBREAK;
+		return;
+	}
+
+	if (!Initialize(param))
+		MAYA_DBREAK;
+}
+
+Window::~Window()
+{
+	rc.CleanAll();
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	glfwDestroyWindow(window);
-	s_window_instances.erase(this);
 }
 
-bool MayaWindow::Exists(MayaWindow* window)
+Window::uptr Window::MakeUnique(WindowParams const& param)
 {
-	return s_window_instances.contains(window);
+	MAYA_DIF(!MAYA_FOUND_DEPS(GraphicsDep))
+	{
+		Error::Send(Error::MissingDependencies,
+			"Window::MakeUnique(WindowParams const&): Graphics dependency not found.");
+		return 0;
+	}
+	Window* window = new Window(0);
+	bool res = window->Initialize(param);
+	if (res) return Window::uptr(window);
+	delete window;
+	return 0;
 }
 
-unsigned MayaWindow::AddEventCallback(MayaEventCallbackCR callback)
+Window::sptr Window::MakeShared(WindowParams const& param)
 {
-	callbacks.push_back(callback);
-	return static_cast<unsigned>(callbacks.size() - 1);
+	MAYA_DIF(!MAYA_FOUND_DEPS(GraphicsDep))
+	{
+		Error::Send(Error::MissingDependencies,
+			"Window::MakeShared(WindowParams const&): Graphics dependency not found.");
+		return 0;
+	}
+	Window* window = new Window(0);
+	bool res = window->Initialize(param);
+	if (res) return Window::sptr(window);
+	delete window;
+	return 0;
 }
 
-void MayaWindow::RemoveEventCallback(unsigned index)
+RenderContext& Window::GetRenderContext()
 {
-	callbacks.at(index) = nullptr;
+	return rc;
 }
 
-void MayaWindow::PleaseClose(bool close)
+unsigned Window::AddEventCallback(EventCallback const& callback)
+{
+	user_callbacks.push_back(callback);
+	return static_cast<unsigned>(user_callbacks.size() - 1);
+}
+
+void Window::RemoveEventCallback(unsigned index)
+{
+	user_callbacks.at(index) = nullptr;
+}
+
+void Window::RequestForClose(bool close)
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	glfwSetWindowShouldClose(window, close);
 }
 
-bool MayaWindow::IsTimeToClose() const
+bool Window::IsRequestedForClose() const
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	return glfwWindowShouldClose(window);
 }
 
-void MayaWindow::UseGraphicsContext()
-{
-	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
-	glfwMakeContextCurrent(window);
-}
-
-void MayaWindow::ClearBuffers()
-{
-	extern void Maya_s_BindScissorTest(MayaWindow* window, MayaScissorTest* test);
-	Maya_s_BindScissorTest(this, 0);
-	glClear(GL_COLOR_BUFFER_BIT);
-}
-
-void MayaWindow::ResizeViewport(MayaIvec2 pos, MayaIvec2 size)
-{
-	UseGraphicsContext();
-	glViewport(pos.x, GetSize().y - pos.y - size.y, size.x, size.y);
-}
-
-void MayaWindow::PackViewport()
-{
-	UseGraphicsContext();
-	auto size = GetSize();
-	glViewport(0, 0, size.x, size.y);
-}
-
-void MayaPollWindowEvents()
+void Window::PollEvents()
 {
 	glfwPollEvents();
 }
 
-void MayaWindow::SwapBuffers()
+void Window::SwapBuffers()
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	glfwSwapBuffers(window);
 }
 
-void MayaWindow::SetPosition(int x, int y)
+void Window::SetPosition(int x, int y)
 {
-	SetPosition(MayaIvec2(x, y));
+	SetPosition(Ivec2(x, y));
 }
 
-void MayaWindow::SetPosition(MayaIvec2 pos)
+void Window::SetPosition(Ivec2 pos)
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	glfwSetWindowPos(window, pos.x, pos.y);
 }
 
-void MayaWindow::SetSize(int width, int height)
+void Window::SetSize(int width, int height)
 {
-	SetSize(MayaIvec2(width, height));
+	SetSize(Ivec2(width, height));
 }
 
-void MayaWindow::SetSize(MayaIvec2 size)
+void Window::SetSize(Ivec2 size)
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	glfwSetWindowSize(window, size.x, size.y);
 }
 
-void MayaWindow::SetTitle(MayaStringCR title)
+void Window::SetTitle(char const* title)
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
-	glfwSetWindowTitle(window, title.c_str());
+	glfwSetWindowTitle(window, title);
 	this->title = title;
 }
 
-MayaIvec2 MayaWindow::GetPosition() const
+Ivec2 Window::GetPosition() const
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
-	MayaIvec2 result;
+	Ivec2 result;
 	glfwGetWindowPos(window, &result.x, &result.y);
 	return result;
 }
 
-MayaIvec2 MayaWindow::GetSize() const
+Ivec2 Window::GetSize() const
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
-	MayaIvec2 result;
+	Ivec2 result;
 	glfwGetWindowSize(window, &result.x, &result.y);
 	return result;
 }
 
-MayaString MayaWindow::GetTitle() const
+stl::string const& Window::GetTitle() const
 {
 	return title;
 }
 
-void MayaWindow::SetResizeAspectRatioLock(int x, int y)
+void Window::SetResizeAspectRatioLock(int x, int y)
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	glfwSetWindowAspectRatio(window, x, y);
 }
 
-bool MayaWindow::IsKeyPressed(MayaKeyCode keycode) const
+bool Window::IsKeyPressed(KeyCode keycode) const
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	return glfwGetKey(window, keycode) == GLFW_PRESS;
 }
 
-bool MayaWindow::IsMouseButtonPressed(MayaMouseButton button) const
+bool Window::IsMouseButtonPressed(MouseButton button) const
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	return glfwGetMouseButton(window, button) == GLFW_PRESS;
 }
 
-MayaFvec2 MayaWindow::GetCursorPosition() const
+Fvec2 Window::GetCursorPosition() const
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	double x, y;
@@ -312,13 +302,13 @@ MayaFvec2 MayaWindow::GetCursorPosition() const
 	return { x, y };
 }
 
-bool MayaWindow::IsFocused() const
+bool Window::IsFocused() const
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	return glfwGetWindowAttrib(window, GLFW_FOCUSED);
 }
 
-void MayaWindow::SetFullscreenMonitor(int monitor, MayaIvec2 size)
+void Window::SetFullscreenMonitor(int monitor, Ivec2 size)
 {
 	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
 	this->monitor = monitor;
@@ -327,14 +317,15 @@ void MayaWindow::SetFullscreenMonitor(int monitor, MayaIvec2 size)
 		return;
 	}
 
-	MayaMonitorsInfo info;
-	MayaGetDeviceInfo(&info);
+	MonitorsInfo info = MonitorsInfo::Retrieve();
 	auto& m = info.Monitors[monitor];
 	glfwSetWindowMonitor(window, static_cast<GLFWmonitor*>(m.Resptr), 0, 0,
 		size.x != -1 ? size.x : m.Resolution.x, size.y != -1 ? size.y : m.Resolution.y, GLFW_DONT_CARE);
 }
 
-int MayaWindow::GetFullscreenMonitor() const
+int Window::GetFullscreenMonitor() const
 {
 	return monitor;
+}
+
 }

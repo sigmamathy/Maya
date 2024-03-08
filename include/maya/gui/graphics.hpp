@@ -6,12 +6,12 @@ class MayaGraphicsGui
 {
 public:
 
-	MayaGraphicsGui(MayaWindow& window);
+	MayaGraphicsGui(Window& window);
 	MayaGraphicsGui(MayaGraphicsGui const&) = delete;
 	MayaGraphicsGui& operator=(MayaGraphicsGui const&) = delete;
 	~MayaGraphicsGui();
 
-	MayaWindow* const Window;
+	Window* const Window;
 
 	class MayaLabelGui& CreateLabel();
 	class MayaButtonGui& CreateButton();
@@ -24,7 +24,7 @@ public:
 
 	void Draw();
 
-	MayaFont& GetDefaultFont();
+	Font& GetDefaultFont();
 
 private:
 

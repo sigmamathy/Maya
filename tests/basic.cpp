@@ -1,50 +1,92 @@
-#include <maya/gui/button.hpp>
-#include <maya/gui/textfield.hpp>
-#include <maya/gui/label.hpp>
-#include <maya/gui/checkbox.hpp>
-#include <maya/gui/panel.hpp>
-#include <maya/gui/scrollbar.hpp>
-#include <maya/gui/numberscroll.hpp>
+#include <maya/window.hpp>
+#include <maya/vertexarray.hpp>
+#include <maya/shader.hpp>
+#include <maya/dataio.hpp>
+#include <maya/texture.hpp>
 
-int main()
+static float v[] = {
+	-0.5f, -0.5f,	0, 0,
+	0.5f, -0.5f,	1, 0,
+	0.0f, 0.5f,		0.5f, 1,
+};
+
+static char const* vshader = R"(
+
+#version 330 core
+
+layout(location = 0) in vec2 ipos;
+layout(location = 1) in vec2 itexcoord;
+
+out vec2 vtexcoord;
+
+void main() {
+	gl_Position = vec4(ipos, 0, 1);
+	vtexcoord = itexcoord;
+}
+
+)";
+
+static char const* fshader = R"(
+
+#version 330 core
+
+in vec2 vtexcoord;
+out vec4 FragColor;
+
+uniform sampler2D tex;
+
+void main() {
+	FragColor = texture(tex, vtexcoord);
+}
+
+)";
+
+int __cdecl main(int argc, char** argv)
 {
-	MayaLibraryManager manager(MAYA_LIBRARY_GLFW);
-	MayaSetErrorCallback(MayaLogErrorToStdCerr);
+	maya::LibraryManager m;
+	m.LoadDependency(maya::GraphicsDep);
+	maya::Error::SetGlobalCallback(maya::Error::LogToConsole);
 
-	MayaWindowUptr window = MayaCreateWindowUptr();
-	window->SetSize(1920, 1080);
+	maya::Window::uptr window = maya::Window::MakeUnique();
+	auto& rc = window->GetRenderContext();
+	rc.Begin();
 
-	MayaGraphicsGui gui(*window);
-	MayaGraphics2d g2d(*window);
+	maya::VertexLayout layout;
+	layout.Push(0, 2).Push(1, 2);
 
-	auto& pane = gui.CreateTitlePanel();
-	pane.SetEnableScroll(1);
-	pane.SetContentSize(MayaFvec2(800, 800));
-	
-	auto& r = gui.CreateNumberScroll();
-	auto& g = gui.CreateNumberScroll();
-	auto& b = gui.CreateNumberScroll();
-	r.SetPosition(-180, 0);
-	b.SetPosition(180, 0);
-	r.SetRange(0, 255);
-	g.SetRange(0, 255);
-	b.SetRange(0, 255);
-	
-	pane.Add(r, g, b);
+	maya::VertexArray::uptr vao = maya::VertexArray::MakeUnique(rc);
+	vao->PushBuffer(maya::ConstBuffer(v, sizeof(v)), layout);
 
-	while (!window->IsTimeToClose())
+	maya::ShaderProgram::uptr program = maya::ShaderProgram::MakeUnique(rc);
+	program->CompileShader(maya::VertexShader, vshader);
+	program->CompileShader(maya::FragmentShader, fshader);
+	program->LinkProgram();
+
+	maya::ImageImporter image(MAYA_PROJECT_SOURCE_DIR "/tests/image0.png");
+
+	maya::Texture::uptr texture = maya::Texture::MakeUnique(rc);
+	texture->CreateContent(image.Data, image.Size, image.Channels);
+	texture->SetFilterLinear();
+	texture->SetRepeat();
+
+	while (!window->IsRequestedForClose())
 	{
-		window->ClearBuffers();
-		window->PackViewport();
+		rc.ClearBuffer();
 
-		g2d.UseWindowProjection();
-		g2d.UseColor(MayaIvec4(r.GetValue(), g.GetValue(), b.GetValue(), 255));
+		rc.SetInput(vao.get());
+		rc.SetProgram(program.get());
+		rc.SetTexture(texture.get(), 0);
 
-		gui.Draw();
+		program->SetUniform<int>("tex", 0);
+
+		rc.DrawSetup();
 
 		window->SwapBuffers();
-		MayaPollWindowEvents();
+		maya::Window::PollEvents();
 	}
+
+	window.reset();
+
 
 	return 0;
 }

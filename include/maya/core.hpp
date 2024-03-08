@@ -20,9 +20,15 @@
 #if (defined (_MSC_VER) && defined (_DEBUG)) || ((defined (__GNUC__) || defined (__clang__)) && defined (__OPTIMIZE__))
 #define MAYA_DEBUG 1
 #define MAYA_DIF(...) if (__VA_ARGS__) [[unlikely]]
+#if defined(_MSC_VER)
+#define MAYA_DBREAK __debugbreak()
+#else
+#define MAYA_DBREAK __builtin_trap()
+#endif
 #else
 #define MAYA_DEBUG 0
 #define MAYA_DIF(...) if (0)
+#define MAYA_DBREAK 
 #endif
 // msvc: _DEBUG
 // gcc or clang: __OPTIMIZE__
@@ -38,187 +44,149 @@
 #error unknown platform detected, only Windows, MacOS and Linux are supported
 #endif
 
+#define MAYA_DELCOPY(x) x(x const&) = delete; x& operator=(x const&) = delete
+
 #include <string>
+#include <string_view>
 #include <cmath>
 #include <array>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include <functional>
 #include <iostream>
 #include <type_traits>
 #include <concepts>
 #include <cmath>
 #include <memory>
-#include <variant>
 
-#define MAYA_TYPEDEF0(x, y) using x = y; using x##R = y&; using x##CR = y const&
-#define MAYA_TYPEDEF1(x, y) template<class Ty> using x = y; template<class Ty> using x##R = y&; template<class Ty> using x##CR = y const&
-#define MAYA_TYPEDEF2(x, ...) template<class Ty1, class Ty2> using x = __VA_ARGS__; template<class Ty1, class Ty2> using x##R = __VA_ARGS__&; template<class Ty1, class Ty2> using x##CR = __VA_ARGS__ const&
-#define MAYA_TYPEDEFPTR(x) class x; MAYA_TYPEDEF0(x##Uptr, MayaUptr<x>); MAYA_TYPEDEF0(x##Sptr, MayaSptr<x>); MAYA_TYPEDEF0(x##Wptr, MayaWptr<x>)
-
-MAYA_TYPEDEF0(MayaString,		std::string);
-
-MAYA_TYPEDEF1(MayaUptr,			std::unique_ptr<Ty>);
-MAYA_TYPEDEF1(MayaSptr,			std::shared_ptr<Ty>);
-MAYA_TYPEDEF1(MayaWptr,			std::weak_ptr<Ty>);
-MAYA_TYPEDEF1(MayaArrayList,	std::vector<Ty>);
-MAYA_TYPEDEF1(MayaFunction,		std::function<Ty>);
-
-MAYA_TYPEDEF2(MayaHashMap,		std::unordered_map<Ty1, Ty2>);
-
-
-// --------------- Error code constants --------------- //
-
-#define MAYA_NO_ERROR							0x0
-#define MAYA_BOUNDARY_ERROR						0x1
-#define MAYA_DIVISION_BY_ZERO_ERROR				0x2
-#define MAYA_MISSING_LIBRARY_ERROR				0x3
-#define MAYA_MISSING_FILE_ERROR					0x4
-#define MAYA_EMPTY_REFERENCE_ERROR				0x5
-#define MAYA_SHADER_COMPILE_ERROR				0x6
-#define MAYA_INCONSISTENTENCY_ERROR				0x7
-#define MAYA_IMAGE_LOAD_ERROR					0x8
-#define MAYA_SHADER_UNIFORM_NO_FOUND_ERROR		0x9
-#define MAYA_INSTANCE_ERROR						0xA
-
-/**
-	@brief Struct of error data reported by Maya.
-
-	Indicates the type of error in ErrorCode and
-	briefly describes the cause of error in Details.
-	Those error will not be thrown as exception, but instead
-	reported using MayaSendError which can be retrieved later using
-	MayaPollError or MayaSetErrorCallback.
-*/
-struct MayaError
+namespace maya
 {
+
+// Types and Functions from the C++ STL library
+namespace stl
+{
+
+using string = ::std::string;
+
+using strview = ::std::string_view;
+
+template<class Fty>
+using fnptr = ::std::function<Fty>;
+
+template<class Ty>
+using uptr = ::std::unique_ptr<Ty>;
+
+template<class Ty>
+using sptr = ::std::shared_ptr<Ty>;
+
+template<class Ty, size_t Sz>
+using array = ::std::array<Ty, Sz>;
+
+template<class Ty>
+using list = ::std::vector<Ty>;
+
+template<class KTy, class VTy>
+using hashmap = ::std::unordered_map<KTy, VTy>;
+
+template<class KTy>
+using uset = ::std::unordered_set<KTy>;
+
+}
+
+// Provides useful error information.
+struct Error
+{
+	// Standard error codes
+	enum: unsigned
+	{
+		NoError = 0,
+		OutOfBounds,
+		DivisionByZero,
+		MissingDependencies,
+		MissingFile,
+		MissingReference,
+		ShaderParse,
+		Inconsistence,
+		ImageLoad,
+		ShaderUniformNotFound,
+		Singleton
+	};
+
+	// One of the error code defined above
 	unsigned ErrorCode;
-	MayaString Details;
-	inline operator bool() const {
+
+	// Error details, usually contains the function name too.
+	stl::string Details;
+
+	// Returns true if error presents
+	inline operator bool() const noexcept {
 		return ErrorCode;
 	}
+
+	// Use std::cerr to log error to console
+	static void LogToConsole(Error& err);
+
+	// Set a global callback for Maya to handle the errors.
+	// Errors stored in the queue will be passed immediately to the callback.
+	// By default callback is nullptr.
+	static void SetGlobalCallback(stl::fnptr<void(Error&)> const& callback);
+
+	// Poll the top error that is stored in the queue.
+	// If none, one with NoError will be returned.
+	static Error Poll();
+
+	// Send an error to the callback if one is presented,
+	// or push the error to the queue that can be retrieved later.
+	static void Send(unsigned code, stl::string const& msg);
+
+	// Send an error to the callback if one is presented,
+	// or push the error to the queue that can be retrieved later.
+	static void Send(Error& err);
 };
 
-/**
-	@brief Set an error callback for Maya.
+// --------------------------- List of dependencies --------------------------- //
 
-	Tells Maya which callback to use whenever MayaSendError is called.
-	Also automatically poll all queued errors and send to this callback.
-	By default, callback is set to nullptr and all errors will be store
-	in the queue until MayaPollError is called.
+constexpr unsigned GraphicsDep = 0x1;
 
-	@param callback: The callback to be used, could be nullptr.
-*/
-void MayaSetErrorCallback(MayaFunctionCR<void(MayaError&)> callback);
-
-/**
-	@brief Returns the error from top of the error queue.
-
-	Poll an error from the error queue. If no error exists, this returns
-	error with ErrorCode = MAYA_NO_ERROR. One can use this advantage 
-	in a while loop. For Instance:
-
-	@code
-	while (MayaError err = MayaPollError()) {
-		// do stuff...
-	}
-	@endcode
-
-	This function is absolutely useless if an error callback is set, since
-	all errors are already handled and no error will be stored in the queue.
-*/
-MayaError MayaPollError();
-
-/**
-	@brief Report an error to Maya.
-
-	Place the error into the back of error queue if callback is not specified,
-	otherwise automatically send it to the callback provided by user.
-*/
-void MayaSendError(MayaError err);
-
-/*
-	@brief Log error to console via std::cerr
-*/
-void MayaLogErrorToStdCerr(MayaError& err);
-
-// ---------- Bits field constants for specifying dependencies ---------- //
-
-#define MAYA_LIBRARY_GLFW 0x1
-
-/**
-	@brief Load dependencies into memory.
-
-	This instance should only be created once and sustain its lifetime
-	throughout the program until main() returned. Some classes requires
-	specific dependencies to be loaded to function. For details please
-	refer to the above definition of constants.
-*/
-class MayaLibraryManager
+// Served as the loader for dependencies.
+class LibraryManager
 {
 public:
 
-	/**
-		@brief Initialize specific contents mentioned in bits.
+	// One only instance of this class can be presented at a time.
+	LibraryManager();
 
-		After desired features are loaded, MayaLibraryManager will free them
-		automatically when it reaches its lifetime. Note that required libraries
-		can be loaded later at any time, using the LoadDependencies function.
+	// Unload all dependencies if any.
+	~LibraryManager();
 
-		@param bits: a bit field that specify what to load
-	*/
-	MayaLibraryManager(unsigned bits = 0);
+	// No copy construct.
+	LibraryManager(LibraryManager const&) = delete;
+	LibraryManager& operator=(LibraryManager const&) = delete;
 
-	/**
-		@brief Destroy and free all loaded libraries.
-	*/
-	~MayaLibraryManager();
+	// Returns the instance of the class, or nullptr if none.
+	static LibraryManager* Instance();
 
-	// No copy
-	MayaLibraryManager(MayaLibraryManager const&) = delete;
-	MayaLibraryManager& operator=(MayaLibraryManager const&) = delete;
+	// Load a single dependency
+	void LoadDependency(unsigned dep);
 
-	/**
-		@brief Load more dependencies manually.
+	// Unload a single dependency
+	void UnloadDependency(unsigned dep);
 
-		Function exactly the same as the constructor.
-		NEVER load libraries that has already been loaded,
-		which may results undefined behaviour.
+	// Returns true if the dependency is presented.
+	bool FoundDependency(unsigned dep) const;
 
-		@param bitfield: a bit field that specify what to load
-	*/
-	void LoadDependencies(unsigned bitfield);
+	// Returns true if the dependencies is presented.
+	bool FoundDependencies(unsigned deps) const;
 
-	/**
-		@brief Unload dependencies manually.
+#define MAYA_FOUND_DEPS(deps) (LibraryManager::Instance() && LibraryManager::Instance()->FoundDependencies(deps))
 
-		Once a dependencies is unloaded, it will no longer
-		be handled by the manager.
-		NEVER unload libraries that have not been loaded,
-		which may results undefined behaviour.
-
-		@param bitfield: a bit field that specify what to unload
-	*/
-	void UnloadDependencies(unsigned bitfield);
-
-	/**
-		@brief Returns true if a dependencies is found to be loaded.
-
-		@param bit: expects a single dependency
-	*/
-	bool FoundDependency(unsigned bit) const;
-
-	/**
-		@brief Returns the time since manager is created (in seconds)
-	*/
+	// Returns the time since the instance is created, in seconds.
 	float GetTimeSince() const;
 
 private:
-	// libraries
+	// bit fields
 	unsigned libraries;
 };
 
-/**
-	@brief Returns a pointer to library manager if presents.
-*/
-MayaLibraryManager* MayaGetLibraryManager();
+}

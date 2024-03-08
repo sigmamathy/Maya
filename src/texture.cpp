@@ -4,6 +4,9 @@
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
 
+namespace maya
+{
+
 static constexpr int s_TextureFormat(int channels)
 {
 	switch (channels)
@@ -16,7 +19,52 @@ static constexpr int s_TextureFormat(int channels)
 	}
 }
 
-static unsigned s_CreateTexture(void const* data, MayaIvec2 size, int channels, bool repeat)
+Texture::Texture(RenderContext& rc)
+	: RenderResource(rc)
+{
+	glGenTextures(1, &textureid);
+}
+
+Texture::~Texture()
+{
+	CleanUp();
+}
+
+Texture::uptr Texture::MakeUnique(RenderContext& rc)
+{
+	return uptr(new Texture(rc));
+}
+
+Texture::sptr Texture::MakeShared(RenderContext& rc)
+{
+	return sptr(new Texture(rc));
+}
+
+void Texture::CleanUp()
+{
+	if (textureid)
+	{
+		RenderResource::CleanUp();
+		glDeleteTextures(1, &textureid);
+		textureid = 0;
+	}
+}
+
+void RenderContext::SetTexture(Texture* tex, int slot)
+{
+	glActiveTexture(GL_TEXTURE0 + slot);
+	glBindTexture(GL_TEXTURE_2D, tex ? tex->textureid : 0);
+}
+
+void Texture::CreateContent(void const* data, Ivec2 size, int channels)
+{
+	rc.SetTexture(this, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+		size.x, size.y, 0, s_TextureFormat(channels), GL_UNSIGNED_BYTE, data);
+	rc.SetTexture(0, 0);
+}
+
+static unsigned s_CreateTexture(void const* data, Ivec2 size, int channels, bool repeat)
 {
 	unsigned textureid;
 	glGenTextures(1, &textureid);
@@ -32,74 +80,28 @@ static unsigned s_CreateTexture(void const* data, MayaIvec2 size, int channels, 
 	return textureid;
 }
 
-static unsigned s_CreateTextureFromImageFile(MayaStringCR path, int channels, MayaIvec2& size, bool repeat)
+void Texture::SetRepeat()
 {
-	stbi_set_flip_vertically_on_load(true);
-	int ch;
-	stbi_uc* data = stbi_load(path.c_str(), &size.x, &size.y, &ch, channels);
-	if (!data)
-		return 0;
-	channels = channels == 0 || ch < channels ? ch : channels;
-	unsigned id = s_CreateTexture(data, size, channels, repeat);
-	stbi_image_free(data);
-	return id;
+	glBindTexture(GL_TEXTURE_2D, textureid);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
 
-MayaTexture* s_CreateTexturePtr(MayaWindow& window, MayaTextureParameters& param)
+void Texture::SetFilterLinear()
 {
-	window.UseGraphicsContext();
-
-	if (param.Source == MayaTextureParameters::FromMemory)
-	{
-		unsigned id = s_CreateTexture(param.RawData.Data, param.RawData.Size, param.RawData.Channels, param.Repeat);
-		return new MayaTexture(id, &window, param.RawData.Size);
-	}
-	else
-	{
-		MayaIvec2 size;
-		unsigned id = s_CreateTextureFromImageFile(param.FileLoad.Path, param.FileLoad.Channels, size, param.Repeat);
-		return id ? new MayaTexture(id, &window, size) : nullptr;
-	}
+	glBindTexture(GL_TEXTURE_2D, textureid);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 }
 
-MayaTextureUptr MayaCreateTextureUptr(MayaWindow& window, MayaTextureParameters& param)
-{
-	auto ptr = s_CreateTexturePtr(window, param);
-	if (!ptr) [[unlikely]] {
-		MayaSendError({ MAYA_IMAGE_LOAD_ERROR,
-					"MayaCreateTextureUptr(MayaWindow&, MayaTextureParameters&): "
-					"The required file path does not exists or unsupported format is detected." });
-		return nullptr;
-	}
-	return MayaTextureUptr(ptr);
-}
-
-MayaTextureSptr MayaCreateTextureSptr(MayaWindow& window, MayaTextureParameters& param)
-{
-	auto ptr = s_CreateTexturePtr(window, param);
-	if (!ptr) [[unlikely]] {
-		MayaSendError({ MAYA_IMAGE_LOAD_ERROR,
-					"MayaCreateTextureSptr(MayaWindow&, MayaTextureParameters&): "
-					"The required file path does not exists or unsupported format is detected." });
-		return nullptr;
-	}
-	return MayaTextureSptr(ptr);
-}
-
-MayaTexture::MayaTexture(unsigned texture, MayaWindow* window, MayaIvec2 size)
-	: textureid(texture), window(window), size(size)
-{
-}
-
-MayaTexture::~MayaTexture()
-{
-	if (!MayaWindow::Exists(window))
-		return;
-	window->UseGraphicsContext();
-	glDeleteTextures(1, &textureid);
-}
-
-MayaIvec2 MayaTexture::GetSize() const
+Ivec2 Texture::GetSize() const
 {
 	return size;
+}
+
+int Texture::GetChannels() const
+{
+	return channels;
+}
+
 }

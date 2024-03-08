@@ -23,202 +23,148 @@
 #include "./core.hpp"
 #include "./math.hpp"
 #include "./event.hpp"
+#include "./render.hpp"
 
-/**
-	@brief Initial configuration for window creation. (Optional)
-	
-	This struct provides user customization on window that
-	will be immediately applied at the moment the window is created.
-	Some option can be changed later (e.g. size and title) but some not,
-	which may require destroy the existing window and create a new one.
-	All parameters is default initialized.
-*/
-inline struct MayaWindowParameters
+namespace maya
 {
-	/**
-		@brief Desired size of window.
 
-		Setting this field will change the size of window,
-		which is relative to the screen resolution.
-		The window can also be resized again by MayaWindow::SetSize.
-		Value of negative one stands for default option, which is 1280x720
-		if the window is in windowed mode, or the resolution of monitor selected
-		if fullscreen window is desired.
+// Window parameters.
+struct WindowParams
+{
+	// Desired size, -1 for default.
+	Ivec2 Size = { -1, -1 };
 
-		@see MayaWindow::SetSize(MayaIvec2)
-	*/
-	MayaIvec2 Size = { -1, -1 };
+	// Desired title.
+	char const* Title = "Maya Application";
 
-	/**
-		@brief Desired title of the window.
-
-		This title parameter refers to the text visible on the window decoration.
-		This string could be empty. Can also be modified by MayaWindow::SetTitle.
-		No use if window is in fullscreen or undecorated.
-
-		@see MayaWindow::SetTitle
-	*/
-	MayaString Title = "Maya Application";
-
-	/**
-		@brief Desired monitor for fullscreen window.
-		
-		This parameter indicates which monitor should the window used for
-		fullscreen window, by using the display number assigned by operating system.
-		For instance, zero is the primary monitor and one is the secondary monitor.
-		Value of negative one indicates windowed mode is desired.
-		Can be reset by MayaWindow::SetFullscreenMonitor.
-
-		@see MayaWindow::SetFullscreenMonitor
-	*/
+	// Desired monitor, -1 for no monitor.
 	int Monitor = -1;
 
-	/**
-		@brief Mulitsampling for anti-aliasing.
-
-		Cannot be changed once window is constructed.
-	*/
+	// Desired samples for anti aliasing
 	int MSAA = 1;
 
-// -------------------------- Window hints -------------------------- //
+	// -------------------------- Window hints -------------------------- //
 
-	/**
-		@brief Set whether the window should be resizable by user.
+		// Can be resizable by user.
+	bool Resizable = true;
 
-		If set to false, the user will no longer be able to resize the window,
-		including maximizing the window.
-		The window can still be resized in code without limits.
-		Cannot be changed once the window is constructed.
-	*/
-	bool Resizable			= true;
+	// Keep the window decoration.
+	bool Decorated = true;
 
-	/**
-		@brief Options for keeping the window decorated.
+	// Automatically minimized when loses focus (Fullscreen only).
+	bool AutoIconify = true;
 
-		If set to false, the top decoration will disappear to user,
-		which also means that the window cannot be freely moved by user anymore.
-		Cannot be changed once the window is constructed.
-	*/
-	bool Decorated			= true;
+	// Keeping the window always on top of other window.
+	bool AlwaysOnTop = false;
 
-	/**
-		@brief Automatically minimized when loses focus (Fullscreen only).
+	// Maximize the window.
+	bool Maximized = false;
 
-		Refers to the behaviour where a window is automatically minimized (iconified)
-		by the window system when it loses focus.
-		No use for window in windowed mode
-		Cannot be changed once the window is constructed.
-	*/
-	bool AutoIconify		= true;
+};
 
-	/**
-		@brief Keeping the window always on top of other window.
-
-		The window will always on top of other window even if it loses foucs.
-		Also known as FLOATING in glfw contexts.
-		Cannot be changed once the window is constructed.
-	*/
-	bool AlwaysOnTop		= false;
-
-	/**
-		@brief Maximize the window.
-
-		Set the window to maximized mode when created.
-		Unknown behaviour if SetSize is called when the window is maximized,
-		or applied when window is in fullscreen.
-		This option can always be changed later, both by user or code.
-	*/
-	bool Maximized			= false;
-
-}
-
-/**
-	@brief Default parameters for this struct.
-*/
-MayaDefaultWindowParameters;
-
-// Window Pointers typedef
-MAYA_TYPEDEFPTR(MayaWindow);
-
-MayaWindowUptr MayaCreateWindowUptr(MayaWindowParameters& param = MayaDefaultWindowParameters);
-
-MayaWindowSptr MayaCreateWindowSptr(MayaWindowParameters& param = MayaDefaultWindowParameters);
-
-void MayaPollWindowEvents();
-
-/**
-	@brief Provides control over window functionality.
-
-
-*/
-class MayaWindow
+// Responsible for handle window process.
+class Window
 {
-
 public:
 
-	MayaWindow(void* pointer, int monitor, MayaStringCR title);
+	using uptr = stl::uptr<Window>;
+	using sptr = stl::sptr<Window>;
 
-	~MayaWindow();
+	// Create window with parameters.
+	Window(WindowParams const& param = WindowParams{});
 
-	MayaWindow(MayaWindow const&) = delete;
-	MayaWindow& operator=(MayaWindow const&) = delete;
+	// Destroy window and underlying graphic resources.
+	~Window();
 
-	static bool Exists(MayaWindow* window);
+	// No copy construct.
+	Window(Window const&) = delete;
+	Window& operator=(Window const&) = delete;
 
-	unsigned AddEventCallback(MayaEventCallbackCR callback);
+	// Create and return a uptr.
+	static uptr MakeUnique(WindowParams const& param = WindowParams{});
 
+	// Create and return a sptr.
+	static sptr MakeShared(WindowParams const& param = WindowParams{});
+
+	// Returns a render context.
+	RenderContext& GetRenderContext();
+
+	// Poll all incoming events to the event callback.
+	static void PollEvents();
+
+	// Add a custom event listener and return an ID.
+	unsigned AddEventCallback(EventCallback const& callback);
+
+	// Remove event listener based on ID.
 	void RemoveEventCallback(unsigned index);
 
-	void PleaseClose(bool close = true);
+	// Set an close flag, does not actually close it.
+	void RequestForClose(bool close = true);
 
-	bool IsTimeToClose() const;
+	// Check if a close flag is enabled.
+	bool IsRequestedForClose() const;
 
-	void UseGraphicsContext();
-
-	void ClearBuffers();
-
-	void ResizeViewport(MayaIvec2 pos, MayaIvec2 size);
-
-	void PackViewport();
-
+	// Swap the front buffer and back buffer.
 	void SwapBuffers();
 
+	// Set window position.
 	void SetPosition(int x, int y);
 
-	void SetPosition(MayaIvec2 pos);
+	// Set window position.
+	void SetPosition(Ivec2 pos);
 
+	// Set window size.
 	void SetSize(int width, int height);
 
-	void SetSize(MayaIvec2 size);
+	// Set window size.
+	void SetSize(Ivec2 size);
 
-	void SetTitle(MayaStringCR title);
+	// Set window title.
+	void SetTitle(char const* title);
 
-	MayaIvec2 GetPosition() const;
+	// Get window position.
+	Ivec2 GetPosition() const;
 
-	MayaIvec2 GetSize() const;
+	// Get window size.
+	Ivec2 GetSize() const;
 
-	MayaString GetTitle() const;
+	// Get window title.
+	stl::string const& GetTitle() const;
 
+	// Ensure the aspect ratio of the window is always constant.
 	void SetResizeAspectRatioLock(int x, int y);
 
-	bool IsKeyPressed(MayaKeyCode keycode) const;
+	// Check if a key is pressed right now.
+	bool IsKeyPressed(KeyCode keycode) const;
 
-	bool IsMouseButtonPressed(MayaMouseButton button) const;
+	// Check if a mouse button is pressed right now.
+	bool IsMouseButtonPressed(MouseButton button) const;
 
-	MayaFvec2 GetCursorPosition() const;
+	// Get the current cursor position.
+	Fvec2 GetCursorPosition() const;
 
+	// Check if the window is focused.
 	bool IsFocused() const;
 
-	void SetFullscreenMonitor(int monitor, MayaIvec2 size = {-1, -1});
+	// Set the window to fullscreen on a specific monitor.
+	// By default resize the window to fit the monitor resolution as well.
+	void SetFullscreenMonitor(int monitor, Ivec2 size = { -1, -1 });
 
+	// Return the current fullscreen monitor, or -1 is none.
 	int GetFullscreenMonitor() const;
 
 private:
 
 	void* resptr;
-	MayaEventCallback event_callback;
-	MayaArrayList<MayaEventCallback> callbacks;
-	MayaString title;
+	EventCallback callback;
+	stl::list<EventCallback> user_callbacks;
+	stl::string title;
 	int monitor;
+	RenderContext rc;
 
+	Window(nullptr_t) noexcept {};
+	bool Initialize(WindowParams const& param);
+	friend class RenderContext;
 };
+
+}

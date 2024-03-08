@@ -3,20 +3,27 @@
 #include "./core.hpp"
 #include "./math.hpp"
 
+namespace maya
+{
+
 // Information about user's monitors
-struct MayaMonitorsInfo
+struct MonitorsInfo
 {
 	struct MonitorData {
 		int Priority;
-		std::string Name;
-		MayaIvec2 Resolution;
+		stl::string Name;
+		Ivec2 Resolution;
 		// ----------- internal ----------- //
 		void* Resptr;
 	};
+
 	MonitorData* Monitors;
 	int Count; // number of monitors
+
+	// Retrieve monitors information
+	static MonitorsInfo Retrieve();
 };
 
-void MayaGetDeviceInfo(MayaMonitorsInfo* info);
+char const* GetClipBoardString();
 
-MayaString MayaGetClipBoardString();
+}

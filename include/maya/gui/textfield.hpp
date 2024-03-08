@@ -13,7 +13,7 @@ public:
 
 	void ReactEvent(MayaEvent& e) override;
 
-	void SetFont(MayaFont* font);
+	void SetFont(Font* font);
 
 	void SetText(MayaStringCR text);
 

@@ -4,43 +4,34 @@
 #include "./math.hpp"
 #include "./texture.hpp"
 
-struct MayaGlyphInfo
+namespace maya
 {
-	MayaTexture* Texture;
-	MayaIvec2 Size, Bearing;
+
+struct Glyph
+{
+	Texture::uptr Texture;
+	Ivec2 Size, Bearing;
 	unsigned Advance;
 };
 
-class MayaWindow;
-MAYA_TYPEDEFPTR(MayaFont);
-
-MayaFontUptr MayaCreateFontUptr(MayaWindow& window, MayaStringCR path, int pixelsize);
-
-MayaFontUptr MayaCreateFontUptr(MayaWindow& window, void* data, unsigned size, int pixelsize);
-
-MayaFontSptr MayaCreateFontSptr(MayaWindow& window, MayaStringCR path, int pixelsize);
-
-MayaFontSptr MayaCreateFontSptr(MayaWindow& window, void* data, unsigned size, int pixelsize);
-
-class MayaFont
+class Font
 {
 public:
 
-	MayaFont(MayaWindow& window, MayaStringCR path, int pixelsize);
+	Font(RenderContext& rc, char const* path, int pixelsize);
 
-	MayaFont(MayaWindow& window, void* data, unsigned size, int pixelsize);
+	// No copy construct.
+	Font(Font const&) = delete;
+	Font& operator=(Font const&) = delete;
 
-	MayaFont(MayaFont const&) = delete;
-
-	MayaFont& operator=(MayaFont const&) = delete;
-
-	MayaGlyphInfo const& operator[](char c) const;
+	Glyph const& operator[](char c) const;
 
 	int GetMaxHeight() const;
 
 private:
 
-	MayaHashMap<char, MayaTextureUptr> textures;
-	MayaHashMap<char, MayaGlyphInfo> glyph_infos;
+	stl::hashmap<char, Glyph> glyphs;
 	int max_height;
 };
+
+}

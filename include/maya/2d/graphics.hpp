@@ -11,11 +11,11 @@ class MayaGraphics2d
 {
 public:
 
-	MayaGraphics2d(MayaWindow& window);
+	MayaGraphics2d(Window& window);
 	MayaGraphics2d(MayaGraphics2d const&) = delete;
 	MayaGraphics2d& operator=(MayaGraphics2d const&) = delete;
 
-	MayaWindow* const Window;
+	Window* const Window;
 
 	void UseProjection(float width, float height);
 	void UseProjection(MayaFvec2 size);
@@ -50,8 +50,8 @@ public:
 	void DrawIsoTriangle(float x, float y, float width, float height);
 	void DrawIsoTriangle(MayaFvec2 pos, MayaFvec2 size);
 
-	void DrawText(MayaFont& font, MayaStringCR text, float x, float y, MayaCorner align = MayaCornerBC);
-	void DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos, MayaCorner align = MayaCornerBC);
+	void DrawText(Font& font, MayaStringCR text, float x, float y, MayaCorner align = MayaCornerBC);
+	void DrawText(Font& font, MayaStringCR text, MayaFvec2 pos, MayaCorner align = MayaCornerBC);
 	void DrawText(class MayaTextDisplay2d& text);
 	void DrawText(class MayaTextDisplay2d& text, int start, int end);
 

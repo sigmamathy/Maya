@@ -4,95 +4,122 @@
 #include <GLFW/glfw3.h>
 #include <chrono>
 
-static std::queue<MayaError> s_error_queue;
-static MayaFunction<void(MayaError& stat)> s_error_callback;
+namespace maya
+{
 
-void MayaSetErrorCallback(MayaFunctionCR<void(MayaError& stat)> callback)
+static std::queue<Error> s_error_queue;
+static stl::fnptr<void(Error&)> s_error_callback;
+
+void Error::SetGlobalCallback(stl::fnptr<void(Error&)> const& callback)
 {
 	s_error_callback = callback;
 	if (callback)
-		while (auto s = MayaPollError())
+		while (auto s = Poll())
 			s_error_callback(s);
 }
 
-MayaError MayaPollError()
+Error Error::Poll()
 {
 	if (s_error_queue.empty())
-		return MayaError{ .ErrorCode = MAYA_NO_ERROR };
+		return Error{ .ErrorCode = NoError };
 	auto res = s_error_queue.front();
 	s_error_queue.pop();
 	return res;
 }
 
-void MayaSendError(MayaError stat)
+void Error::Send(unsigned code, stl::string const& msg)
 {
-	if (s_error_callback)
-		s_error_callback(stat);
-	else 
-		s_error_queue.push(stat);
+	Error err = { code, msg };
+	if (s_error_callback) s_error_callback(err);
+	else s_error_queue.push(err);
 }
 
-void MayaLogErrorToStdCerr(MayaError& err)
+void Error::Send(Error& err)
+{
+	if (s_error_callback) s_error_callback(err);
+	else s_error_queue.push(err);
+}
+
+void Error::LogToConsole(Error& err)
 {
 	std::cerr << "ERROR 0x" << std::hex << std::uppercase << err.ErrorCode << std::dec;
 	std::cerr << " at " << err.Details << "\n\n";
 }
 
-static MayaLibraryManager* s_library_pointer = 0;
+static LibraryManager* s_library_pointer = 0;
 static std::chrono::steady_clock::time_point s_library_start_tp;
 
-MayaLibraryManager::MayaLibraryManager(unsigned bitfield)
-	: libraries(bitfield)
+LibraryManager::LibraryManager()
+	: libraries(0)
 {
 	MAYA_DIF(s_library_pointer)
 	{
-		MayaSendError({
-			MAYA_INSTANCE_ERROR,
-			"MayaLibraryManager::MayaLibraryManager(): Multiple instances of MayaLibraryManager is detected."
-		});
+		Error::Send(Error::Singleton,
+			"maya::LibraryManager::LibraryManager(): "
+			"Multiple instances of LibraryManager is detected.");
+		MAYA_DBREAK;
 		return;
 	}
 
 	s_library_pointer = this;
-	LoadDependencies(bitfield);
 	s_library_start_tp = std::chrono::high_resolution_clock::now();
 }
 
-MayaLibraryManager::~MayaLibraryManager()
+LibraryManager::~LibraryManager()
 {
-	UnloadDependencies(libraries);
+	for (size_t i = 0; i < sizeof(decltype(libraries)); i++)
+	{
+		auto d = 1 << i;
+		if (libraries & d)
+			UnloadDependency(d);
+	}
 	s_library_pointer = 0;
 }
 
-void MayaLibraryManager::LoadDependencies(unsigned bitfield)
+LibraryManager* LibraryManager::Instance()
 {
-	libraries |= bitfield;
-	if (bitfield & MAYA_LIBRARY_GLFW) {
-		glfwInit();
+	return s_library_pointer;
+}
+
+void LibraryManager::LoadDependency(unsigned dep)
+{
+	switch (dep)
+	{
+		case GraphicsDep:
+			glfwInit();
+			break;
 	}
+
+	libraries |= dep;
 }
 
-void MayaLibraryManager::UnloadDependencies(unsigned bitfield)
+void LibraryManager::UnloadDependency(unsigned dep)
 {
-	libraries &= ~bitfield;
-	if (bitfield & MAYA_LIBRARY_GLFW) {
-		glfwTerminate();
+	switch (dep)
+	{
+		case GraphicsDep:
+			glfwTerminate();
+			break;
 	}
+
+	libraries &= ~dep;
 }
 
-bool MayaLibraryManager::FoundDependency(unsigned bit) const
+bool LibraryManager::FoundDependency(unsigned dep) const
 {
-	return libraries & bit;
+	return libraries & dep;
 }
 
-float MayaLibraryManager::GetTimeSince() const
+bool LibraryManager::FoundDependencies(unsigned deps) const
+{
+	return !(~libraries & deps);
+}
+
+float LibraryManager::GetTimeSince() const
 {
 	auto end = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<float> duration = end - s_library_start_tp;
 	return duration.count();
 }
 
-MayaLibraryManager* MayaGetLibraryManager()
-{
-	return s_library_pointer;
 }

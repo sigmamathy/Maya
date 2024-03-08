@@ -1,16 +1,20 @@
 #include <maya/deviceinfo.hpp>
 #include <GLFW/glfw3.h>
 
-void MayaGetDeviceInfo(MayaMonitorsInfo* info)
+namespace maya
 {
-	MAYA_DIF(!MayaGetLibraryManager() || !MayaGetLibraryManager()->FoundDependency(MAYA_LIBRARY_GLFW))
+
+MonitorsInfo MonitorsInfo::Retrieve()
+{
+	MAYA_DIF(!LibraryManager::Instance() || !LibraryManager::Instance()->FoundDependency(GraphicsDep))
 	{
-		MayaSendError({ MAYA_MISSING_LIBRARY_ERROR,
-			"MayaGetDeviceInfo(MayaMonitorsInfo&): GLFW is not initialized." });
-		return;
+		Error::Send(Error::MissingDependencies,
+			"MayaGetDeviceInfo(MayaMonitorsInfo&): Graphics dependency not found.");
+		return {};
 	}
 
-	static std::vector<MayaMonitorsInfo::MonitorData> monitors_info_cache;
+	MonitorsInfo result;
+	static std::vector<MonitorsInfo::MonitorData> monitors_info_cache;
 	static bool first_called = false;
 
 	if (!first_called) {
@@ -22,25 +26,27 @@ void MayaGetDeviceInfo(MayaMonitorsInfo* info)
 			auto* vid = glfwGetVideoMode(ms[i]);
 			monitors_info_cache.emplace_back(
 				i, glfwGetMonitorName(ms[i]),
-				MayaIvec2(vid->width, vid->height), ms[i]
+				Ivec2(vid->width, vid->height), ms[i]
 			);
 		}
 		first_called = true;
 	}
 
-	info->Monitors = monitors_info_cache.data();
-	info->Count = static_cast<int>(monitors_info_cache.size());
+	result.Monitors = monitors_info_cache.data();
+	result.Count = static_cast<int>(monitors_info_cache.size());
+	return result;
 }
 
-MayaString MayaGetClipBoardString()
+char const* GetClipBoardString()
 {
-	MAYA_DIF(!MayaGetLibraryManager() || !MayaGetLibraryManager()->FoundDependency(MAYA_LIBRARY_GLFW))
+	MAYA_DIF(!LibraryManager::Instance() || !LibraryManager::Instance()->FoundDependency(GraphicsDep))
 	{
-		MayaSendError({ MAYA_MISSING_LIBRARY_ERROR,
-			"MayaGetDeviceInfo(MayaMonitorsInfo&): GLFW is not initialized." });
-		return "";
+		Error::Send(Error::MissingDependencies,
+			"MayaGetDeviceInfo(MayaMonitorsInfo&): GLFW is not initialized.");
+		return nullptr;
 	}
 
-	char const* s = glfwGetClipboardString(0);
-	return s ? s : "";
+	return glfwGetClipboardString(0);
+}
+
 }

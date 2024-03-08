@@ -6,15 +6,15 @@ class MayaTextDisplay2d
 {
 public:
 
-	MayaTextDisplay2d(MayaFont& font, MayaStringCR text);
+	MayaTextDisplay2d(Font& font, MayaStringCR text);
 	MayaTextDisplay2d& operator=(MayaStringCR text);
 
 	void InsertCharAt(int index, char c);
 	char RemoveCharAt(int index);
 	void InsertStringAt(int index, MayaStringCR str);
 
-	void SetFont(MayaFont& font);
-	MayaFont& GetFont() const;
+	void SetFont(Font& font);
+	Font& GetFont() const;
 	MayaStringCR GetString() const;
 	unsigned GetLength() const;
 
@@ -31,7 +31,7 @@ public:
 
 private:
 
-	MayaFont* font;
+	Font* font;
 	MayaString string;
 	MayaFvec2 text_size;
 	MayaCorner text_align;

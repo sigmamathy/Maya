@@ -49,7 +49,7 @@ void main()
 
 )";
 
-static MayaShaderProgramUptr s_CreateShaderProgram(MayaWindow& window)
+static MayaShaderProgramUptr s_CreateShaderProgram(Window& window)
 {
 	MayaShaderProgramParameters param;
 	param.Vertex = s_vertex_shader;
@@ -75,7 +75,7 @@ static MayaShaderProgramUptr s_CreateShaderProgram(MayaWindow& window)
 #define MAYA_TICK			2
 #define MAYA_ISO_TRIANGLE	3
 
-static MayaVertexArrayUptr s_CreateSquareVertexArray(MayaWindow& window)
+static MayaVertexArrayUptr s_CreateSquareVertexArray(Window& window)
 {
 	static constexpr float vertices[] = {
 		-0.5f, 0.5f,		0, 1,
@@ -94,7 +94,7 @@ static MayaVertexArrayUptr s_CreateSquareVertexArray(MayaWindow& window)
 	return res;
 }
 
-static MayaVertexArrayUptr s_CreateCircleVertexArray(MayaWindow& window, int precision)
+static MayaVertexArrayUptr s_CreateCircleVertexArray(Window& window, int precision)
 {
 	MayaArrayList<float> vertices;
 	vertices.reserve(precision * 4 + 4);
@@ -136,7 +136,7 @@ static MayaVertexArrayUptr s_CreateCircleVertexArray(MayaWindow& window, int pre
 	return result;
 }
 
-static MayaVertexArrayUptr s_CreateTickVertexArray(MayaWindow& window)
+static MayaVertexArrayUptr s_CreateTickVertexArray(Window& window)
 {
 	static constexpr float vertices[] = {
 		-0.5f, -0.05f,				0, 0.45f,
@@ -171,7 +171,7 @@ static MayaVertexArrayUptr s_CreateTickVertexArray(MayaWindow& window)
 	return res;
 }
 
-static MayaVertexArrayUptr s_CreateIsoTriangleVertexArray(MayaWindow& window)
+static MayaVertexArrayUptr s_CreateIsoTriangleVertexArray(Window& window)
 {
 	static constexpr float vertices[] = {
 		-0.5f, -0.5f,		0, 0,
@@ -187,7 +187,7 @@ static MayaVertexArrayUptr s_CreateIsoTriangleVertexArray(MayaWindow& window)
 	return res;
 }
 
-MayaGraphics2d::MayaGraphics2d(MayaWindow& window)
+MayaGraphics2d::MayaGraphics2d(Window& window)
 	: Window(&window), texture(nullptr), camera(nullptr), rotation(0), projection(1), color(MayaWhite)
 {
 	program = s_CreateShaderProgram(window);
@@ -200,6 +200,7 @@ MayaGraphics2d::MayaGraphics2d(MayaWindow& window)
 
 	r.Program = program.get();
 	r.Textures[0] = texture;
+	r.MaxNumTexture = 2;
 	r.Blending = &blend;
 }
 
@@ -399,12 +400,12 @@ void MayaGraphics2d::DrawIsoTriangle(MayaFvec2 pos, MayaFvec2 size)
 	r.ExecuteDraw();
 }
 
-void MayaGraphics2d::DrawText(MayaFont& font, MayaStringCR text, float x, float y, MayaCorner align)
+void MayaGraphics2d::DrawText(Font& font, MayaStringCR text, float x, float y, MayaCorner align)
 {
 	return DrawText(font, text, MayaFvec2(x, y), align);
 }
 
-void MayaGraphics2d::DrawText(MayaFont& font, MayaStringCR text, MayaFvec2 pos, MayaCorner align)
+void MayaGraphics2d::DrawText(Font& font, MayaStringCR text, MayaFvec2 pos, MayaCorner align)
 {
 	program->SetUniform<int>("uHasTexture[1]", 1);
 	UpdateCameraOnDraw();

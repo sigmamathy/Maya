@@ -81,7 +81,7 @@ void MayaTextFieldGui::ReactEvent(MayaEvent& e)
 	{
 		if (careti != -1 && ke->Down)
 		{
-			if (ke->KeyCode == MayaKeyBackspace && careti != 0)
+			if (ke->Keycode == MayaKeyBackspace && careti != 0)
 			{
 				char c = text.RemoveCharAt(careti - 1);
 				careti--;
@@ -91,13 +91,13 @@ void MayaTextFieldGui::ReactEvent(MayaEvent& e)
 					scroll = caretpos;
 				SendCallback(MayaEventGui::Typing);
 			}
-			else if (ke->KeyCode == MayaKeyDelete && careti != text.GetLength())
+			else if (ke->Keycode == MayaKeyDelete && careti != text.GetLength())
 			{
 				char c = text.RemoveCharAt(careti);
 				caret_timer = MayaGetLibraryManager()->GetTimeSince();
 				SendCallback(MayaEventGui::Typing);
 			}
-			else if (ke->KeyCode == MayaKeyLeft && careti != 0)
+			else if (ke->Keycode == MayaKeyLeft && careti != 0)
 			{
 				char c = text.GetString()[careti - 1];
 				careti--;
@@ -106,7 +106,7 @@ void MayaTextFieldGui::ReactEvent(MayaEvent& e)
 				if (caretpos < scroll)
 					scroll = caretpos;
 			}
-			else if (ke->KeyCode == MayaKeyRight && careti != text.GetLength())
+			else if (ke->Keycode == MayaKeyRight && careti != text.GetLength())
 			{
 				char c = text.GetString()[careti];
 				careti++;
@@ -115,7 +115,7 @@ void MayaTextFieldGui::ReactEvent(MayaEvent& e)
 				if (caretpos - scroll > size.x - 10)
 					scroll = caretpos - static_cast<int>(size.x) + 10;
 			}
-			else if (ke->KeyCode == MayaKeyV && (ke->Mods & MayaModControl))
+			else if (ke->Keycode == MayaKeyV && (ke->Mods & MayaModControl))
 			{
 				MayaString cs = MayaGetClipBoardString();
 				MayaString s;
@@ -136,7 +136,7 @@ void MayaTextFieldGui::ReactEvent(MayaEvent& e)
 					SendCallback(MayaEventGui::Typing);
 				}
 			}
-			else if (ke->KeyCode == MayaKeyEnter)
+			else if (ke->Keycode == MayaKeyEnter)
 			{
 				SendCallback(MayaEventGui::Interact);
 			}
@@ -178,7 +178,7 @@ void MayaTextFieldGui::SetCaretPosToMousePos()
 	}
 }
 
-void MayaTextFieldGui::SetFont(MayaFont* font)
+void MayaTextFieldGui::SetFont(Font* font)
 {
 	if (!font)
 		font = &gui->GetDefaultFont();

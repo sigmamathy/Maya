@@ -10,7 +10,7 @@
 #include <maya/transformation.hpp>
 #include <maya/font.hpp>
 
-MayaGraphicsGui::MayaGraphicsGui(MayaWindow& window)
+MayaGraphicsGui::MayaGraphicsGui(Window& window)
 	: Window(&window), g2d(window)
 {
 	components.reserve(30);
@@ -31,7 +31,7 @@ MayaGraphicsGui::MayaGraphicsGui(MayaWindow& window)
 
 MayaGraphicsGui::~MayaGraphicsGui()
 {
-	if (MayaWindow::Exists(Window))
+	if (Window::Exists(Window))
 		Window->RemoveEventCallback(callbackid);
 }
 
@@ -58,7 +58,7 @@ void MayaGraphicsGui::Draw()
 
 #include "./resources/opensans"
 
-MayaFont& MayaGraphicsGui::GetDefaultFont()
+Font& MayaGraphicsGui::GetDefaultFont()
 {
 	if (!default_font)
 		default_font = MayaCreateFontUptr(*Window, s_open_sans_regular, sizeof(s_open_sans_regular), 30);
