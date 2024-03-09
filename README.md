@@ -1,13 +1,11 @@
-# Maya - Library for Everything
+# Maya - Library for C++
 
 <p align="center">
-  <img src="https://static.wikia.nocookie.net/aceattorney/images/0/00/Maya-Angry-1-HD.gif/revision/latest/scale-to-width-down/250?cb=20210321173300" alt="Maya" width=500>
+  <img src="https://static.wikia.nocookie.net/aceattorney/images/4/4f/Maya_Confident_1.gif/revision/latest?cb=20120728012634" width=400>
 </p>
 
-Maya is a library written in C++ focuses on graphics rendering and audio streaming,
-based on verbose C API such as OpenGL and PortAudio.
-It is designed to be easy to use, high extensionability, maximize efficency
-while offers full controll over resource management.
+Maya is a simple wrapper library of OpenGL and PortAudio,
+provides functionality for rendering and streaming audio.
 
 ## Prerequisites
 
@@ -57,30 +55,22 @@ cmake . -B out -DCMAKE_TOOLCHAIN_FILE="PATH"
 
 ## Example
 
-The following example creates a window and a centered button.
+The following example creates a window.
 
 main.cpp:
 
 ```cpp
 #include <maya/window.hpp>
-#include <maya/gui/button.hpp>
 
 int main()
 {
-	MayaLibraryManager manager(MAYA_LIBRARY_GLFW);
+	maya::LibraryManager lib;
+	lib.LoadDependency(maya::GraphicsDep);
 
-	MayaWindowUptr window = MayaCreateWindowUptr();
-
-	MayaGraphicsGUI gui(*window);
-	gui.CreateButton();
-
-	while (!window->IsTimeToClose())
-	{
-		window->ClearBuffers();
-		window->PackViewport();
-		gui.Draw();
+	maya::Window::uptr window = maya::Window::MakeUnique();
+	while (!window->IsRequestedForClose()) {
 		window->SwapBuffers();
-		MayaPollWindowEvents();
+		maya::Window::PollEvents();
 	}
 
 	return 0;

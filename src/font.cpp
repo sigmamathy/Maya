@@ -38,7 +38,7 @@ Font::Font(RenderContext& rc, char const* path, int pixelsize)
 
         auto& t = *g.Texture;
         t.CreateContent(image.data(), Ivec2(map.width, map.rows), 4);
-        t.SetRepeat(); // ...
+        t.SetClampToEdge(); // ...
         t.SetFilterLinear();
 
         if (face->glyph->bitmap_top > max_height)

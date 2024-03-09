@@ -3,11 +3,16 @@
 #include <maya/shader.hpp>
 #include <maya/dataio.hpp>
 #include <maya/texture.hpp>
+#include <maya/transformation.hpp>
+#include <maya/font.hpp>
 
 static float v[] = {
 	-0.5f, -0.5f,	0, 0,
 	0.5f, -0.5f,	1, 0,
-	0.0f, 0.5f,		0.5f, 1,
+	-0.5f, 0.5f,	0, 1,
+	0.5f, -0.5f,	1, 0,
+	-0.5f, 0.5f,	0, 1,
+	0.5f, 0.5f,		1, 1,
 };
 
 static char const* vshader = R"(
@@ -19,8 +24,10 @@ layout(location = 1) in vec2 itexcoord;
 
 out vec2 vtexcoord;
 
+uniform mat4 uModel, uProj;
+
 void main() {
-	gl_Position = vec4(ipos, 0, 1);
+	gl_Position = uProj * uModel * vec4(ipos, 0, 1);
 	vtexcoord = itexcoord;
 }
 
@@ -31,12 +38,12 @@ static char const* fshader = R"(
 #version 330 core
 
 in vec2 vtexcoord;
-out vec4 FragColor;
+out vec4 oFragColor;
 
-uniform sampler2D tex;
+uniform sampler2D uTex;
 
 void main() {
-	FragColor = texture(tex, vtexcoord);
+	oFragColor = texture(uTex, vtexcoord);
 }
 
 )";
@@ -62,12 +69,10 @@ int __cdecl main(int argc, char** argv)
 	program->CompileShader(maya::FragmentShader, fshader);
 	program->LinkProgram();
 
-	maya::ImageImporter image(MAYA_PROJECT_SOURCE_DIR "/tests/image0.png");
-
-	maya::Texture::uptr texture = maya::Texture::MakeUnique(rc);
-	texture->CreateContent(image.Data, image.Size, image.Channels);
-	texture->SetFilterLinear();
-	texture->SetRepeat();
+	program->SetUniformMatrix("uProj", maya::OrthogonalProjection(window->GetSize()));
+	program->SetUniform<int>("uTex", 0);
+	
+	maya::Font font (rc, MAYA_PROJECT_SOURCE_DIR "/tests/Arial.ttf", 50);
 
 	while (!window->IsRequestedForClose())
 	{
@@ -75,10 +80,10 @@ int __cdecl main(int argc, char** argv)
 
 		rc.SetInput(vao.get());
 		rc.SetProgram(program.get());
-		rc.SetTexture(texture.get(), 0);
-
-		program->SetUniform<int>("tex", 0);
-
+		
+		rc.SetTexture(font['A'].Texture.get(), 0);
+		program->SetUniformMatrix("uModel", maya::ScaleModel(maya::Fvec3(100)));
+		
 		rc.DrawSetup();
 
 		window->SwapBuffers();

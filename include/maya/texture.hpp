@@ -26,6 +26,8 @@ public:
 
 	void SetRepeat();
 
+	void SetClampToEdge();
+
 	void SetFilterLinear();
 
 	Ivec2 GetSize() const;

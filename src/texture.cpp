@@ -87,6 +87,13 @@ void Texture::SetRepeat()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
 
+void Texture::SetClampToEdge()
+{
+	glBindTexture(GL_TEXTURE_2D, textureid);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+}
+
 void Texture::SetFilterLinear()
 {
 	glBindTexture(GL_TEXTURE_2D, textureid);
