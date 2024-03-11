@@ -159,6 +159,7 @@ struct Error
 enum Dependency : unsigned
 {
 	GraphicsDep		= 0x1,
+	AudioDep		= 0x2,
 };
 
 // Served as the loader for dependencies.

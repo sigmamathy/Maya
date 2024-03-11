@@ -5,6 +5,7 @@
 #include <chrono>
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include <portaudio.h>
 
 namespace maya
 {
@@ -89,6 +90,9 @@ void LibraryManager::LoadDependency(Dependency dep)
 		case GraphicsDep:
 			glfwInit();
 			break;
+		case AudioDep:
+			Pa_Initialize();
+			break;
 	}
 
 	dependencies |= dep;
@@ -106,6 +110,9 @@ void LibraryManager::UnloadDependency(Dependency dep)
 	{
 		case GraphicsDep:
 			glfwTerminate();
+			break;
+		case AudioDep:
+			Pa_Terminate();
 			break;
 	}
 

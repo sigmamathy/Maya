@@ -5,6 +5,7 @@
 #include <maya/texture.hpp>
 #include <maya/transformation.hpp>
 #include <maya/font.hpp>
+#include <maya/audio.hpp>
 
 static float v[] = {
 	-0.5f, -0.5f,	0, 0,
@@ -51,7 +52,7 @@ void main() {
 int __cdecl main(int argc, char** argv)
 {
 	maya::LibraryManager m;
-	m << maya::GraphicsDep;
+	m << maya::GraphicsDep << maya::AudioDep;
 
 	maya::Error::SetGlobalHandle(maya::Error::LogToConsole);
 
@@ -83,6 +84,12 @@ int __cdecl main(int argc, char** argv)
 
 	maya::stl::string text = "Hello";
 
+	maya::AudioSource audio;
+	audio.ReadFile(MAYA_PROJECT_SOURCE_DIR "/tests/tidal.wav");
+	maya::AudioPlayer player;
+	player.SetSource(&audio);
+	player.Start();
+
 	while (!window->IsRequestedForClose())
 	{
 		rc.ClearBuffer();
@@ -108,7 +115,7 @@ int __cdecl main(int argc, char** argv)
 	}
 
 	window.reset();
-
+	player.Stop();
 
 	return 0;
 }
