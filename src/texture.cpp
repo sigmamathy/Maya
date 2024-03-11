@@ -20,14 +20,14 @@ static constexpr int s_TextureFormat(int channels)
 }
 
 Texture::Texture(RenderContext& rc)
-	: RenderResource(rc)
+	: RenderResource(rc), size(0), channels(0)
 {
 	glGenTextures(1, &textureid);
 }
 
 Texture::~Texture()
 {
-	CleanUp();
+	Destroy();
 }
 
 Texture::uptr Texture::MakeUnique(RenderContext& rc)
@@ -40,11 +40,11 @@ Texture::sptr Texture::MakeShared(RenderContext& rc)
 	return sptr(new Texture(rc));
 }
 
-void Texture::CleanUp()
+void Texture::Destroy()
 {
 	if (textureid)
 	{
-		RenderResource::CleanUp();
+		RenderResource::Destroy();
 		glDeleteTextures(1, &textureid);
 		textureid = 0;
 	}
@@ -52,8 +52,10 @@ void Texture::CleanUp()
 
 void RenderContext::SetTexture(Texture* tex, int slot)
 {
+	if (textures[slot] == tex) return;
 	glActiveTexture(GL_TEXTURE0 + slot);
-	glBindTexture(GL_TEXTURE_2D, tex ? tex->textureid : 0);
+	glBindTexture(GL_TEXTURE_2D, tex ? tex->GetNativeId() : 0);
+	textures[slot] = tex;
 }
 
 void Texture::CreateContent(void const* data, Ivec2 size, int channels)
@@ -64,19 +66,8 @@ void Texture::CreateContent(void const* data, Ivec2 size, int channels)
 	rc.SetTexture(0, 0);
 }
 
-static unsigned s_CreateTexture(void const* data, Ivec2 size, int channels, bool repeat)
+unsigned Texture::GetNativeId() const
 {
-	unsigned textureid;
-	glGenTextures(1, &textureid);
-	glBindTexture(GL_TEXTURE_2D, textureid);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size.x, size.y, 0, s_TextureFormat(channels), GL_UNSIGNED_BYTE, data);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
 	return textureid;
 }
 

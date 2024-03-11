@@ -3,6 +3,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <chrono>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 namespace maya
 {
@@ -10,7 +12,7 @@ namespace maya
 static std::queue<Error> s_error_queue;
 static stl::fnptr<void(Error&)> s_error_callback;
 
-void Error::SetGlobalCallback(stl::fnptr<void(Error&)> const& callback)
+void Error::SetGlobalHandle(stl::fnptr<void(Error&)> const& callback)
 {
 	s_error_callback = callback;
 	if (callback)
@@ -49,8 +51,7 @@ void Error::LogToConsole(Error& err)
 static LibraryManager* s_library_pointer = 0;
 static std::chrono::steady_clock::time_point s_library_start_tp;
 
-LibraryManager::LibraryManager()
-	: libraries(0)
+LibraryManager::LibraryManager() : dependencies(0)
 {
 	MAYA_DIF(s_library_pointer)
 	{
@@ -67,11 +68,11 @@ LibraryManager::LibraryManager()
 
 LibraryManager::~LibraryManager()
 {
-	for (size_t i = 0; i < sizeof(decltype(libraries)); i++)
+	for (size_t i = 0; i < sizeof(decltype(dependencies)); i++)
 	{
 		auto d = 1 << i;
-		if (libraries & d)
-			UnloadDependency(d);
+		if (dependencies & d)
+			UnloadDependency(static_cast<Dependency>(d));
 	}
 	s_library_pointer = 0;
 }
@@ -81,7 +82,7 @@ LibraryManager* LibraryManager::Instance()
 	return s_library_pointer;
 }
 
-void LibraryManager::LoadDependency(unsigned dep)
+void LibraryManager::LoadDependency(Dependency dep)
 {
 	switch (dep)
 	{
@@ -90,10 +91,16 @@ void LibraryManager::LoadDependency(unsigned dep)
 			break;
 	}
 
-	libraries |= dep;
+	dependencies |= dep;
 }
 
-void LibraryManager::UnloadDependency(unsigned dep)
+LibraryManager& LibraryManager::operator<<(Dependency dep)
+{
+	LoadDependency(dep);
+	return *this;
+}
+
+void LibraryManager::UnloadDependency(Dependency dep)
 {
 	switch (dep)
 	{
@@ -102,17 +109,17 @@ void LibraryManager::UnloadDependency(unsigned dep)
 			break;
 	}
 
-	libraries &= ~dep;
+	dependencies &= ~dep;
 }
 
-bool LibraryManager::FoundDependency(unsigned dep) const
+bool LibraryManager::FoundDependency(Dependency dep) const
 {
-	return libraries & dep;
+	return dependencies & dep;
 }
 
 bool LibraryManager::FoundDependencies(unsigned deps) const
 {
-	return !(~libraries & deps);
+	return !(~dependencies & deps);
 }
 
 float LibraryManager::GetTimeSince() const

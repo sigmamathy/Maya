@@ -94,6 +94,16 @@ using uset = ::std::unordered_set<KTy>;
 
 }
 
+template<class Ty>
+struct Buffer
+{
+	Ty* Data = 0;
+	unsigned Size = 0;
+};
+
+template<class Ty>
+using ConstBuffer = Buffer<Ty const>;
+
 // Provides useful error information.
 struct Error
 {
@@ -130,7 +140,7 @@ struct Error
 	// Set a global callback for Maya to handle the errors.
 	// Errors stored in the queue will be passed immediately to the callback.
 	// By default callback is nullptr.
-	static void SetGlobalCallback(stl::fnptr<void(Error&)> const& callback);
+	static void SetGlobalHandle(stl::fnptr<void(Error&)> const& callback);
 
 	// Poll the top error that is stored in the queue.
 	// If none, one with NoError will be returned.
@@ -145,9 +155,11 @@ struct Error
 	static void Send(Error& err);
 };
 
-// --------------------------- List of dependencies --------------------------- //
-
-constexpr unsigned GraphicsDep = 0x1;
+// List of dependencies available.
+enum Dependency : unsigned
+{
+	GraphicsDep		= 0x1,
+};
 
 // Served as the loader for dependencies.
 class LibraryManager
@@ -168,13 +180,16 @@ public:
 	static LibraryManager* Instance();
 
 	// Load a single dependency
-	void LoadDependency(unsigned dep);
+	void LoadDependency(Dependency dep);
+
+	// Equivalent to LoadDependency
+	LibraryManager& operator<<(Dependency dep);
 
 	// Unload a single dependency
-	void UnloadDependency(unsigned dep);
+	void UnloadDependency(Dependency dep);
 
 	// Returns true if the dependency is presented.
-	bool FoundDependency(unsigned dep) const;
+	bool FoundDependency(Dependency dep) const;
 
 	// Returns true if the dependencies is presented.
 	bool FoundDependencies(unsigned deps) const;
@@ -186,7 +201,7 @@ public:
 
 private:
 	// bit fields
-	unsigned libraries;
+	unsigned dependencies;
 };
 
 }

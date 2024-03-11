@@ -51,12 +51,16 @@ void main() {
 int __cdecl main(int argc, char** argv)
 {
 	maya::LibraryManager m;
-	m.LoadDependency(maya::GraphicsDep);
-	maya::Error::SetGlobalCallback(maya::Error::LogToConsole);
+	m << maya::GraphicsDep;
+
+	maya::Error::SetGlobalHandle(maya::Error::LogToConsole);
 
 	maya::Window::uptr window = maya::Window::MakeUnique();
 	auto& rc = window->GetRenderContext();
 	rc.Begin();
+
+	rc.Enable(rc.Blending);
+	rc.SetBlendMode(rc.AlphaBlend);
 
 	maya::VertexLayout layout;
 	layout.Push(0, 2).Push(1, 2);
@@ -72,7 +76,12 @@ int __cdecl main(int argc, char** argv)
 	program->SetUniformMatrix("uProj", maya::OrthogonalProjection(window->GetSize()));
 	program->SetUniform<int>("uTex", 0);
 	
-	maya::Font font (rc, MAYA_PROJECT_SOURCE_DIR "/tests/Arial.ttf", 50);
+	maya::Font font;
+	font.OpenFileStream(MAYA_PROJECT_SOURCE_DIR "/tests/Arial.ttf", 50);
+	font.LoadAsciiChars(rc);
+	font.CloseStream();
+
+	maya::stl::string text = "Hello";
 
 	while (!window->IsRequestedForClose())
 	{
@@ -80,11 +89,19 @@ int __cdecl main(int argc, char** argv)
 
 		rc.SetInput(vao.get());
 		rc.SetProgram(program.get());
-		
-		rc.SetTexture(font['A'].Texture.get(), 0);
-		program->SetUniformMatrix("uModel", maya::ScaleModel(maya::Fvec3(100)));
-		
-		rc.DrawSetup();
+
+		int adv = 0;
+		for (char c : text) {
+			rc.SetTexture(font[c].Texture.get(), 0);
+			program->SetUniformMatrix("uModel",
+				maya::TranslateModel(font[c].Bearing + maya::Fvec2(adv, 0) + maya::Fvec2(font[c].Size.x, -font[c].Size.y) / 2)
+				* maya::ScaleModel(font[c].Size));
+			rc.DrawSetup();
+			adv += font[c].Advance;
+		}
+
+		// ui::Manager m (window);
+		// 
 
 		window->SwapBuffers();
 		maya::Window::PollEvents();

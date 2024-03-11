@@ -122,7 +122,7 @@ bool Window::Initialize(WindowParams const& param)
 	glfwSetWindowUserPointer(window, &callback);
 	s_SetupWindowEventCallback(window);
 
-	resptr = window;
+	nativeptr = window;
 	monitor = param.Monitor;
 	title = param.Title;
 	callback = [this](Event& e) {
@@ -132,6 +132,7 @@ bool Window::Initialize(WindowParams const& param)
 	};
 
 	rc.window = this;
+	rc.Init();
 
 	return true;
 }
@@ -152,8 +153,8 @@ Window::Window(WindowParams const& param)
 
 Window::~Window()
 {
-	rc.CleanAll();
-	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	rc.DestroyAll();
+	GLFWwindow* window = static_cast<GLFWwindow*>(nativeptr);
 	glfwDestroyWindow(window);
 }
 
@@ -187,6 +188,11 @@ Window::sptr Window::MakeShared(WindowParams const& param)
 	return 0;
 }
 
+void* Window::GetNativePointer()
+{
+	return nativeptr;
+}
+
 RenderContext& Window::GetRenderContext()
 {
 	return rc;
@@ -205,13 +211,13 @@ void Window::RemoveEventCallback(unsigned index)
 
 void Window::RequestForClose(bool close)
 {
-	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	GLFWwindow* window = static_cast<GLFWwindow*>(nativeptr);
 	glfwSetWindowShouldClose(window, close);
 }
 
 bool Window::IsRequestedForClose() const
 {
-	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	GLFWwindow* window = static_cast<GLFWwindow*>(nativeptr);
 	return glfwWindowShouldClose(window);
 }
 
@@ -222,7 +228,7 @@ void Window::PollEvents()
 
 void Window::SwapBuffers()
 {
-	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	GLFWwindow* window = static_cast<GLFWwindow*>(nativeptr);
 	glfwSwapBuffers(window);
 }
 
@@ -233,7 +239,7 @@ void Window::SetPosition(int x, int y)
 
 void Window::SetPosition(Ivec2 pos)
 {
-	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	GLFWwindow* window = static_cast<GLFWwindow*>(nativeptr);
 	glfwSetWindowPos(window, pos.x, pos.y);
 }
 
@@ -244,20 +250,20 @@ void Window::SetSize(int width, int height)
 
 void Window::SetSize(Ivec2 size)
 {
-	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	GLFWwindow* window = static_cast<GLFWwindow*>(nativeptr);
 	glfwSetWindowSize(window, size.x, size.y);
 }
 
 void Window::SetTitle(char const* title)
 {
-	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	GLFWwindow* window = static_cast<GLFWwindow*>(nativeptr);
 	glfwSetWindowTitle(window, title);
 	this->title = title;
 }
 
 Ivec2 Window::GetPosition() const
 {
-	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	GLFWwindow* window = static_cast<GLFWwindow*>(nativeptr);
 	Ivec2 result;
 	glfwGetWindowPos(window, &result.x, &result.y);
 	return result;
@@ -265,7 +271,7 @@ Ivec2 Window::GetPosition() const
 
 Ivec2 Window::GetSize() const
 {
-	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	GLFWwindow* window = static_cast<GLFWwindow*>(nativeptr);
 	Ivec2 result;
 	glfwGetWindowSize(window, &result.x, &result.y);
 	return result;
@@ -278,25 +284,25 @@ stl::string const& Window::GetTitle() const
 
 void Window::SetResizeAspectRatioLock(int x, int y)
 {
-	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	GLFWwindow* window = static_cast<GLFWwindow*>(nativeptr);
 	glfwSetWindowAspectRatio(window, x, y);
 }
 
 bool Window::IsKeyPressed(KeyCode keycode) const
 {
-	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	GLFWwindow* window = static_cast<GLFWwindow*>(nativeptr);
 	return glfwGetKey(window, keycode) == GLFW_PRESS;
 }
 
 bool Window::IsMouseButtonPressed(MouseButton button) const
 {
-	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	GLFWwindow* window = static_cast<GLFWwindow*>(nativeptr);
 	return glfwGetMouseButton(window, button) == GLFW_PRESS;
 }
 
 Fvec2 Window::GetCursorPosition() const
 {
-	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	GLFWwindow* window = static_cast<GLFWwindow*>(nativeptr);
 	double x, y;
 	glfwGetCursorPos(window, &x, &y);
 	return { x, y };
@@ -304,13 +310,13 @@ Fvec2 Window::GetCursorPosition() const
 
 bool Window::IsFocused() const
 {
-	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	GLFWwindow* window = static_cast<GLFWwindow*>(nativeptr);
 	return glfwGetWindowAttrib(window, GLFW_FOCUSED);
 }
 
 void Window::SetFullscreenMonitor(int monitor, Ivec2 size)
 {
-	GLFWwindow* window = static_cast<GLFWwindow*>(resptr);
+	GLFWwindow* window = static_cast<GLFWwindow*>(nativeptr);
 	this->monitor = monitor;
 	if (monitor == -1) {
 		glfwSetWindowMonitor(window, nullptr, 0, 0, size.x != -1 ? size.x : 1280, size.y != -1 ? size.y : 720, GLFW_DONT_CARE);

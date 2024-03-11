@@ -292,13 +292,13 @@ void MayaGraphics2d::PushScissor(MayaFvec2 pos, MayaFvec2 size)
 	}
 
 	scissors.emplace_back(pos, size);
-	r.Scissor = &scissors.back();
+	r.ScissorTest = &scissors.back();
 }
 
 void MayaGraphics2d::PopScissor()
 {
 	scissors.pop_back();
-	r.Scissor = scissors.empty() ? 0 : &scissors.back();
+	r.ScissorTest = scissors.empty() ? 0 : &scissors.back();
 }
 
 void MayaGraphics2d::UpdateCameraOnDraw()

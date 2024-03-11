@@ -5,16 +5,6 @@
 namespace maya
 {
 
-template<class Ty>
-struct Buffer
-{
-	Ty* Data = 0;
-	unsigned Size = 0;
-};
-
-template<class Ty>
-using ConstBuffer = Buffer<Ty const>;
-
 class VertexLayout
 {
 public:
@@ -24,7 +14,7 @@ public:
 		int Offset;
 	};
 
-	VertexLayout() = default;
+	VertexLayout();
 	VertexLayout(int location, int count);
 	VertexLayout& Push(int location, int count);
 
@@ -34,6 +24,7 @@ private:
 	friend class VertexArray;
 };
 
+// Collection of vertex buffers and index buffer.
 class VertexArray : public RenderResource
 {
 public:
@@ -41,33 +32,56 @@ public:
 	using uptr = stl::uptr<VertexArray>;
 	using sptr = stl::sptr<VertexArray>;
 
+	// Constructor.
 	VertexArray(RenderContext& rc);
 
+	// Cleanup resources.
 	~VertexArray();
 
 	// No copy construct.
 	VertexArray(VertexArray const&) = delete;
 	VertexArray& operator=(VertexArray const&) = delete;
 
+	// Create and return a uptr.
 	static uptr MakeUnique(RenderContext& rc);
 
+	// Create and return a sptr.
 	static sptr MakeShared(RenderContext& rc);
 
-	void CleanUp() override;
+	// Return the vertex array id.
+	unsigned GetNativeId() const override;
 
+	// Add a vertex buffer to the array.
 	template<class Ty>
 	void PushBuffer(ConstBuffer<Ty> buffer, VertexLayout& layout, bool MaySubjectToChange = false);
 
+	// Return the number of vertex buffers.
+	unsigned GetBufferCount() const;
+
+	// Link an index buffer to the array.
 	void LinkIndexBuffer(ConstBuffer<unsigned> buffer);
 
+	// Return true if a index buffer is linked.
+	bool HasIndexBuffer() const;
+
+	// Indicates which range of vertices should be involved in rendering.
 	void SetDrawRange(int start, int end);
 
+	// Reset the draw range to default.
 	void ResetDrawRange();
 
+	// Get the draw range.
+	Ivec2 GetDrawRange() const;
+
+	// Update a specific vertex buffer.
 	template<class Ty>
 	void UpdateBuffer(int index, ConstBuffer<Ty> buffer);
 
-public:
+protected:
+
+	void Destroy() override;
+
+private:
 
 	unsigned vaoid;
 	stl::list<unsigned> vboids;
@@ -75,7 +89,6 @@ public:
 
 	int vertex_count, indices_count;
 	Ivec2 draw_range;
-	friend class RenderContext;
 };
 
 }

@@ -6,8 +6,14 @@
 namespace maya
 {
 
+VertexLayout::VertexLayout()
+{
+	attributes.reserve(4);
+}
+
 VertexLayout::VertexLayout(int location, int count)
 {
+	attributes.reserve(4);
 	Push(location, count);
 }
 
@@ -26,7 +32,7 @@ VertexArray::VertexArray(RenderContext& rc)
 
 VertexArray::~VertexArray()
 {
-	CleanUp();
+	Destroy();
 }
 
 VertexArray::uptr VertexArray::MakeUnique(RenderContext& rc)
@@ -39,11 +45,16 @@ VertexArray::sptr VertexArray::MakeShared(RenderContext& rc)
 	return sptr(new VertexArray(rc));
 }
 
-void VertexArray::CleanUp()
+unsigned VertexArray::GetNativeId() const
+{
+	return vaoid;
+}
+
+void VertexArray::Destroy()
 {
 	if (vaoid)
 	{
-		RenderResource::CleanUp();
+		RenderResource::Destroy();
 		glDeleteVertexArrays(1, &vaoid);
 		if (!vboids.empty())
 			glDeleteBuffers(static_cast<GLsizei>(vboids.size()), vboids.data());
@@ -55,9 +66,9 @@ void VertexArray::CleanUp()
 
 void RenderContext::SetInput(VertexArray* resource)
 {
-	if (crntvao == resource) return;
-	crntvao = resource;
-	glBindVertexArray(resource ? resource->vaoid : 0);
+	if (input == resource) return;
+	input = resource;
+	glBindVertexArray(resource ? resource->GetNativeId() : 0);
 }
 
 void VertexArray::SetDrawRange(int start, int end)
@@ -68,6 +79,13 @@ void VertexArray::SetDrawRange(int start, int end)
 void VertexArray::ResetDrawRange()
 {
 	draw_range = { -1, -1 };
+}
+
+Ivec2 VertexArray::GetDrawRange() const
+{
+	if (draw_range.x != -1)
+		return draw_range;
+	return iboid ? Ivec2{ 0, indices_count / 3 } : Ivec2{ 0, vertex_count };
 }
 
 template<class Ty>
@@ -114,6 +132,11 @@ template void VertexArray::PushBuffer(Buffer<float const>, VertexLayout&, bool);
 template void VertexArray::PushBuffer(Buffer<int const>, VertexLayout&, bool);
 template void VertexArray::PushBuffer(Buffer<unsigned const>, VertexLayout&, bool);
 
+unsigned VertexArray::GetBufferCount() const
+{
+	return static_cast<unsigned>(vboids.size());
+}
+
 void VertexArray::LinkIndexBuffer(ConstBuffer<unsigned> buffer)
 {
 	if (iboid)
@@ -125,6 +148,11 @@ void VertexArray::LinkIndexBuffer(ConstBuffer<unsigned> buffer)
 	rc.SetInput(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	indices_count = buffer.Size / sizeof(unsigned);
+}
+
+bool VertexArray::HasIndexBuffer() const
+{
+	return iboid;
 }
 
 template<class Ty>

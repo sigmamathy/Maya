@@ -86,6 +86,9 @@ public:
 	// Create and return a sptr.
 	static sptr MakeShared(WindowParams const& param = WindowParams{});
 
+	// Return the native window pointer.
+	void* GetNativePointer();
+
 	// Returns a render context.
 	RenderContext& GetRenderContext();
 
@@ -155,7 +158,7 @@ public:
 
 private:
 
-	void* resptr;
+	void* nativeptr;
 	EventCallback callback;
 	stl::list<EventCallback> user_callbacks;
 	stl::string title;
@@ -164,7 +167,6 @@ private:
 
 	Window(nullptr_t) noexcept {};
 	bool Initialize(WindowParams const& param);
-	friend class RenderContext;
 };
 
 }

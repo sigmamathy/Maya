@@ -511,6 +511,16 @@ constexpr auto Cross2D(Vector<Ty1, 2> const& vec1, Vector<Ty2, 2> const& vec2)
 	return vec1[0] * vec2[1] - vec1[1] * vec2[0];
 }
 
+// Hadamard product.
+template<class Ty1, class Ty2, int Dim>
+constexpr auto Hadamard(Vector<Ty1, Dim> const& vec1, Vector<Ty2, Dim> const& vec2)
+{
+	Vector<decltype(vec1[0] * vec2[0]), Dim> res;
+	for (int i = 0; i < Dim; i++)
+		res[i] = vec1[i] * vec2[i];
+	return res;
+}
+
 // Compute a normalized vector
 template<class Ty, int Dim>
 constexpr auto Normalize(Vector<Ty, Dim> const& vec)
@@ -522,7 +532,7 @@ constexpr auto Normalize(Vector<Ty, Dim> const& vec)
 	MAYA_DIF(!sum)
 	{
 		Error::Send(Error::DivisionByZero,
-			"MayaNormalize(Vector const&): The required vector has norm equal to zero.");
+			"Normalize(Vector const&): The required vector has norm equal to zero.");
 		return Vector<common_type, Dim>(0);
 	}
 	auto invsqrt = 1.0f / std::sqrt(static_cast<common_type>(sum));
@@ -750,5 +760,16 @@ constexpr auto Transpose(Matrix<Ty, Rw, Cn> const& mat)
 			res[j][i] = mat[i][j];
 	return res;
 }
+
+// Addition operation between 2 matrices
+template<class Ty1, class Ty2, int Rw, int Cn>
+constexpr auto Hadamard(Matrix<Ty1, Rw, Cn> const& mat1, Matrix<Ty2, Rw, Cn> const& mat2)
+{
+	Matrix<decltype(mat1[0][0] * mat2[0][0]), Rw, Cn> res;
+	for (int i = 0; i < Cn; i++)
+		res[i] = Hadamard(mat1[i], mat2[i]);
+	return res;
+}
+
 
 }
