@@ -22,7 +22,7 @@ Also make sure the following is properly setup:
 
 	- glfw3 (x64)
 	- Freetype (x64)
-	- PortAudio (x64)
+	- SndFile (x64)
 
 ## Installation - CMake
 

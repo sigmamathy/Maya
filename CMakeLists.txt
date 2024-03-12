@@ -5,11 +5,28 @@ project("Maya" VERSION "1.048596")
 # Assume SYSTEM=WINDOWS and vcpkg is located in C:/
 set(CMAKE_TOOLCHAIN_FILE "C:/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE FILEPATH "vcpkg toolchain file")
 
+# Link vcpkg packages
 find_package(glfw3 CONFIG REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(SndFile REQUIRED)
-find_package(portaudio CONFIG REQUIRED)
 
+# Update git submodules
+find_package(Git QUIET)
+if (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+    # Update submodule as needed
+    option(GIT_SUBMODULE "Check submodule during build" ON)
+    if (GIT_SUBMODULE)
+        message(STATUS "Submodule update")
+        execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+                        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                        RESULT_VARIABLE GIT_SUBMOD_RESULT)
+        if (NOT GIT_SUBMOD_RESULT EQUAL "0")
+            message(FATAL_ERROR "git submodule update --init --recursive failed with ${GIT_SUBMOD_RESULT}.")
+        endif()
+    endif()
+endif()
+
+# Source codes
 add_library(
     ${PROJECT_NAME}
     "external/glad/src/glad.c"
@@ -26,27 +43,27 @@ add_library(
     "src/transformation.cpp"
     "src/font.cpp"
     "src/audio.cpp"
-     
-    # "src/2d/graphics.cpp"
-    # "src/2d/camera.cpp" 
-    # "src/2d/textdisplay.cpp"
-    # 
-    # "src/gui/graphics.cpp"
-    # "src/gui/button.cpp"
-    # "src/gui/textfield.cpp"
-    # "src/gui/checkbox.cpp"
-    # "src/gui/label.cpp"
-    # "src/gui/panel.cpp"
-    # "src/gui/scrollbar.cpp"
-    # "src/gui/numberscroll.cpp"
 )
  
+# Setup properties
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 add_compile_definitions(MAYA_PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 
-target_include_directories(${PROJECT_NAME} PUBLIC "include" "external/glad/include" "external/stb/include")
-target_link_libraries(${PROJECT_NAME} glfw Freetype::Freetype SndFile::sndfile portaudio)
+# Git submodules
+add_subdirectory("external/portaudio")
 
+# Include directories
+target_include_directories(${PROJECT_NAME}
+    PUBLIC "include"
+    PUBLIC "external/glad/include"
+    PUBLIC "external/stb/include"
+    PUBLIC "external/portaudio/include"
+)
+
+# Linked libraries
+target_link_libraries(${PROJECT_NAME} glfw Freetype::Freetype SndFile::sndfile PortAudio)
+
+# Tests
 option(MAYA_BUILD_TESTS "Build tests" ON)
 if (MAYA_BUILD_TESTS)
     enable_testing()

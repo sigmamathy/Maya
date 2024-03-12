@@ -10,6 +10,12 @@ void AudioSource::ReadFile(char const* path)
 {
 	SF_INFO info;
 	SNDFILE* file = sf_open(path, SFM_READ, &info);
+
+	if (!file) {
+		// ...
+		return;
+	}
+
 	Samples.resize(info.frames * info.channels);
 	sf_readf_float(file, Samples.data(), info.frames);
 	sf_close(file);
@@ -25,7 +31,7 @@ struct AudioStatus
 	std::atomic<float> Volume;
 };
 
-static int PortAudio_audioCallback(const void* input_buffer, void* output_buffer,
+static int s_AudioOutputCallback(const void* input_buffer, void* output_buffer,
 								unsigned long frames_per_buffer,
 								const PaStreamCallbackTimeInfo* time_info,
 								PaStreamCallbackFlags status_flags,
@@ -95,7 +101,7 @@ void AudioPlayer::SetSource(AudioSource const* src, unsigned framesperbuffer)
 
 	PaStream* stream;
 	Pa_OpenStream(&stream, NULL, &outputParameters, src->SampleRate, framesperbuffer,
-		paNoFlag, PortAudio_audioCallback, status.get());
+		paNoFlag, s_AudioOutputCallback, status.get());
 
 	nativeptr = stream;
 }
@@ -153,6 +159,11 @@ float AudioPlayer::GetDuration() const
 {
 	auto& src = status->Source;
 	return (float) src->Samples.size() / src->SampleRate / src->Channels;
+}
+
+bool AudioPlayer::IsEndReached() const
+{
+	return status->SamplePosition == status->Source->Samples.size();
 }
 
 }

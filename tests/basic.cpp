@@ -82,10 +82,9 @@ int __cdecl main(int argc, char** argv)
 	font.LoadAsciiChars(rc);
 	font.CloseStream();
 
-	maya::stl::string text = "Hello";
-
 	maya::AudioSource audio;
-	audio.ReadFile(MAYA_PROJECT_SOURCE_DIR "/tests/tidal.wav");
+	audio.ReadFile(MAYA_PROJECT_SOURCE_DIR "/tests/pursuit.mp3");
+
 	maya::AudioPlayer player;
 	player.SetSource(&audio);
 	player.Start();
@@ -97,6 +96,7 @@ int __cdecl main(int argc, char** argv)
 		rc.SetInput(vao.get());
 		rc.SetProgram(program.get());
 
+		maya::stl::string text = std::to_string(player.GetPosition()) + " / " + std::to_string(player.GetDuration());
 		int adv = 0;
 		for (char c : text) {
 			rc.SetTexture(font[c].Texture.get(), 0);
