@@ -2,14 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 
 project("Maya" VERSION "1.048596")
 
-# Assume SYSTEM=WINDOWS and vcpkg is located in C:/
-set(CMAKE_TOOLCHAIN_FILE "C:/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE FILEPATH "vcpkg toolchain file")
-
-# Link vcpkg packages
-find_package(glfw3 CONFIG REQUIRED)
-find_package(Freetype REQUIRED)
-find_package(SndFile REQUIRED)
-
 # Update git submodules
 find_package(Git QUIET)
 if (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
@@ -31,6 +23,7 @@ add_library(
     ${PROJECT_NAME}
     "external/glad/src/glad.c"
     "external/stb/src/stb_image.c"
+    "external/minimp3/src/minimp3.c"
 
     "src/core.cpp"
     "src/deviceinfo.cpp"
@@ -49,19 +42,31 @@ add_library(
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 add_compile_definitions(MAYA_PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 
+set(GLFW_BUILD_DOCS OFF)
+set(ENABLE_EXTERNAL_LIBS OFF)
+set(BUILD_TESTING OFF)
+set(ENABLE_CPACK OFF)
+set(INSTALL_PKGCONFIG_MODULE OFF)
+set(INSTALL_MANPAGES OFF)
+
 # Git submodules
+add_subdirectory("external/glfw")
+add_subdirectory("external/freetype")
 add_subdirectory("external/portaudio")
 
 # Include directories
 target_include_directories(${PROJECT_NAME}
     PUBLIC "include"
     PUBLIC "external/glad/include"
+    PUBLIC "external/glfw/include"
+    PUBLIC "external/freetype/include"
     PUBLIC "external/stb/include"
     PUBLIC "external/portaudio/include"
+    PUBLIC "external/minimp3/include"
 )
 
 # Linked libraries
-target_link_libraries(${PROJECT_NAME} glfw Freetype::Freetype SndFile::sndfile PortAudio)
+target_link_libraries(${PROJECT_NAME} glfw freetype PortAudio)
 
 # Tests
 option(MAYA_BUILD_TESTS "Build tests" ON)

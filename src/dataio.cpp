@@ -11,7 +11,7 @@ ImageImporter::ImageImporter(char const* path, int channels)
 {
 	MAYA_DIF(!fs::exists(path))
 	{
-		Error err (Error::MissingFile, "ImageImporter::ImageImporter(char const*, int): Desired file \"");
+		Error err (Error::FileNotFound, "ImageImporter::ImageImporter(char const*, int): Desired file \"");
 		err.Details += path;
 		err.Details += "\" not found";
 		Error::Send(err);

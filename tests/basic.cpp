@@ -83,11 +83,14 @@ int __cdecl main(int argc, char** argv)
 	font.CloseStream();
 
 	maya::AudioSource audio;
-	audio.ReadFile(MAYA_PROJECT_SOURCE_DIR "/tests/pursuit.mp3");
+
+	auto s = m.GetTimeSince();
+	audio.ReadFile(MAYA_PROJECT_SOURCE_DIR "/tests/Dash.mp3");
+	std::cout << m.GetTimeSince() - s << '\n';
 
 	maya::AudioPlayer player;
 	player.SetSource(&audio);
-	player.Start();
+	//player.Start();
 
 	while (!window->IsRequestedForClose())
 	{

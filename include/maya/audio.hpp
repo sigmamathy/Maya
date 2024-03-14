@@ -20,8 +20,7 @@ struct AudioSource
 	unsigned Channels;
 
 	// Read audio source from a audio file.
-	// Supported types are: WAV FLAC MP3 etc.
-	// See libsndfile for more details.
+	// Support WAV and MP3 loading.
 	void ReadFile(char const* path);
 };
 

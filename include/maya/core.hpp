@@ -114,17 +114,18 @@ struct Error
 		OutOfBounds,
 		DivisionByZero,
 		MissingDependencies,
-		MissingFile,
+		FileNotFound,
+		UnsupportedFileFormat,
 		MissingReference,
 		ShaderParse,
 		Inconsistence,
 		ImageLoad,
 		ShaderUniformNotFound,
-		Singleton
+		Singleton,
 	};
 
 	// One of the error code defined above
-	unsigned ErrorCode;
+	unsigned ErrorCode = NoError;
 
 	// Error details, usually contains the function name too.
 	stl::string Details;
