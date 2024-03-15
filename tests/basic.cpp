@@ -90,7 +90,7 @@ int __cdecl main(int argc, char** argv)
 
 	maya::AudioPlayer player;
 	player.SetSource(&audio);
-	//player.Start();
+	player.Start();
 
 	while (!window->IsRequestedForClose())
 	{
