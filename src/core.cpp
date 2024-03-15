@@ -50,7 +50,7 @@ void Error::LogToConsole(Error& err)
 }
 
 static LibraryManager* s_library_pointer = 0;
-static std::chrono::steady_clock::time_point s_library_start_tp;
+static std::chrono::high_resolution_clock::time_point s_library_start_tp;
 
 LibraryManager::LibraryManager() : dependencies(0)
 {

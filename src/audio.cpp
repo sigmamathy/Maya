@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <fstream>
 #include <filesystem>
+#include <cstring>
 #include <minimp3/minimp3.h>
 
 namespace maya
