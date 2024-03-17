@@ -34,7 +34,7 @@ add_library(
     "src/vertexarray.cpp"
     "src/texture.cpp"
     "src/transformation.cpp"
-    "src/font.cpp"
+    
     "src/audio.cpp"
 )
  

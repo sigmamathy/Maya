@@ -4,7 +4,6 @@
 #include <maya/dataio.hpp>
 #include <maya/texture.hpp>
 #include <maya/transformation.hpp>
-#include <maya/font.hpp>
 #include <maya/audio.hpp>
 
 static float v[] = {
@@ -77,16 +76,11 @@ int __cdecl main(int argc, char** argv)
 	program->SetUniformMatrix("uProj", maya::OrthogonalProjection(window->GetSize()));
 	program->SetUniform<int>("uTex", 0);
 	
-	maya::Font font;
-	font.OpenFileStream(MAYA_PROJECT_SOURCE_DIR "/tests/Arial.ttf", 50);
-	font.LoadAsciiChars(rc);
-	font.CloseStream();
+	maya::FontData font;
+	font.ImportFile(MAYA_PROJECT_SOURCE_DIR "/tests/Arial.ttf", 50, rc);
 
-	maya::AudioSource audio;
-
-	auto s = m.GetTimeSince();
-	audio.ReadFile(MAYA_PROJECT_SOURCE_DIR "/tests/Dash.mp3");
-	std::cout << m.GetTimeSince() - s << '\n';
+	maya::AudioData audio;
+	audio.ImportFile(MAYA_PROJECT_SOURCE_DIR "/tests/Dash.mp3");
 
 	maya::AudioPlayer player;
 	player.SetSource(&audio);
@@ -102,12 +96,13 @@ int __cdecl main(int argc, char** argv)
 		maya::stl::string text = std::to_string(player.GetPosition()) + " / " + std::to_string(player.GetDuration());
 		int adv = 0;
 		for (char c : text) {
-			rc.SetTexture(font[c].Texture.get(), 0);
+			auto& glyph = font.Data.at(c);
+			rc.SetTexture(glyph.Texture.get(), 0);
 			program->SetUniformMatrix("uModel",
-				maya::TranslateModel(font[c].Bearing + maya::Fvec2(adv, 0) + maya::Fvec2(font[c].Size.x, -font[c].Size.y) / 2)
-				* maya::ScaleModel(font[c].Size));
+				maya::TranslateModel(glyph.Bearing + maya::Fvec2(adv, 0) + maya::Fvec2(glyph.Size.x, -glyph.Size.y) / 2)
+				* maya::ScaleModel(glyph.Size));
 			rc.DrawSetup();
-			adv += font[c].Advance;
+			adv += glyph.Advance;
 		}
 
 		// ui::Manager m (window);

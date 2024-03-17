@@ -3,25 +3,24 @@
 #include "../render.hpp"
 #include "../window.hpp"
 
-namespace maya::ui
+namespace maya
 {
 
-class Manager
+class UiManager
 {
 public:
 
-	Manager(Window& window);
+	UiManager(Window& window);
 
-	~Manager();
+	~UiManager();
 
-	Manager(Manager const&) = delete;
-	Manager& operator=(Manager const&) = delete;
-
-	
+	UiManager(UiManager const&) = delete;
+	UiManager& operator=(UiManager const&) = delete;
 
 private:
 
 	unsigned eid;
+	
 
 };
 
