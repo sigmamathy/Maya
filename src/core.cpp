@@ -11,130 +11,95 @@
 namespace maya
 {
 
-static std::queue<Error> s_error_queue;
-static stl::fnptr<void(Error&)> s_error_callback;
+struct s_Error {
+	CoreManager::ErrorCode code;
+	stl::string message;
+};
 
-void Error::SetGlobalHandle(stl::fnptr<void(Error&)> const& callback)
+static CoreManager* s_cm_pointer = 0;
+static std::chrono::high_resolution_clock::time_point s_cm_start_tp;
+static stl::fnptr<void(CoreManager::LogLevel, stl::string const&)> s_cm_logger;
+static CoreManager::ErrorHandleMode s_cm_err_mode;
+static std::queue<s_Error> s_cm_error_queue;
+
+CoreManager::CoreManager()
 {
-	s_error_callback = callback;
-	if (callback)
-		while (auto s = Poll())
-			s_error_callback(s);
-}
-
-Error Error::Poll()
-{
-	if (s_error_queue.empty())
-		return Error{ .ErrorCode = NoError };
-	auto res = s_error_queue.front();
-	s_error_queue.pop();
-	return res;
-}
-
-void Error::Send(unsigned code, stl::string const& msg)
-{
-	Error err = { code, msg };
-	if (s_error_callback) s_error_callback(err);
-	else s_error_queue.push(err);
-}
-
-void Error::Send(Error& err)
-{
-	if (s_error_callback) s_error_callback(err);
-	else s_error_queue.push(err);
-}
-
-void Error::LogToConsole(Error& err)
-{
-	std::cerr << "ERROR 0x" << std::hex << std::uppercase << err.ErrorCode << std::dec;
-	std::cerr << " at " << err.Details << "\n\n";
-}
-
-static CoreManager* s_library_pointer = 0;
-static std::chrono::high_resolution_clock::time_point s_library_start_tp;
-
-CoreManager::CoreManager() : dependencies(0)
-{
-	MAYA_DIF(s_library_pointer)
+#if MAYA_DEBUG
+	if (s_cm_pointer)
 	{
-		Error::Send(Error::Singleton,
-			"maya::CoreManager::CoreManager(): "
-			"Multiple instances of CoreManager is detected.");
-		MAYA_DBREAK;
+		s_cm_pointer->MakeError(INVALID_OPERATION_ERROR, "Core Manager is initialized twice.");
 		return;
 	}
+#endif
 
-	s_library_pointer = this;
-	s_library_start_tp = std::chrono::high_resolution_clock::now();
+	s_cm_pointer = this;
+	s_cm_start_tp = std::chrono::high_resolution_clock::now();
+	s_cm_logger = DefaultConsoleLogger;
+	s_cm_err_mode = MAYA_DEBUG ? QUEUE_AND_LOG_ERROR : QUEUE_ERROR;
+	glfwInit();
+	Pa_Initialize();
 }
 
 CoreManager::~CoreManager()
 {
-	for (size_t i = 0; i < sizeof(decltype(dependencies)); i++)
-	{
-		auto d = 1 << i;
-		if (dependencies & d)
-			UnloadDependency(static_cast<Dependency>(d));
-	}
-	s_library_pointer = 0;
+	MAYA_DEBUG_LOG_INFO("CoreManager destructing...");
+	glfwTerminate();
+	Pa_Terminate();
+	s_cm_pointer = 0;
 }
 
 CoreManager* CoreManager::Instance()
 {
-	return s_library_pointer;
-}
-
-void CoreManager::LoadDependency(Dependency dep)
-{
-	switch (dep)
-	{
-		case GraphicsDep:
-			glfwInit();
-			break;
-		case AudioDep:
-			Pa_Initialize();
-			break;
-	}
-
-	dependencies |= dep;
-}
-
-CoreManager& CoreManager::operator<<(Dependency dep)
-{
-	LoadDependency(dep);
-	return *this;
-}
-
-void CoreManager::UnloadDependency(Dependency dep)
-{
-	switch (dep)
-	{
-		case GraphicsDep:
-			glfwTerminate();
-			break;
-		case AudioDep:
-			Pa_Terminate();
-			break;
-	}
-
-	dependencies &= ~dep;
-}
-
-bool CoreManager::FoundDependency(Dependency dep) const
-{
-	return dependencies & dep;
-}
-
-bool CoreManager::FoundDependencies(unsigned deps) const
-{
-	return !(~dependencies & deps);
+	return s_cm_pointer;
 }
 
 float CoreManager::GetTimeSince() const
 {
 	auto end = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<float> duration = end - s_library_start_tp;
+	std::chrono::duration<float> duration = end - s_cm_start_tp;
 	return duration.count();
+}
+
+void CoreManager::Log(LogLevel level, stl::string const& content)
+{
+	if (s_cm_logger)
+		s_cm_logger(level, content);
+}
+
+void CoreManager::SetLogger(CoreManager::Logger const& outputfn)
+{
+	s_cm_logger = outputfn;
+}
+
+CoreManager::Logger const& CoreManager::GetLogger() const
+{
+	return s_cm_logger;
+}
+
+void CoreManager::DefaultConsoleLogger(LogLevel level, stl::string const& content)
+{
+	std::cout << "[Maya:";
+	switch (level) {
+		case LOG_INFO: std::cout << "INFO]    | "; break;
+		case LOG_WARNING: std::cout << "\033[93mWARNING\033[0m] | "; break;
+		case LOG_ERROR: std::cout << "\033[91mERROR\033[0m]   | "; break;
+	}
+	std::cout << content << '\n';
+}
+
+void CoreManager::MakeError(ErrorCode code, stl::string const& msg)
+{
+	if (s_cm_err_mode % 2)
+		Log(LOG_ERROR, "Code " + std::to_string(code) + " - Reason: " + msg);
+	switch (s_cm_err_mode / 2) {
+		case 1: s_cm_error_queue.push(s_Error{ code, msg }); break;
+		case 2: throw code;
+	}
+}
+
+void CoreManager::SetErrorHandleMode(ErrorHandleMode mode)
+{
+	s_cm_err_mode = mode;
 }
 
 }

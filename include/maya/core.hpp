@@ -19,16 +19,8 @@
 #ifndef MAYA_DEBUG // if not predefined
 #if (defined (_MSC_VER) && defined (_DEBUG)) || ((defined (__GNUC__) || defined (__clang__)) && defined (__OPTIMIZE__))
 #define MAYA_DEBUG 1
-#define MAYA_DIF(...) if (__VA_ARGS__) [[unlikely]]
-#if defined(_MSC_VER)
-#define MAYA_DBREAK __debugbreak()
-#else
-#define MAYA_DBREAK __builtin_trap()
-#endif
 #else
 #define MAYA_DEBUG 0
-#define MAYA_DIF(...) if (0)
-#define MAYA_DBREAK 
 #endif
 // msvc: _DEBUG
 // gcc or clang: __OPTIMIZE__
@@ -47,6 +39,9 @@
 #define MAYA_BENCHMARK(...) {\
 	float _maya_tstart = ::maya::CoreManager::Instance()->GetTimeSince();\
 	__VA_ARGS__; std::cout << ::maya::CoreManager::Instance()->GetTimeSince() - _maya_tstart << '\n'; }
+#define MAYA_STL ::std::
+#define MAYA_LIKELY [[likely]]
+#define MAYA_UNLIKELY [[unlikely]]
 
 #include <string>
 #include <string_view>
@@ -69,111 +64,31 @@ namespace maya
 // Types and Functions from the C++ STL library
 namespace stl
 {
+	using string			= MAYA_STL string;
+	using strview			= MAYA_STL string_view;
 
-using string = ::std::string;
+	template<class Ty> using fnptr		= MAYA_STL function<Ty>;
+	template<class Ty> using uptr		= MAYA_STL unique_ptr<Ty>;
+	template<class Ty> using sptr		= MAYA_STL shared_ptr<Ty>;
+	template<class Ty> using list		= MAYA_STL vector<Ty>;
+	template<class Ty> using atomic		= MAYA_STL atomic<Ty>;
+	template<class Ty> using hashset	= MAYA_STL unordered_set<Ty>;
 
-using strview = ::std::string_view;
-
-using thread = ::std::thread;
-
-using mutex = ::std::mutex;
-
-template<class Fty>
-using fnptr = ::std::function<Fty>;
-
-template<class Ty>
-using uptr = ::std::unique_ptr<Ty>;
-
-template<class Ty>
-using sptr = ::std::shared_ptr<Ty>;
-
-template<class Ty, size_t Sz>
-using array = ::std::array<Ty, Sz>;
-
-template<class Ty>
-using list = ::std::vector<Ty>;
-
-template<class Ty>
-using atomic = ::std::atomic<Ty>;
-
-template<class KTy, class VTy>
-using hashmap = ::std::unordered_map<KTy, VTy>;
-
-template<class KTy>
-using uset = ::std::unordered_set<KTy>;
-
+	template<class Ty, MAYA_STL size_t Sz> using array = MAYA_STL array<Ty, Sz>;
+	template<class Ty1, class Ty2> using hashmap = MAYA_STL unordered_map<Ty1, Ty2>;
 }
 
-template<class Ty>
-struct Buffer
-{
+// Contains information about data pointer and size.
+template<class Ty> struct Buffer {
 	Ty* Data = 0;
 	unsigned Size = 0;
 };
 
-template<class Ty>
-using ConstBuffer = Buffer<Ty const>;
+// Constant buffer data and size.
+template<class Ty> using ConstBuffer = Buffer<Ty const>;
 
-// Provides useful error information.
-struct Error
-{
-	// Standard error codes
-	enum: unsigned
-	{
-		NoError = 0,
-		OutOfBounds,
-		DivisionByZero,
-		MissingDependencies,
-		FileNotFound,
-		UnsupportedFileFormat,
-		MissingReference,
-		ShaderParse,
-		Inconsistence,
-		ImageLoad,
-		ShaderUniformNotFound,
-		Singleton,
-	};
-
-	// One of the error code defined above
-	unsigned ErrorCode = NoError;
-
-	// Error details, usually contains the function name too.
-	stl::string Details;
-
-	// Returns true if error presents
-	inline operator bool() const noexcept {
-		return ErrorCode;
-	}
-
-	// Use std::cerr to log error to console
-	static void LogToConsole(Error& err);
-
-	// Set a global callback for Maya to handle the errors.
-	// Errors stored in the queue will be passed immediately to the callback.
-	// By default callback is nullptr.
-	static void SetGlobalHandle(stl::fnptr<void(Error&)> const& callback);
-
-	// Poll the top error that is stored in the queue.
-	// If none, one with NoError will be returned.
-	static Error Poll();
-
-	// Send an error to the callback if one is presented,
-	// or push the error to the queue that can be retrieved later.
-	static void Send(unsigned code, stl::string const& msg);
-
-	// Send an error to the callback if one is presented,
-	// or push the error to the queue that can be retrieved later.
-	static void Send(Error& err);
-};
-
-// List of dependencies available.
-enum Dependency : unsigned
-{
-	GraphicsDep		= 0x1,
-	AudioDep		= 0x2,
-};
-
-// Served as the loader for dependencies.
+// Served as the core of Maya.
+// Require instantiation before any other usage of Maya.
 class CoreManager
 {
 public:
@@ -181,7 +96,7 @@ public:
 	// One only instance of this class can be presented at a time.
 	CoreManager();
 
-	// Unload all dependencies if any.
+	// Free necessary resources.
 	~CoreManager();
 
 	// No copy construct.
@@ -191,29 +106,64 @@ public:
 	// Returns the instance of the class, or nullptr if none.
 	static CoreManager* Instance();
 
-	// Load a single dependency
-	void LoadDependency(Dependency dep);
-
-	// Equivalent to LoadDependency
-	CoreManager& operator<<(Dependency dep);
-
-	// Unload a single dependency
-	void UnloadDependency(Dependency dep);
-
-	// Returns true if the dependency is presented.
-	bool FoundDependency(Dependency dep) const;
-
-	// Returns true if the dependencies is presented.
-	bool FoundDependencies(unsigned deps) const;
-
-#define MAYA_FOUND_DEPS(deps) (CoreManager::Instance() && CoreManager::Instance()->FoundDependencies(deps))
-
 	// Returns the time since the instance is created, in seconds.
 	float GetTimeSince() const;
 
-private:
-	// bit fields
-	unsigned dependencies;
+	// Indicates the level of attention required in logging.
+	enum LogLevel { LOG_INFO, LOG_WARNING, LOG_ERROR };
+
+	// Logger typedef.
+	using Logger = stl::fnptr<void(LogLevel, stl::string const&)>;
+
+	// Default logger used by CoreManager.
+	static void DefaultConsoleLogger(LogLevel level, stl::string const& content);
+
+	// Set a custom logger, or nullptr if no output is desired.
+	void SetLogger(Logger const& outputfn);
+
+	// Get the current logger.
+	Logger const& GetLogger() const;
+
+	// Log information to logger.
+	void Log(LogLevel level, stl::string const& content);
+
+#if MAYA_DEBUG
+#define MAYA_DEBUG_LOG_INFO(...) ::maya::CoreManager::Instance()->Log(::maya::CoreManager::LOG_INFO, __VA_ARGS__)
+#define MAYA_DEBUG_LOG_WARNING(...) ::maya::CoreManager::Instance()->Log(::maya::CoreManager::LOG_WARNING, __VA_ARGS__)
+#define MAYA_DEBUG_LOG_ERROR(...) ::maya::CoreManager::Instance()->Log(::maya::CoreManager::LOG_WARNING, __VA_ARGS__)
+#else // !MAYA_DEBUG
+#define MAYA_DEBUG_LOG_INFO(...)
+#define MAYA_DEBUG_LOG_WARNING(...)
+#define MAYA_DEBUG_LOG_ERROR(...)
+#endif
+
+	enum ErrorCode {
+		NO_ERROR,
+		INVALID_OPERATION_ERROR,
+		OUT_OF_BOUNDS_ERROR,
+		MATH_ERROR,
+		FILE_NOT_FOUND_ERROR,
+		FILE_FORMAT_ERROR,
+		VERTEX_BUFFER_ERROR,
+		SHADER_COMPILE_ERROR,
+		SHADER_LINK_ERROR,
+	};
+
+	void MakeError(ErrorCode code, stl::string const& msg);
+
+#define MAYA_MAKE_ERROR(code, ...) ::maya::CoreManager::Instance()->MakeError(::maya::CoreManager::code, __VA_ARGS__);
+
+	enum ErrorHandleMode {
+		IGNORE_ERROR,
+		IGNORE_AND_LOG_ERROR,
+		QUEUE_ERROR,
+		QUEUE_AND_LOG_ERROR,
+		THROW_ERROR,
+		THROW_AND_LOG_ERROR
+	};
+
+	void SetErrorHandleMode(ErrorHandleMode mode);
+
 };
 
 }

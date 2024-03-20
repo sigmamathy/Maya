@@ -22,13 +22,15 @@ void ImageData::Import(char const* path, int channels)
 {
 	Data.clear();
 
-	MAYA_DIF(!std::filesystem::exists(path))
+#if MAYA_DEBUG
+	if (!std::filesystem::exists(path))
 	{
-		Error err(Error::FileNotFound, "ImageData::Import(char const*, int): Desired file \"");
-		err.Details += path;
-		err.Details += "\" not found";
-		Error::Send(err);
+		auto& cm = *CoreManager::Instance();
+		cm.MakeError(cm.FILE_NOT_FOUND_ERROR,
+			"Unable to find file \"" + stl::string(path) + "\"");
+		return;
 	}
+#endif
 
 	stbi_set_flip_vertically_on_load(true);
 	int ch;
@@ -36,12 +38,8 @@ void ImageData::Import(char const* path, int channels)
 	Channels = channels == 0 || ch < channels ? ch : channels;
 
 	if (!dat) [[unlikely]] {
-		Error err(Error::UnsupportedFileFormat,
-			"ImageData::Import(char const*, int): Error while loading image file \"");
-		err.Details += path;
-		err.Details += "\": ";
-		err.Details += stbi_failure_reason();
-		Error::Send(err);
+		MAYA_MAKE_ERROR(FILE_FORMAT_ERROR,
+			"Error while loading image file \"" + stl::string(path) + "\": " + stl::string(stbi_failure_reason()));
 	}
 
 	Data.insert(Data.end(), dat, dat + Size.x * Size.y);
@@ -118,10 +116,9 @@ void FontData::Import(ConstBuffer<void> data, int pixelsize, class RenderContext
 }
 
 // Warning: this assume little endian is employed in the system.
-static Error s_ImportWav(char const* path, AudioData& audio)
+static void s_ImportWav(char const* path, AudioData& audio)
 {
 	std::ifstream ifs(path, std::ios::binary);
-	if (!ifs) return { Error::FileNotFound, "Required file \"" + stl::string(path) + "\" does not exists." };
 	ifs.seekg(20, std::ios::cur); // skip useless header.
 
 	uint16_t format, ch, bps;
@@ -176,8 +173,8 @@ static Error s_ImportWav(char const* path, AudioData& audio)
 				break;
 			}
 			default: {
-				return { Error::UnsupportedFileFormat,
-					".wav with Pulse Code Modulation and " + std::to_string(bps) + " bits per sample is not supported." };
+				MAYA_MAKE_ERROR(FILE_FORMAT_ERROR,
+					".wav with Pulse Code Modulation and " + std::to_string(bps) + " bits per sample is not supported.");
 			}
 		}
 	}
@@ -196,24 +193,21 @@ static Error s_ImportWav(char const* path, AudioData& audio)
 				break;
 			}
 			default: {
-				return { Error::UnsupportedFileFormat,
-					".wav audio with IEEE 754 and " + std::to_string(bps) + " bits per sample is not supported." };
+				MAYA_MAKE_ERROR(FILE_FORMAT_ERROR,
+					".wav audio with IEEE 754 and " + std::to_string(bps) + " bits per sample is not supported.");
 			}
 		}
 	}
 	else
 	{
-		return { Error::UnsupportedFileFormat,
-			"Unknown .wav format (" + std::to_string(format) + ")" };
+		MAYA_MAKE_ERROR(FILE_FORMAT_ERROR,
+			"Unknown .wav format (" + std::to_string(format) + ")");
 	}
-
-	return {};
 }
 
-static Error s_ImportMp3(char const* path, AudioData& src)
+static void s_ImportMp3(char const* path, AudioData& src)
 {
 	std::ifstream ifs(path, std::ios::binary);
-	if (!ifs) return { Error::FileNotFound, "Required file \"" + stl::string(path) + "\" does not exists." };
 	std::vector<uint8_t> data(std::filesystem::file_size(path));
 	ifs.read(reinterpret_cast<char*>(data.data()), data.size());
 	ifs.close();
@@ -238,30 +232,24 @@ static Error s_ImportMp3(char const* path, AudioData& src)
 
 	for (float& x: src.Samples)
 		x /= std::numeric_limits<int16_t>::max();
-
-	return {};
 }
 
 void AudioData::Import(char const* path)
 {
-	namespace fs = std::filesystem;
-	Error err;
-	auto ext = fs::path(path).extension();
-
-	if (ext == ".wav") err = s_ImportWav(path, *this);
-	else if (ext == ".mp3") err = s_ImportMp3(path, *this);
-
-	else { // not supported
-		err.ErrorCode = Error::UnsupportedFileFormat;
-		err.Details = "AudioSource::ReadFile(char const*): Unknown audio file format found.";
-		Error::Send(err);
+#if MAYA_DEBUG
+	if (!std::filesystem::exists(path))
+	{
+		auto& cm = *CoreManager::Instance();
+		cm.MakeError(cm.FILE_NOT_FOUND_ERROR,
+			"Unable to find file \"" + stl::string(path) + "\"");
 		return;
 	}
+#endif
 
-	if (err) { // error found.
-		err.Details.insert(0, "AudioSource::ReadFile(char const*): ");
-		Error::Send(err);
-	}
+	auto ext = std::filesystem::path(path).extension();
+
+	if (ext == ".wav") s_ImportWav(path, *this);
+	else if (ext == ".mp3") s_ImportMp3(path, *this);
 }
 
 }

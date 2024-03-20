@@ -115,12 +115,15 @@ RenderContext::BlendMode RenderContext::GetBlendMode()
 
 void RenderContext::DrawSetup()
 {
-	MAYA_DIF(!input || !program)
+#if MAYA_DEBUG
+	if (!input || !program)
 	{
-		Error::Send(Error::MissingReference,
-			"RenderContext::DrawSetup(): The vertex array or shader program is absent.");
+		auto& cm = *CoreManager::Instance();
+		cm.MakeError(cm.INVALID_OPERATION_ERROR,
+			"Attempting to draw without vertex array or shader program presented.");
 		return;
 	}
+#endif
 
 	if (input->HasIndexBuffer()) {
 		Ivec2 dr = input->GetDrawRange() * 3;

@@ -118,7 +118,7 @@ public:
 private:
 
 	class Window* window;
-	stl::uset<RenderResource*> resources;
+	stl::hashset<RenderResource*> resources;
 
 	VertexArray* input;
 	ShaderProgram* program;
@@ -130,9 +130,9 @@ private:
 	friend class RenderResource;
 
 	// multithread support for synchronization.
-	stl::mutex mut;
+	MAYA_STL mutex mut;
 	std::condition_variable cv, cv0, cv1;
-	stl::thread::id threadid;
+	MAYA_STL thread::id threadid;
 	stl::fnptr<void()> execsync;
 	std::atomic<unsigned> num_wait, num_quiet_wait;
 

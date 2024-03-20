@@ -20,7 +20,7 @@ void AsyncWorker::Start()
 {
 	// assert !IsRunning
 	if (thread.joinable()) thread.join();
-	thread = stl::thread(&AsyncWorker::CompleteWorks, this);
+	thread = std::thread(&AsyncWorker::CompleteWorks, this);
 }
 
 unsigned AsyncWorker::Work(stl::fnptr<void()> const& work)
@@ -37,9 +37,15 @@ void AsyncWorker::Clear()
 void AsyncWorker::CompleteWorks()
 {
 	for (auto& work : worklist) {
-		float f = CoreManager::Instance()->GetTimeSince();
+#if MAYA_DEBUG
+		auto& cm = *CoreManager::Instance();
+		float start = cm.GetTimeSince();
+#endif
 		work();
-		std::cout << CoreManager::Instance()->GetTimeSince() - f << '\n';
+#if MAYA_DEBUG
+		MAYA_DEBUG_LOG_INFO("Async work " + std::to_string(onwork + 1) + " completed in "
+			+ std::to_string(cm.GetTimeSince() - start) + "s");
+#endif
 		onwork++;
 	}
 }

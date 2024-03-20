@@ -87,6 +87,8 @@ static void s_SetupWindowEventCallback(GLFWwindow* window)
 
 bool Window::Initialize(WindowParams const& param)
 {
+	MAYA_DEBUG_LOG_INFO("Initializing window...");
+
 	glfwWindowHint(GLFW_RESIZABLE, param.Resizable);
 	glfwWindowHint(GLFW_DECORATED, param.Decorated);
 	glfwWindowHint(GLFW_AUTO_ICONIFY, param.AutoIconify);
@@ -139,16 +141,7 @@ bool Window::Initialize(WindowParams const& param)
 
 Window::Window(WindowParams const& param)
 {
-	MAYA_DIF(!MAYA_FOUND_DEPS(GraphicsDep))
-	{
-		Error::Send(Error::MissingDependencies,
-			"Window::Window(WindowParams const&): Graphics dependency not found.");
-		MAYA_DBREAK;
-		return;
-	}
-
-	if (!Initialize(param))
-		MAYA_DBREAK;
+	Initialize(param);
 }
 
 Window::~Window()
@@ -160,12 +153,6 @@ Window::~Window()
 
 Window::uptr Window::MakeUnique(WindowParams const& param)
 {
-	MAYA_DIF(!MAYA_FOUND_DEPS(GraphicsDep))
-	{
-		Error::Send(Error::MissingDependencies,
-			"Window::MakeUnique(WindowParams const&): Graphics dependency not found.");
-		return 0;
-	}
 	Window* window = new Window(0);
 	bool res = window->Initialize(param);
 	if (res) return Window::uptr(window);
@@ -175,12 +162,6 @@ Window::uptr Window::MakeUnique(WindowParams const& param)
 
 Window::sptr Window::MakeShared(WindowParams const& param)
 {
-	MAYA_DIF(!MAYA_FOUND_DEPS(GraphicsDep))
-	{
-		Error::Send(Error::MissingDependencies,
-			"Window::MakeShared(WindowParams const&): Graphics dependency not found.");
-		return 0;
-	}
 	Window* window = new Window(0);
 	bool res = window->Initialize(param);
 	if (res) return Window::sptr(window);

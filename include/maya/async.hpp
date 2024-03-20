@@ -33,7 +33,7 @@ public:
 
 private:
 
-	stl::thread thread;
+	MAYA_STL thread thread;
 	stl::list<stl::fnptr<void()>> worklist;
 	stl::atomic<unsigned> onwork;
 

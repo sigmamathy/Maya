@@ -9,6 +9,8 @@ namespace maya
 ShaderProgram::ShaderProgram(RenderContext& rc)
 	: RenderResource(rc)
 {
+	MAYA_DEBUG_LOG_INFO("Initializing shader program...");
+
 	programid = glCreateProgram();
 	for (unsigned& i : shaderids) i = 0;
 }
@@ -57,7 +59,8 @@ void ShaderProgram::CompileShader(ShaderType type, char const* source)
 			case GeometryShader: errmsg = "Following error found in geometry shader\n" + errmsg; break;
 		}
 
-		Error::Send(Error::ShaderParse, "ShaderProgram::CompileShader(ShaderType, char const*): " + errmsg);
+		auto& cm = *CoreManager::Instance();
+		cm.MakeError(cm.SHADER_COMPILE_ERROR, errmsg);
 		glDeleteShader(shader);
 		shader = 0;
 		return;
@@ -68,12 +71,14 @@ void ShaderProgram::CompileShader(ShaderType type, char const* source)
 
 void ShaderProgram::LinkProgram()
 {
-	MAYA_DIF(!shaderids[VertexShader] || !shaderids[FragmentShader])
+#if MAYA_DEBUG
+	if (!shaderids[VertexShader] || !shaderids[FragmentShader])
 	{
-		Error::Send(Error::ShaderParse,
-			"ShaderProgram::LinkProgram(): Vertex shader or fragment shader is absent.");
+		auto& cm = *CoreManager::Instance();
+		cm.MakeError(cm.SHADER_LINK_ERROR, "Vertex shader or fragment shader is absent.");
 		return;
 	}
+#endif
 
 	glLinkProgram(programid);
 
@@ -85,8 +90,8 @@ void ShaderProgram::LinkProgram()
 		stl::string errmsg;
 		errmsg.resize(512);
 		glGetProgramInfoLog(programid, 512, NULL, &errmsg[0]);
-		Error::Send(Error::ShaderParse,
-			"ShaderProgram::LinkProgram(): Following error found while linking shaders: " + errmsg);
+		auto& cm = *CoreManager::Instance();
+		cm.MakeError(cm.SHADER_LINK_ERROR, "Following error found while linking shaders : " + errmsg);
 	}
 
 	for (int i = 0; i < shaderids.size(); i++) {
@@ -124,10 +129,10 @@ int ShaderProgram::FindUniformLocation(stl::strview name)
 	stl::string str(name); // Ensure null terminated string
 	int x = glGetUniformLocation(programid, str.c_str());
 	uniform_location_cache[name] = x;
-	if (x == -1) {
-		Error::Send(Error::ShaderUniformNotFound,
-			"ShaderProgram::FindUniformLocation(stl::strview): The required uniform \"" + str + "\" does not exists.");
-	}
+#if MAYA_DEBUG
+	if (x == -1)
+		MAYA_DEBUG_LOG_WARNING("The required uniform \"" + str + "\" does not exists.");
+#endif
 	return x;
 }
 

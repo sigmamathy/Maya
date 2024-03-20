@@ -50,15 +50,9 @@ void main() {
 
 )";
 
-int __cdecl main(int argc, char** argv)
+int main(int argc, char** argv)
 {
 	maya::CoreManager cm;
-	// cm.SetLogPolicy(cm.LOG_INFO);
-	// cm.SetLogOutput(cm.ConsoleOutput);
-
-	cm << maya::GraphicsDep << maya::AudioDep;
-
-	maya::Error::SetGlobalHandle(maya::Error::LogToConsole);
 
 	maya::Window::uptr window = maya::Window::MakeUnique();
 	auto& rc = window->GetRenderContext();
@@ -99,7 +93,7 @@ int __cdecl main(int argc, char** argv)
 
 		if (work && importer.IsWorkDone(work2) && importer.IsWorkDone(work)) {
 			player.SetSource(&audio);
-			player.Start();
+			//player.Start();
 			work = 0;
 		}
 

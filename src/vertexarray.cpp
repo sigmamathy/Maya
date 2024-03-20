@@ -27,6 +27,7 @@ VertexLayout& VertexLayout::Push(int location, int count)
 VertexArray::VertexArray(RenderContext& rc)
 	: RenderResource(rc), iboid(0), vertex_count(0), indices_count(0), draw_range(-1)
 {
+	MAYA_DEBUG_LOG_INFO("Initializing vertex array...");
 	glGenVertexArrays(1, &vaoid);
 }
 
@@ -120,12 +121,14 @@ void VertexArray::PushBuffer(ConstBuffer<Ty> buffer, VertexLayout& layout, bool 
 	{
 		vertex_count = vc;
 	}
-	else MAYA_DIF(vertex_count != vc)
+#if MAYA_DEBUG
+	else if(vertex_count != vc)
 	{
-		Error::Send(Error::Inconsistence,
-			"VertexArray::PushBuffer(Buffer<Ty const>, VertexLayout&, bool): "
+		auto& cm = *CoreManager::Instance();
+		cm.MakeError(cm.VERTEX_BUFFER_ERROR,
 			"Number of vertices is inconsistence with the existsing buffers.");
 	}
+#endif
 }
 
 template void VertexArray::PushBuffer(Buffer<float const>, VertexLayout&, bool);
@@ -156,14 +159,17 @@ bool VertexArray::HasIndexBuffer() const
 }
 
 template<class Ty>
-void VertexArray::UpdateBuffer(int index, ConstBuffer<Ty> buffer)
+void VertexArray::UpdateBuffer(unsigned index, ConstBuffer<Ty> buffer)
 {
-	MAYA_DIF(index >= vboids.size())
+#if MAYA_DEBUG
+	if (index >= vboids.size())
 	{
-		Error::Send(Error::OutOfBounds,
-			"VertexArray::UpdateBuffer(int, Buffer<Ty const>): Required buffer does not exists.");
+		auto& cm = *CoreManager::Instance();
+		cm.MakeError(cm.OUT_OF_BOUNDS_ERROR,
+			"Attempting to update vertex buffer that does not exists.");
 		return;
 	}
+#endif
 
 	auto id = vboids[index];
 	glBindBuffer(GL_ARRAY_BUFFER, id);

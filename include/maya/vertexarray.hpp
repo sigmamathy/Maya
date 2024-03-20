@@ -75,7 +75,7 @@ public:
 
 	// Update a specific vertex buffer.
 	template<class Ty>
-	void UpdateBuffer(int index, ConstBuffer<Ty> buffer);
+	void UpdateBuffer(unsigned index, ConstBuffer<Ty> buffer);
 
 protected:
 
