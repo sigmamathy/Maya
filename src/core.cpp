@@ -6,6 +6,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include <portaudio.h>
+#include <iostream>
 
 namespace maya
 {
@@ -49,16 +50,16 @@ void Error::LogToConsole(Error& err)
 	std::cerr << " at " << err.Details << "\n\n";
 }
 
-static LibraryManager* s_library_pointer = 0;
+static CoreManager* s_library_pointer = 0;
 static std::chrono::high_resolution_clock::time_point s_library_start_tp;
 
-LibraryManager::LibraryManager() : dependencies(0)
+CoreManager::CoreManager() : dependencies(0)
 {
 	MAYA_DIF(s_library_pointer)
 	{
 		Error::Send(Error::Singleton,
-			"maya::LibraryManager::LibraryManager(): "
-			"Multiple instances of LibraryManager is detected.");
+			"maya::CoreManager::CoreManager(): "
+			"Multiple instances of CoreManager is detected.");
 		MAYA_DBREAK;
 		return;
 	}
@@ -67,7 +68,7 @@ LibraryManager::LibraryManager() : dependencies(0)
 	s_library_start_tp = std::chrono::high_resolution_clock::now();
 }
 
-LibraryManager::~LibraryManager()
+CoreManager::~CoreManager()
 {
 	for (size_t i = 0; i < sizeof(decltype(dependencies)); i++)
 	{
@@ -78,12 +79,12 @@ LibraryManager::~LibraryManager()
 	s_library_pointer = 0;
 }
 
-LibraryManager* LibraryManager::Instance()
+CoreManager* CoreManager::Instance()
 {
 	return s_library_pointer;
 }
 
-void LibraryManager::LoadDependency(Dependency dep)
+void CoreManager::LoadDependency(Dependency dep)
 {
 	switch (dep)
 	{
@@ -98,13 +99,13 @@ void LibraryManager::LoadDependency(Dependency dep)
 	dependencies |= dep;
 }
 
-LibraryManager& LibraryManager::operator<<(Dependency dep)
+CoreManager& CoreManager::operator<<(Dependency dep)
 {
 	LoadDependency(dep);
 	return *this;
 }
 
-void LibraryManager::UnloadDependency(Dependency dep)
+void CoreManager::UnloadDependency(Dependency dep)
 {
 	switch (dep)
 	{
@@ -119,17 +120,17 @@ void LibraryManager::UnloadDependency(Dependency dep)
 	dependencies &= ~dep;
 }
 
-bool LibraryManager::FoundDependency(Dependency dep) const
+bool CoreManager::FoundDependency(Dependency dep) const
 {
 	return dependencies & dep;
 }
 
-bool LibraryManager::FoundDependencies(unsigned deps) const
+bool CoreManager::FoundDependencies(unsigned deps) const
 {
 	return !(~dependencies & deps);
 }
 
-float LibraryManager::GetTimeSince() const
+float CoreManager::GetTimeSince() const
 {
 	auto end = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<float> duration = end - s_library_start_tp;

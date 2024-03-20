@@ -102,6 +102,19 @@ public:
 	// Get the maximum number of texture slots available.
 	int GetMaxTextureSlots() const;
 
+	// Tell SyncWithThreads to wait even no threads are waiting.
+	struct QuietWait {
+		RenderContext& rc;
+		QuietWait(RenderContext& rc);
+		~QuietWait();
+	};
+
+	// Synchronous render related execution.
+	void WaitForSyncExec(stl::fnptr<void()> const& exec);
+
+	// Wait in the main thread for WaitForSyncExec.
+	void SyncWithThreads(float maxwait);
+
 private:
 
 	class Window* window;
@@ -115,6 +128,13 @@ private:
 
 	friend class Window;
 	friend class RenderResource;
+
+	// multithread support for synchronization.
+	stl::mutex mut;
+	std::condition_variable cv, cv0, cv1;
+	stl::thread::id threadid;
+	stl::fnptr<void()> execsync;
+	std::atomic<unsigned> num_wait, num_quiet_wait;
 
 	RenderContext();
 	void Init();

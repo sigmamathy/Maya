@@ -21,7 +21,8 @@ void RenderResource::Destroy()
 static RenderContext* s_current_context = 0;
 
 RenderContext::RenderContext()
-	: window(0), input(0), program(0), settings(0), blendmode(NoBlend)
+	: window(0), input(0), program(0), settings(0), blendmode(NoBlend),
+	num_wait(0), num_quiet_wait(0), threadid(std::this_thread::get_id())
 {
 }
 
@@ -134,6 +135,64 @@ void RenderContext::DrawSetup()
 int RenderContext::GetMaxTextureSlots() const
 {
 	return static_cast<unsigned>(textures.size());
+}
+
+RenderContext::QuietWait::QuietWait(RenderContext& rc) : rc(rc)
+{
+	rc.num_quiet_wait++;
+}
+
+RenderContext::QuietWait::~QuietWait()
+{
+	rc.num_quiet_wait--;
+}
+
+void RenderContext::WaitForSyncExec(stl::fnptr<void()> const& exec)
+{
+	if (std::this_thread::get_id() == threadid) {
+		exec();
+		return;
+	}
+	std::unique_lock<std::mutex> lock(mut);
+	num_wait++;
+	cv.wait(lock);
+	execsync = exec;
+	num_wait--;
+	cv0.notify_one();
+	cv1.wait(lock);
+}
+
+void RenderContext::SyncWithThreads(float maxwait)
+{
+	auto* cm = CoreManager::Instance();
+	float start = cm->GetTimeSince();
+
+	for (;;)
+	{
+		if (!num_wait)
+		{
+			if (!num_quiet_wait)
+				return; // no one is waiting.
+			
+			while (!num_wait) // loop until wait call.
+			{
+				if (!num_quiet_wait || cm->GetTimeSince() - start > maxwait) {
+					return; // wait time exceeds or no threads requires wait anymore.
+				}
+			}
+
+			continue; // someone is waiting.
+		}
+
+		if (cm->GetTimeSince() - start > maxwait)
+			return; // wait time exceeds.
+
+		std::unique_lock<std::mutex> lock(mut);
+		cv.notify_one(); // unlock any wait.
+		cv0.wait(lock); // wait here.
+		execsync(); // execute whatever recieved.
+		cv1.notify_one(); // tell thread to continue execution.
+	}
 }
 
 void RenderContext::DestroyAll()

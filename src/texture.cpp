@@ -7,7 +7,7 @@
 namespace maya
 {
 
-static constexpr int s_TextureFormat(int channels)
+static constexpr GLenum s_TextureFormat(int channels)
 {
 	switch (channels)
 	{
@@ -22,6 +22,7 @@ static constexpr int s_TextureFormat(int channels)
 Texture::Texture(RenderContext& rc)
 	: RenderResource(rc), size(0), channels(0)
 {
+	rc.Begin();
 	glGenTextures(1, &textureid);
 }
 
@@ -61,7 +62,7 @@ void RenderContext::SetTexture(Texture* tex, int slot)
 void Texture::CreateContent(void const* data, Ivec2 size, int channels)
 {
 	rc.SetTexture(this, 0);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
 		size.x, size.y, 0, s_TextureFormat(channels), GL_UNSIGNED_BYTE, data);
 	rc.SetTexture(0, 0);
 }

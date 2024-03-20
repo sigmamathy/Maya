@@ -9,17 +9,22 @@
 #include <cstring>
 #include <minimp3/minimp3.h>
 #include <algorithm>
+#include <iterator>
+
+#ifdef _MSC_VER
+#pragma warning (disable: 4244)
+#endif
 
 namespace maya
 {
 
-void ImageData::ImportFile(char const* path, int channels)
+void ImageData::Import(char const* path, int channels)
 {
 	Data.clear();
 
 	MAYA_DIF(!std::filesystem::exists(path))
 	{
-		Error err(Error::FileNotFound, "ImageData::ImportFile(char const*, int): Desired file \"");
+		Error err(Error::FileNotFound, "ImageData::Import(char const*, int): Desired file \"");
 		err.Details += path;
 		err.Details += "\" not found";
 		Error::Send(err);
@@ -32,7 +37,7 @@ void ImageData::ImportFile(char const* path, int channels)
 
 	if (!dat) [[unlikely]] {
 		Error err(Error::UnsupportedFileFormat,
-			"ImageData::ImportFile(char const*, int): Error while loading image file \"");
+			"ImageData::Import(char const*, int): Error while loading image file \"");
 		err.Details += path;
 		err.Details += "\": ";
 		err.Details += stbi_failure_reason();
@@ -43,41 +48,46 @@ void ImageData::ImportFile(char const* path, int channels)
 	stbi_image_free(dat);
 }
 
-static void s_LoadChars(RenderContext& rc, FT_Face face, stl::hashmap<unsigned, FontData::Glyph>& data)
+static void s_LoadChars(RenderContext& rc, FT_Face face, FontData& font)
 {
 	FT_UInt index;
 	FT_ULong charcode = FT_Get_First_Char(face, &index);
+
+	RenderContext::QuietWait qw(rc);
 
 	while (index != 0)
 	{
 		FT_Load_Glyph(face, index, FT_LOAD_RENDER);
 		auto& map = face->glyph->bitmap;
 
-		std::vector<unsigned char> image;
-		image.reserve(map.width * map.rows * 4);
+		std::vector<std::uint32_t> image;
+		image.reserve(map.width * map.rows);
 
-		for (unsigned j = 0; j < map.rows; j++)
-			for (unsigned i = 0; i < map.width; i++)
-				for (unsigned k = 0; k < 4; k++)
-					image.emplace_back(map.buffer[(map.rows - j - 1) * map.width + i]);
+		for (unsigned j = map.rows - 1; j != ~0u; j--) {
+			auto x = &map.buffer[j * map.width];
+			image.insert(image.end(), x, x + map.width);
+		}
 
-		data[charcode] = {
-			.Texture = Texture::MakeUnique(rc),
-			.Size = Ivec2(map.width, map.rows),
-			.Bearing = Ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-			.Advance = unsigned(face->glyph->advance.x >> 6)
-		};
+		rc.WaitForSyncExec([&, charcode, face]()
+		{
+			font.Data[charcode] = {
+				.Texture = Texture::MakeUnique(rc),
+				.Size = Ivec2(map.width, map.rows),
+				.Bearing = Ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+				.Advance = unsigned(face->glyph->advance.x >> 6)
+			};
 
-		auto& t = *data.at(charcode).Texture;
-		t.CreateContent(image.data(), Ivec2(map.width, map.rows), 4);
-		t.SetClampToEdge();
-		t.SetFilterLinear();
+			auto& t = *font.Data.at(charcode).Texture;
+			t.CreateContent(image.data(), Ivec2(map.width, map.rows), 4);
+			t.SetClampToEdge();
+			t.SetFilterLinear();
+		});
 
 		charcode = FT_Get_Next_Char(face, charcode, &index);
 	}
 }
 
-void FontData::ImportFile(char const* path, int pixelsize, RenderContext& rc)
+void FontData::Import(char const* path, int pixelsize, RenderContext& rc)
 {
 	FT_Library ft;
 	FT_Init_FreeType(&ft);
@@ -86,13 +96,13 @@ void FontData::ImportFile(char const* path, int pixelsize, RenderContext& rc)
 	FT_Set_Pixel_Sizes(face, 0, pixelsize);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-	s_LoadChars(rc, face, Data);
+	s_LoadChars(rc, face, *this);
 
 	FT_Done_Face(face);
 	FT_Done_FreeType(ft);
 }
 
-void FontData::ImportMemory(ConstBuffer<void> data, int pixelsize, class RenderContext& rc)
+void FontData::Import(ConstBuffer<void> data, int pixelsize, class RenderContext& rc)
 {
 	FT_Library ft;
 	FT_Init_FreeType(&ft);
@@ -101,14 +111,14 @@ void FontData::ImportMemory(ConstBuffer<void> data, int pixelsize, class RenderC
 	FT_Set_Pixel_Sizes(face, 0, pixelsize);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-	s_LoadChars(rc, face, Data);
+	s_LoadChars(rc, face, *this);
 
 	FT_Done_Face(face);
 	FT_Done_FreeType(ft);
 }
 
 // Warning: this assume little endian is employed in the system.
-static Error s_ImportWav(char const* path, AudioData& src)
+static Error s_ImportWav(char const* path, AudioData& audio)
 {
 	std::ifstream ifs(path, std::ios::binary);
 	if (!ifs) return { Error::FileNotFound, "Required file \"" + stl::string(path) + "\" does not exists." };
@@ -117,10 +127,10 @@ static Error s_ImportWav(char const* path, AudioData& src)
 	uint16_t format, ch, bps;
 	ifs.read(reinterpret_cast<char*>(&format), 2);
 	ifs.read(reinterpret_cast<char*>(&ch), 2);
-	ifs.read(reinterpret_cast<char*>(&src.SampleRate), 4);
+	ifs.read(reinterpret_cast<char*>(&audio.SampleRate), 4);
 	ifs.seekg(6, std::ios::cur);
 	ifs.read(reinterpret_cast<char*>(&bps), 2);
-	src.Channels = ch;
+	audio.Channels = ch;
 
 	char name[5];
 	ifs.read(name, 4); // this may be "data" or "LIST"
@@ -142,22 +152,27 @@ static Error s_ImportWav(char const* path, AudioData& src)
 			case 8: {
 				std::vector<int8_t> tmp(capacity);
 				ifs.read(reinterpret_cast<char*>(tmp.data()), datasize);
-				std::transform(tmp.begin(), tmp.end(), std::back_inserter(src.Samples),
-					[](int8_t element) { return static_cast<float>(element) / std::numeric_limits<int8_t>::max(); });
+				audio.Samples.insert(audio.Samples.end(), tmp.begin(), tmp.end());
+				for (auto& x: audio.Samples)
+					x /= std::numeric_limits<int8_t>::max();
+
 				break;
 			}
 			case 16: {
 				std::vector<int16_t> tmp(capacity);
 				ifs.read(reinterpret_cast<char*>(tmp.data()), datasize);
-				std::transform(tmp.begin(), tmp.end(), std::back_inserter(src.Samples),
-					[](int16_t element) { return static_cast<float>(element) / std::numeric_limits<int16_t>::max(); });
+				audio.Samples.insert(audio.Samples.end(), tmp.begin(), tmp.end());
+				for (auto& x : audio.Samples)
+					x /= std::numeric_limits<int16_t>::max();
 				break;
 			}
 			case 32: {
+
 				std::vector<int32_t> tmp(capacity);
 				ifs.read(reinterpret_cast<char*>(tmp.data()), datasize);
-				std::transform(tmp.begin(), tmp.end(), std::back_inserter(src.Samples),
-					[](int32_t element) { return static_cast<float>(element) / std::numeric_limits<int32_t>::max(); });
+				audio.Samples.insert(audio.Samples.end(), tmp.begin(), tmp.end());
+				for (auto& x : audio.Samples)
+					x /= std::numeric_limits<int32_t>::max();
 				break;
 			}
 			default: {
@@ -171,14 +186,13 @@ static Error s_ImportWav(char const* path, AudioData& src)
 		switch (bps)
 		{
 			case 32: {
-				ifs.read(reinterpret_cast<char*>(src.Samples.data()), datasize);
+				ifs.read(reinterpret_cast<char*>(audio.Samples.data()), datasize);
 				break;
 			}
 			case 64: {
 				std::vector<double> tmp(capacity);
 				ifs.read(reinterpret_cast<char*>(tmp.data()), datasize);
-				std::transform(tmp.begin(), tmp.end(), std::back_inserter(src.Samples),
-					[](double element) { return static_cast<float>(element); });
+				audio.Samples.insert(audio.Samples.end(), tmp.begin(), tmp.end());
 				break;
 			}
 			default: {
@@ -211,28 +225,24 @@ static Error s_ImportMp3(char const* path, AudioData& src)
 	mp3dec_frame_info_t frame_info;
 	std::size_t offset = 0;
 
-	int sc = mp3dec_decode_frame(&decoder, data.data(), static_cast<int>(data.size()), pcm.data(), &frame_info);
-	src.Channels = frame_info.channels;
-	src.SampleRate = frame_info.hz;
-	src.Samples.insert(src.Samples.end(), pcm.begin(), pcm.begin() + sc * src.Channels);
-	for (unsigned i = 0; i < sc * src.Channels; ++i)
-		src.Samples[i] /= std::numeric_limits<int16_t>::max();
-	offset += frame_info.frame_bytes;
-
 	while (int sc = mp3dec_decode_frame(
 		&decoder, data.data() + offset, static_cast<int>(data.size() - offset), pcm.data(), &frame_info))
 	{
-		auto x = src.Samples.size();
+		if (!offset) {
+			src.Channels = frame_info.channels;
+			src.SampleRate = frame_info.hz;
+		}
 		src.Samples.insert(src.Samples.end(), pcm.begin(), pcm.begin() + sc * src.Channels);
-		for (unsigned i = 0; i < sc * src.Channels; ++i)
-			src.Samples[i + x] /= std::numeric_limits<int16_t>::max();
 		offset += frame_info.frame_bytes;
 	}
+
+	for (float& x: src.Samples)
+		x /= std::numeric_limits<int16_t>::max();
 
 	return {};
 }
 
-void AudioData::ImportFile(char const* path)
+void AudioData::Import(char const* path)
 {
 	namespace fs = std::filesystem;
 	Error err;

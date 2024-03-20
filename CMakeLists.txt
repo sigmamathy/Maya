@@ -36,24 +36,27 @@ add_library(
     "src/transformation.cpp"
     
     "src/audio.cpp"
-)
+ "src/async.cpp")
  
 # Setup properties
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
-add_compile_definitions(MAYA_PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+set(BUILD_SHARED_LIBS OFF)
 set(GLFW_BUILD_DOCS OFF)
 set(FT_DISABLE_ZLIB ON)
 set(FT_DISABLE_BZIP2 ON)
 set(FT_DISABLE_PNG ON)
 set(FT_DISABLE_HARFBUZZ ON)
 set(FT_DISABLE_BROTLI ON)
+set(ASSIMP_BUILD_TESTS OFF)
+set(ASSIMP_INSTALL OFF)
 
 # Git submodules
 add_subdirectory("external/glfw")
 add_subdirectory("external/freetype")
 add_subdirectory("external/portaudio")
+add_subdirectory("external/assimp")
 
 # Include directories
 target_include_directories(${PROJECT_NAME}
@@ -64,10 +67,11 @@ target_include_directories(${PROJECT_NAME}
     PUBLIC "external/stb/include"
     PUBLIC "external/portaudio/include"
     PUBLIC "external/minimp3/include"
+    PUBLIC "external/assimp/include"
 )
 
 # Linked libraries
-target_link_libraries(${PROJECT_NAME} glfw freetype PortAudio)
+target_link_libraries(${PROJECT_NAME} glfw freetype PortAudio assimp)
 
 # Tests
 option(MAYA_BUILD_TESTS "Build tests" ON)

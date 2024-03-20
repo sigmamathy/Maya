@@ -6,7 +6,7 @@ namespace maya
 
 MonitorsInfo MonitorsInfo::Retrieve()
 {
-	MAYA_DIF(!LibraryManager::Instance() || !LibraryManager::Instance()->FoundDependency(GraphicsDep))
+	MAYA_DIF(!CoreManager::Instance() || !CoreManager::Instance()->FoundDependency(GraphicsDep))
 	{
 		Error::Send(Error::MissingDependencies,
 			"MayaGetDeviceInfo(MayaMonitorsInfo&): Graphics dependency not found.");
@@ -39,7 +39,7 @@ MonitorsInfo MonitorsInfo::Retrieve()
 
 char const* GetClipBoardString()
 {
-	MAYA_DIF(!LibraryManager::Instance() || !LibraryManager::Instance()->FoundDependency(GraphicsDep))
+	MAYA_DIF(!CoreManager::Instance() || !CoreManager::Instance()->FoundDependency(GraphicsDep))
 	{
 		Error::Send(Error::MissingDependencies,
 			"MayaGetDeviceInfo(MayaMonitorsInfo&): GLFW is not initialized.");

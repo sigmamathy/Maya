@@ -5,6 +5,8 @@
 #include <maya/texture.hpp>
 #include <maya/transformation.hpp>
 #include <maya/audio.hpp>
+#include <maya/async.hpp>
+#include <iostream>
 
 static float v[] = {
 	-0.5f, -0.5f,	0, 0,
@@ -43,15 +45,18 @@ out vec4 oFragColor;
 uniform sampler2D uTex;
 
 void main() {
-	oFragColor = texture(uTex, vtexcoord);
+	oFragColor = vec4(1.0f) * texture(uTex, vtexcoord).r;
 }
 
 )";
 
 int __cdecl main(int argc, char** argv)
 {
-	maya::LibraryManager m;
-	m << maya::GraphicsDep << maya::AudioDep;
+	maya::CoreManager cm;
+	// cm.SetLogPolicy(cm.LOG_INFO);
+	// cm.SetLogOutput(cm.ConsoleOutput);
+
+	cm << maya::GraphicsDep << maya::AudioDep;
 
 	maya::Error::SetGlobalHandle(maya::Error::LogToConsole);
 
@@ -76,33 +81,44 @@ int __cdecl main(int argc, char** argv)
 	program->SetUniformMatrix("uProj", maya::OrthogonalProjection(window->GetSize()));
 	program->SetUniform<int>("uTex", 0);
 	
-	maya::FontData font;
-	font.ImportFile(MAYA_PROJECT_SOURCE_DIR "/tests/Arial.ttf", 50, rc);
-
 	maya::AudioData audio;
-	audio.ImportFile(MAYA_PROJECT_SOURCE_DIR "/tests/Dash.mp3");
+	maya::FontData font;
 
 	maya::AudioPlayer player;
-	player.SetSource(&audio);
-	player.Start();
+
+	maya::AsyncWorker importer;
+	unsigned work = importer.Work([&]() { audio.Import(MAYA_TEST_DIR "Dash.mp3"); });
+	unsigned work2 = importer.Work([&]() { font.Import(MAYA_TEST_DIR "Arial.ttf", 50, rc); });
+	importer.Start();
 
 	while (!window->IsRequestedForClose())
 	{
+		rc.SyncWithThreads(0.005f);
+		rc.Begin();
 		rc.ClearBuffer();
+
+		if (work && importer.IsWorkDone(work2) && importer.IsWorkDone(work)) {
+			player.SetSource(&audio);
+			player.Start();
+			work = 0;
+		}
 
 		rc.SetInput(vao.get());
 		rc.SetProgram(program.get());
 
-		maya::stl::string text = std::to_string(player.GetPosition()) + " / " + std::to_string(player.GetDuration());
-		int adv = 0;
-		for (char c : text) {
-			auto& glyph = font.Data.at(c);
-			rc.SetTexture(glyph.Texture.get(), 0);
-			program->SetUniformMatrix("uModel",
-				maya::TranslateModel(glyph.Bearing + maya::Fvec2(adv, 0) + maya::Fvec2(glyph.Size.x, -glyph.Size.y) / 2)
-				* maya::ScaleModel(glyph.Size));
-			rc.DrawSetup();
-			adv += glyph.Advance;
+		if (player.GetSource())
+		{
+			maya::stl::string text = std::to_string(player.GetPosition()) + " / " + std::to_string(player.GetDuration());
+			int adv = 0;
+			for (char c : text) {
+				auto& glyph = font.Data.at(c);
+				rc.SetTexture(glyph.Texture.get(), 0);
+				program->SetUniformMatrix("uModel",
+					maya::TranslateModel(glyph.Bearing + maya::Fvec2(adv, 0) + maya::Fvec2(glyph.Size.x, -glyph.Size.y) / 2)
+					* maya::ScaleModel(glyph.Size));
+				rc.DrawSetup();
+				adv += glyph.Advance;
+			}
 		}
 
 		// ui::Manager m (window);

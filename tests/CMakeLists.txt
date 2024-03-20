@@ -6,4 +6,5 @@ function(maya_create_test TEST_NAME)
 	add_test(NAME "${TEST_NAME}" COMMAND ${TEST_NAME} WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 endfunction()
 
+add_compile_definitions(MAYA_TEST_DIR="${PROJECT_SOURCE_DIR}/tests/")
 maya_create_test("basic")

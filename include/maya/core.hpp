@@ -44,7 +44,9 @@
 #error unknown platform detected, only Windows, MacOS and Linux are supported
 #endif
 
-#define MAYA_DELCOPY(x) x(x const&) = delete; x& operator=(x const&) = delete
+#define MAYA_BENCHMARK(...) {\
+	float _maya_tstart = ::maya::CoreManager::Instance()->GetTimeSince();\
+	__VA_ARGS__; std::cout << ::maya::CoreManager::Instance()->GetTimeSince() - _maya_tstart << '\n'; }
 
 #include <string>
 #include <string_view>
@@ -54,11 +56,12 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <functional>
-#include <iostream>
 #include <type_traits>
 #include <concepts>
-#include <cmath>
 #include <memory>
+#include <thread>
+#include <atomic>
+#include <mutex>
 
 namespace maya
 {
@@ -70,6 +73,10 @@ namespace stl
 using string = ::std::string;
 
 using strview = ::std::string_view;
+
+using thread = ::std::thread;
+
+using mutex = ::std::mutex;
 
 template<class Fty>
 using fnptr = ::std::function<Fty>;
@@ -85,6 +92,9 @@ using array = ::std::array<Ty, Sz>;
 
 template<class Ty>
 using list = ::std::vector<Ty>;
+
+template<class Ty>
+using atomic = ::std::atomic<Ty>;
 
 template<class KTy, class VTy>
 using hashmap = ::std::unordered_map<KTy, VTy>;
@@ -164,28 +174,28 @@ enum Dependency : unsigned
 };
 
 // Served as the loader for dependencies.
-class LibraryManager
+class CoreManager
 {
 public:
 
 	// One only instance of this class can be presented at a time.
-	LibraryManager();
+	CoreManager();
 
 	// Unload all dependencies if any.
-	~LibraryManager();
+	~CoreManager();
 
 	// No copy construct.
-	LibraryManager(LibraryManager const&) = delete;
-	LibraryManager& operator=(LibraryManager const&) = delete;
+	CoreManager(CoreManager const&) = delete;
+	CoreManager& operator=(CoreManager const&) = delete;
 
 	// Returns the instance of the class, or nullptr if none.
-	static LibraryManager* Instance();
+	static CoreManager* Instance();
 
 	// Load a single dependency
 	void LoadDependency(Dependency dep);
 
 	// Equivalent to LoadDependency
-	LibraryManager& operator<<(Dependency dep);
+	CoreManager& operator<<(Dependency dep);
 
 	// Unload a single dependency
 	void UnloadDependency(Dependency dep);
@@ -196,7 +206,7 @@ public:
 	// Returns true if the dependencies is presented.
 	bool FoundDependencies(unsigned deps) const;
 
-#define MAYA_FOUND_DEPS(deps) (LibraryManager::Instance() && LibraryManager::Instance()->FoundDependencies(deps))
+#define MAYA_FOUND_DEPS(deps) (CoreManager::Instance() && CoreManager::Instance()->FoundDependencies(deps))
 
 	// Returns the time since the instance is created, in seconds.
 	float GetTimeSince() const;
