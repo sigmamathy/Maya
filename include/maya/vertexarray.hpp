@@ -32,6 +32,9 @@ public:
 	using uptr = stl::uptr<VertexArray>;
 	using sptr = stl::sptr<VertexArray>;
 
+	// Uninitialized.
+	VertexArray(void) = default;
+
 	// Constructor.
 	VertexArray(RenderContext& rc);
 
@@ -48,8 +51,11 @@ public:
 	// Create and return a sptr.
 	static sptr MakeShared(RenderContext& rc);
 
-	// Return the vertex array id.
-	unsigned GetNativeId() const override;
+	// Initialize array.
+	virtual void Init(RenderContext& rc) override;
+
+	// Free array.
+	virtual void Free() override;
 
 	// Add a vertex buffer to the array.
 	template<class Ty>
@@ -79,15 +85,10 @@ public:
 
 protected:
 
-	void Destroy() override;
+	stl::list<MAYA_STL uint32_t> vboids;
+	MAYA_STL uint32_t iboid;
 
-private:
-
-	unsigned vaoid;
-	stl::list<unsigned> vboids;
-	unsigned iboid;
-
-	int vertex_count, indices_count;
+	MAYA_STL size_t vertex_count, indices_count;
 	Ivec2 draw_range;
 };
 

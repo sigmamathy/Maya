@@ -6,31 +6,6 @@
 namespace maya
 {
 
-// Specify a corner for aligning
-// Horizontal:      (x & 0b11) = 1, 2, 3 for Left, Center, Right
-// Vertical:        (x >> 2) = 1, 2, 3 for Bottom, Center, Top
-enum Alignment
-{
-	AlignLeft		= 0b1,			// 0001
-	AlignCenterH	= 0b10,			// 0010
-	AlignRight		= 0b11,			// 0011
-	AlignBottom		= 0b100,		// 0100
-	AlignCenterV	= 0b1000,		// 1000
-	AlignTop		= 0b1100,		// 1100
-
-	// ---------------- Combinations ---------------- //
-
-	AlignTL = AlignTop | AlignLeft,
-	AlignTC = AlignTop | AlignCenterH,
-	AlignTR = AlignTop | AlignRight,
-	AlignCL = AlignCenterV | AlignLeft,
-	AlignCC = AlignCenterV | AlignCenterH,
-	AlignCR = AlignCenterV | AlignRight,
-	AlignBL = AlignBottom | AlignLeft,
-	AlignBC = AlignBottom | AlignCenterH,
-	AlignBR = AlignBottom | AlignRight,
-};
-
 // Translation matrix (2D)
 Fmat4 TranslateModel(Fvec2 position);
 

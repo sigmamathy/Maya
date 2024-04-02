@@ -37,14 +37,18 @@ void AsyncWorker::Clear()
 void AsyncWorker::CompleteWorks()
 {
 	for (auto& work : worklist) {
-#if MAYA_DEBUG
+#if 1 or MAYA_DEBUG
 		auto& cm = *CoreManager::Instance();
 		float start = cm.GetTimeSince();
 #endif
 		work();
-#if MAYA_DEBUG
-		MAYA_DEBUG_LOG_INFO("Async work " + std::to_string(onwork + 1) + " completed in "
+#if 1 or MAYA_DEBUG
+		std::cout << "Async work " + std::to_string(onwork + 1) + " completed in "
+			+ std::to_string(cm.GetTimeSince() - start) + "s" << '\n';
+		/*
+		* MAYA_DEBUG_LOG_INFO("Async work " + std::to_string(onwork + 1) + " completed in "
 			+ std::to_string(cm.GetTimeSince() - start) + "s");
+		*/
 #endif
 		onwork++;
 	}

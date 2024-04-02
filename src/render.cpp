@@ -1,40 +1,64 @@
 #include <maya/render.hpp>
 #include <maya/window.hpp>
 #include <maya/vertexarray.hpp>
+#include <maya/shader.hpp>
+#include <maya/texture.hpp>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 namespace maya
 {
 
-RenderResource::RenderResource(RenderContext& rc)
-	: rc(rc)
+RenderResource::RenderResource(void)
+	: rc(0), nativeid(0)
 {
+}
+
+void RenderResource::Init(class RenderContext& rc)
+{
+	MAYA_ASSERT(!this->rc && !nativeid);
+	this->rc = &rc;
+	rc.BeginContext();
 	rc.resources.insert(this);
 }
 
-void RenderResource::Destroy()
+void RenderResource::Free()
 {
-	rc.resources.erase(this);
+	MAYA_ASSERT(rc);
+	rc->BeginContext();
+	rc->resources.erase(this);
+	rc = 0;
 }
 
 static RenderContext* s_current_context = 0;
 
-RenderContext::RenderContext()
-	: window(0), input(0), program(0), settings(0), blendmode(NoBlend),
-	num_wait(0), num_quiet_wait(0), threadid(std::this_thread::get_id())
+void RenderContext::Init(Window* win)
 {
-}
+	window			= win;
+	input			= 0;
+	program			= 0;
+	settings		= 0;
+	blendmode		= NO_BLEND;
+	num_wait		= 0;
+	num_quiet_wait	= 0;
+	threadid		= std::this_thread::get_id();
 
-void RenderContext::Init()
-{
-	GLint texmax;
-	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &texmax);
-	textures.resize(texmax);
 	resources.reserve(32);
+	GLint num_tex_slots;
+	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &num_tex_slots);
+	textures.resize(num_tex_slots);
 }
 
-void RenderContext::Begin()
+void RenderContext::Free()
+{
+	BeginContext();
+	while (!resources.empty()) {
+		auto it = resources.begin();
+		(*it)->Free();
+	}
+}
+
+void RenderContext::BeginContext()
 {
 	glfwMakeContextCurrent(static_cast<GLFWwindow*>(window->GetNativePointer()));
 	s_current_context = this;
@@ -47,52 +71,54 @@ RenderContext* RenderContext::CurrentContext()
 
 void RenderContext::ClearBuffer()
 {
-	Disable(ScissorTest);
+	Disable(SCISSOR_TEST);
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
-VertexArray* RenderContext::GetInput()
+void RenderContext::SetInput(VertexArray* resource)
 {
-	return input;
+	if (input == resource) return;
+	input = resource;
+	glBindVertexArray(resource ? resource->GetNativeId() : 0);
 }
 
-ShaderProgram* RenderContext::GetProgram()
+void RenderContext::SetProgram(ShaderProgram* pg)
 {
-	return program;
+	if (program == pg) return;
+	program = pg;
+	glUseProgram(program ? program->GetNativeId() : 0);
 }
 
-Texture* RenderContext::GetTexture(int slot)
+void RenderContext::SetTexture(Texture* tex, int slot)
 {
-	return textures[slot];
+	if (textures[slot] == tex) return;
+	glActiveTexture(GL_TEXTURE0 + slot);
+	glBindTexture(GL_TEXTURE_2D, tex ? tex->GetNativeId() : 0);
+	textures[slot] = tex;
 }
 
-void RenderContext::Enable(Setting set)
+void RenderContext::Enable(Options set)
 {
 	if (IsEnabled(set)) return;
 	GLenum e = 0;
 	switch (set) {
-		case Blending: e = GL_BLEND; break;
-		case ScissorTest: e = GL_SCISSOR_TEST; break;
+		case BLENDING: e = GL_BLEND; break;
+		case SCISSOR_TEST: e = GL_SCISSOR_TEST; break;
 	}
 	glEnable(e);
 	settings &= 1 << set;
 }
 
-void RenderContext::Disable(Setting set)
+void RenderContext::Disable(Options set)
 {
 	if (!IsEnabled(set)) return;
 	GLenum e = 0;
 	switch (set) {
-		case Blending: e = GL_BLEND; break;
-		case ScissorTest: e = GL_SCISSOR_TEST; break;
+		case BLENDING: e = GL_BLEND; break;
+		case SCISSOR_TEST: e = GL_SCISSOR_TEST; break;
 	}
 	glDisable(e);
 	settings &= ~(1 << set);
-}
-
-bool RenderContext::IsEnabled(Setting set) const
-{
-	return settings & (1 << set);
 }
 
 void RenderContext::SetBlendMode(BlendMode bm)
@@ -100,17 +126,12 @@ void RenderContext::SetBlendMode(BlendMode bm)
 	if (blendmode == bm)
 		return;
 	switch (bm) {
-		case NoBlend: glBlendFunc(GL_ONE, GL_ZERO); break;
-		case AlphaBlend: glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); break;
-		case AdditiveBlend: glBlendFunc(GL_SRC_ALPHA, GL_ONE); break;
-		case MulitplicativeBlend: glBlendFunc(GL_DST_COLOR, GL_ZERO); break;
+		case NO_BLEND: glBlendFunc(GL_ONE, GL_ZERO); break;
+		case ALPHA_BLEND: glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); break;
+		case ADDITIVE_BLEND: glBlendFunc(GL_SRC_ALPHA, GL_ONE); break;
+		case MULTIPLICATIVE_BLEND: glBlendFunc(GL_DST_COLOR, GL_ZERO); break;
 	}
 	blendmode = bm;
-}
-
-RenderContext::BlendMode RenderContext::GetBlendMode()
-{
-	return blendmode;
 }
 
 void RenderContext::DrawSetup()
@@ -133,11 +154,6 @@ void RenderContext::DrawSetup()
 		Ivec2 dr = input->GetDrawRange();
 		glDrawArrays(GL_TRIANGLES, dr.x, dr.y - dr.x);
 	}
-}
-
-int RenderContext::GetMaxTextureSlots() const
-{
-	return static_cast<unsigned>(textures.size());
 }
 
 RenderContext::QuietWait::QuietWait(RenderContext& rc) : rc(rc)
@@ -195,15 +211,6 @@ void RenderContext::SyncWithThreads(float maxwait)
 		cv0.wait(lock); // wait here.
 		execsync(); // execute whatever recieved.
 		cv1.notify_one(); // tell thread to continue execution.
-	}
-}
-
-void RenderContext::DestroyAll()
-{
-	Begin();
-	while (!resources.empty()) {
-		auto it = resources.begin();
-		(*it)->Destroy();
 	}
 }
 

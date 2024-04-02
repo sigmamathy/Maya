@@ -19,8 +19,11 @@
 #ifndef MAYA_DEBUG // if not predefined
 #if (defined (_MSC_VER) && defined (_DEBUG)) || ((defined (__GNUC__) || defined (__clang__)) && defined (__OPTIMIZE__))
 #define MAYA_DEBUG 1
+#include <cassert>
+#define MAYA_ASSERT(...) assert((__VA_ARGS__))
 #else
 #define MAYA_DEBUG 0
+#define MAYA_ASSERT(...)
 #endif
 // msvc: _DEBUG
 // gcc or clang: __OPTIMIZE__
@@ -36,9 +39,6 @@
 #error unknown platform detected, only Windows, MacOS and Linux are supported
 #endif
 
-#define MAYA_BENCHMARK(...) {\
-	float _maya_tstart = ::maya::CoreManager::Instance()->GetTimeSince();\
-	__VA_ARGS__; std::cout << ::maya::CoreManager::Instance()->GetTimeSince() - _maya_tstart << '\n'; }
 #define MAYA_STL ::std::
 #define MAYA_LIKELY [[likely]]
 #define MAYA_UNLIKELY [[unlikely]]
@@ -81,7 +81,7 @@ namespace stl
 // Contains information about data pointer and size.
 template<class Ty> struct Buffer {
 	Ty* Data = 0;
-	unsigned Size = 0;
+	MAYA_STL size_t Size = 0;
 };
 
 // Constant buffer data and size.
@@ -149,6 +149,8 @@ public:
 		SHADER_LINK_ERROR,
 	};
 
+	// Report an error to the system for handling.
+	// Note that this is only used for errors that can be recovered.
 	void MakeError(ErrorCode code, stl::string const& msg);
 
 #define MAYA_MAKE_ERROR(code, ...) ::maya::CoreManager::Instance()->MakeError(::maya::CoreManager::code, __VA_ARGS__);
@@ -163,6 +165,8 @@ public:
 	};
 
 	void SetErrorHandleMode(ErrorHandleMode mode);
+
+	ErrorHandleMode GetErrorHandleMode() const;
 
 };
 

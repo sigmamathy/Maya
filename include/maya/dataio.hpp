@@ -1,6 +1,7 @@
 #pragma once
 
 #include "./math.hpp"
+#include "./texture.hpp"
 
 namespace maya
 {
@@ -27,7 +28,7 @@ struct FontData
 	// Character glyph data.
 	struct Glyph
 	{
-		stl::uptr<class Texture> Texture;
+		Texture Bitmap;
 		Ivec2 Size, Bearing;
 		unsigned Advance;
 	};

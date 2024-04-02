@@ -10,27 +10,29 @@ class RenderResource
 {
 public:
 
-	// Add itself to the collection.
-	RenderResource(class RenderContext& rc);
+	// Uninitialized.
+	RenderResource(void);
 
-	// Is expected to call Destroy() in the child implementation.
+	// Destructor.
 	virtual ~RenderResource() = default;
+
+	// Initialize resources.
+	virtual void Init(class RenderContext& rc);
+
+	// Destroy resources.
+	virtual void Free();
 
 	// No copy constructs.
 	RenderResource(RenderResource const&) = delete;
 	RenderResource& operator=(RenderResource const&) = delete;
 
 	// Returns the native id.
-	virtual unsigned GetNativeId() const = 0;
+	inline MAYA_STL uint32_t GetNativeId() const { return nativeid; };
 
 protected:
 
-	RenderContext& rc;
-	friend class RenderContext;
-
-	// Called by the destructor or RenderContext clean up.
-	// Overriders are expected to include this destroy function.
-	virtual void Destroy();
+	RenderContext* rc;
+	MAYA_STL uint32_t nativeid;
 };
 
 // Graphics context for rendering.
@@ -39,7 +41,7 @@ class RenderContext
 public:
 
 	// Set this rendering context to the current.
-	void Begin();
+	void BeginContext();
 
 	// Get the current context.
 	static RenderContext* CurrentContext();
@@ -57,50 +59,50 @@ public:
 	void SetTexture(class Texture* tex, int slot);
 
 	// Get the current vertex array.
-	VertexArray* GetInput();
+	inline VertexArray* GetInput() { return input; }
 
 	// Get the current shader prgoram.
-	ShaderProgram* GetProgram();
+	inline ShaderProgram* GetProgram() { return program; }
 
 	// Get the current texture to a slot.
-	Texture* GetTexture(int slot);
+	inline Texture* GetTexture(int slot) { return textures[slot]; }
 
 	// Settings for rendering.
-	enum Setting
+	enum Options
 	{
-		Blending,
-		ScissorTest,
+		BLENDING,
+		SCISSOR_TEST,
 	};
 
 	// Enable a rendering setting.
-	void Enable(Setting set);
+	void Enable(Options set);
 
 	// Disable a rendering setting.
-	void Disable(Setting set);
+	void Disable(Options set);
 
 	// Return true if a setting is enabled.
-	bool IsEnabled(Setting set) const;
+	inline bool IsEnabled(Options set) const { return settings & (1 << set); }
 
 	// Usable blending modes
 	enum BlendMode
 	{
-		NoBlend,
-		AlphaBlend,
-		AdditiveBlend,
-		MulitplicativeBlend
+		NO_BLEND,
+		ALPHA_BLEND,
+		ADDITIVE_BLEND,
+		MULTIPLICATIVE_BLEND
 	};
 
 	// Set a blend mode.
 	void SetBlendMode(BlendMode bm);
 
 	// Get the current blend mode.
-	BlendMode GetBlendMode();
+	inline BlendMode GetBlendMode() const { return blendmode; }
 
 	// Draw the current bounded setup.
 	void DrawSetup();
 
 	// Get the maximum number of texture slots available.
-	int GetMaxTextureSlots() const;
+	inline MAYA_STL size_t GetMaxTextureSlots() const { return textures.size(); }
 
 	// Tell SyncWithThreads to wait even no threads are waiting.
 	struct QuietWait {
@@ -136,9 +138,9 @@ private:
 	stl::fnptr<void()> execsync;
 	std::atomic<unsigned> num_wait, num_quiet_wait;
 
-	RenderContext();
-	void Init();
-	void DestroyAll();
+	RenderContext() = default;
+	void Init(class Window* window);
+	void Free();
 };
 
 }

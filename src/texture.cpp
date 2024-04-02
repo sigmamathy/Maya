@@ -20,15 +20,13 @@ static constexpr GLenum s_TextureFormat(int channels)
 }
 
 Texture::Texture(RenderContext& rc)
-	: RenderResource(rc), size(0), channels(0)
 {
-	rc.Begin();
-	glGenTextures(1, &textureid);
+	Init(rc);
 }
 
 Texture::~Texture()
 {
-	Destroy();
+	Free();
 }
 
 Texture::uptr Texture::MakeUnique(RenderContext& rc)
@@ -41,66 +39,50 @@ Texture::sptr Texture::MakeShared(RenderContext& rc)
 	return sptr(new Texture(rc));
 }
 
-void Texture::Destroy()
+void Texture::Init(RenderContext& rc)
 {
-	if (textureid)
-	{
-		RenderResource::Destroy();
-		glDeleteTextures(1, &textureid);
-		textureid = 0;
-	}
+	RenderResource::Init(rc);
+	glGenTextures(1, &nativeid);
+	size = { 0, 0 };
+	channels = 0;
 }
 
-void RenderContext::SetTexture(Texture* tex, int slot)
+void Texture::Free()
 {
-	if (textures[slot] == tex) return;
-	glActiveTexture(GL_TEXTURE0 + slot);
-	glBindTexture(GL_TEXTURE_2D, tex ? tex->GetNativeId() : 0);
-	textures[slot] = tex;
+	if (nativeid) {
+		RenderResource::Free();
+		glDeleteTextures(1, &nativeid);
+		nativeid = 0;
+	}
 }
 
 void Texture::CreateContent(void const* data, Ivec2 size, int channels)
 {
-	rc.SetTexture(this, 0);
+	rc->SetTexture(this, 0);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
 		size.x, size.y, 0, s_TextureFormat(channels), GL_UNSIGNED_BYTE, data);
-	rc.SetTexture(0, 0);
-}
-
-unsigned Texture::GetNativeId() const
-{
-	return textureid;
+	rc->SetTexture(0, 0);
 }
 
 void Texture::SetRepeat()
 {
-	glBindTexture(GL_TEXTURE_2D, textureid);
+	glBindTexture(GL_TEXTURE_2D, nativeid);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
 
 void Texture::SetClampToEdge()
 {
-	glBindTexture(GL_TEXTURE_2D, textureid);
+	glBindTexture(GL_TEXTURE_2D, nativeid);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
 
 void Texture::SetFilterLinear()
 {
-	glBindTexture(GL_TEXTURE_2D, textureid);
+	glBindTexture(GL_TEXTURE_2D, nativeid);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-}
-
-Ivec2 Texture::GetSize() const
-{
-	return size;
-}
-
-int Texture::GetChannels() const
-{
-	return channels;
 }
 
 }

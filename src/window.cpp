@@ -133,9 +133,8 @@ bool Window::Initialize(WindowParams const& param)
 			if (call) call(e);
 	};
 
-	rc.window = this;
-	rc.Init();
 
+	rc.Init(this);
 	return true;
 }
 
@@ -146,7 +145,7 @@ Window::Window(WindowParams const& param)
 
 Window::~Window()
 {
-	rc.DestroyAll();
+	rc.Free();
 	GLFWwindow* window = static_cast<GLFWwindow*>(nativeptr);
 	glfwDestroyWindow(window);
 }

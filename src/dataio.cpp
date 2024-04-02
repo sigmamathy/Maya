@@ -68,17 +68,15 @@ static void s_LoadChars(RenderContext& rc, FT_Face face, FontData& font)
 
 		rc.WaitForSyncExec([&, charcode, face]()
 		{
-			font.Data[charcode] = {
-				.Texture = Texture::MakeUnique(rc),
-				.Size = Ivec2(map.width, map.rows),
-				.Bearing = Ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-				.Advance = unsigned(face->glyph->advance.x >> 6)
-			};
-
-			auto& t = *font.Data.at(charcode).Texture;
-			t.CreateContent(image.data(), Ivec2(map.width, map.rows), 4);
-			t.SetClampToEdge();
-			t.SetFilterLinear();
+			auto& g = font.Data[charcode];
+			g.Bitmap.Init(rc);
+			g.Size = Ivec2(map.width, map.rows);
+			g.Bearing = Ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top);
+			g.Advance = face->glyph->advance.x >> 6;
+			
+			g.Bitmap.CreateContent(image.data(), Ivec2(map.width, map.rows), 4);
+			g.Bitmap.SetClampToEdge();
+			g.Bitmap.SetFilterLinear();
 		});
 
 		charcode = FT_Get_Next_Char(face, charcode, &index);
@@ -105,7 +103,7 @@ void FontData::Import(ConstBuffer<void> data, int pixelsize, class RenderContext
 	FT_Library ft;
 	FT_Init_FreeType(&ft);
 	FT_Face face;
-	FT_New_Memory_Face(ft, static_cast<FT_Byte const*>(data.Data), data.Size, 0, &face);
+	FT_New_Memory_Face(ft, static_cast<FT_Byte const*>(data.Data), static_cast<FT_Long>(data.Size), 0, &face);
 	FT_Set_Pixel_Sizes(face, 0, pixelsize);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 

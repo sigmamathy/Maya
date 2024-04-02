@@ -8,12 +8,12 @@ namespace maya
 
 VertexLayout::VertexLayout()
 {
-	attributes.reserve(4);
+	attributes.reserve(8);
 }
 
 VertexLayout::VertexLayout(int location, int count)
 {
-	attributes.reserve(4);
+	attributes.reserve(8);
 	Push(location, count);
 }
 
@@ -25,15 +25,13 @@ VertexLayout& VertexLayout::Push(int location, int count)
 }
 
 VertexArray::VertexArray(RenderContext& rc)
-	: RenderResource(rc), iboid(0), vertex_count(0), indices_count(0), draw_range(-1)
 {
-	MAYA_DEBUG_LOG_INFO("Initializing vertex array...");
-	glGenVertexArrays(1, &vaoid);
+	Init(rc);
 }
 
 VertexArray::~VertexArray()
 {
-	Destroy();
+	Free();
 }
 
 VertexArray::uptr VertexArray::MakeUnique(RenderContext& rc)
@@ -46,30 +44,28 @@ VertexArray::sptr VertexArray::MakeShared(RenderContext& rc)
 	return sptr(new VertexArray(rc));
 }
 
-unsigned VertexArray::GetNativeId() const
+void VertexArray::Init(RenderContext& rc)
 {
-	return vaoid;
+	RenderResource::Init(rc);
+	glGenVertexArrays(1, &nativeid);
+	iboid = 0;
+	vertex_count = 0;
+	indices_count = 0;
+	draw_range = Ivec2(-1);
 }
 
-void VertexArray::Destroy()
+void VertexArray::Free()
 {
-	if (vaoid)
+	if (nativeid)
 	{
-		RenderResource::Destroy();
-		glDeleteVertexArrays(1, &vaoid);
+		RenderResource::Free();
+		glDeleteVertexArrays(1, &nativeid);
 		if (!vboids.empty())
 			glDeleteBuffers(static_cast<GLsizei>(vboids.size()), vboids.data());
 		if (iboid)
 			glDeleteBuffers(1, &iboid);
-		vaoid = 0;
+		nativeid = 0;
 	}
-}
-
-void RenderContext::SetInput(VertexArray* resource)
-{
-	if (input == resource) return;
-	input = resource;
-	glBindVertexArray(resource ? resource->GetNativeId() : 0);
 }
 
 void VertexArray::SetDrawRange(int start, int end)
@@ -95,7 +91,7 @@ void VertexArray::PushBuffer(ConstBuffer<Ty> buffer, VertexLayout& layout, bool 
 	unsigned& vboid = vboids.emplace_back();
 
 	glGenBuffers(1, &vboid);
-	rc.SetInput(this);
+	rc->SetInput(this);
 	glBindBuffer(GL_ARRAY_BUFFER, vboid);
 	glBufferData(GL_ARRAY_BUFFER, buffer.Size, buffer.Data,
 		MaySubjectToChange ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
@@ -115,7 +111,7 @@ void VertexArray::PushBuffer(ConstBuffer<Ty> buffer, VertexLayout& layout, bool 
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	int vc = buffer.Size / layout.stride / sizeof(Ty);
+	MAYA_STL size_t vc = buffer.Size / layout.stride / sizeof(Ty);
 
 	if (!vertex_count)
 	{
@@ -145,10 +141,10 @@ void VertexArray::LinkIndexBuffer(ConstBuffer<unsigned> buffer)
 	if (iboid)
 		glDeleteBuffers(1, &iboid);
 	glGenBuffers(1, &iboid);
-	rc.SetInput(this);
+	rc->SetInput(this);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboid);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, buffer.Size, buffer.Data, GL_STATIC_DRAW);
-	rc.SetInput(0);
+	rc->SetInput(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	indices_count = buffer.Size / sizeof(unsigned);
 }

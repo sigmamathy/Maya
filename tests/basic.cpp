@@ -56,24 +56,23 @@ int main(int argc, char** argv)
 
 	maya::Window::uptr window = maya::Window::MakeUnique();
 	auto& rc = window->GetRenderContext();
-	rc.Begin();
+	rc.BeginContext();
 
-	rc.Enable(rc.Blending);
-	rc.SetBlendMode(rc.AlphaBlend);
+	rc.Enable(rc.BLENDING);
+	rc.SetBlendMode(rc.ALPHA_BLEND);
 
 	maya::VertexLayout layout;
 	layout.Push(0, 2).Push(1, 2);
 
-	maya::VertexArray::uptr vao = maya::VertexArray::MakeUnique(rc);
-	vao->PushBuffer(maya::ConstBuffer(v, sizeof(v)), layout);
+	maya::VertexArray vao(rc);
+	vao.PushBuffer(maya::ConstBuffer(v, sizeof(v)), layout);
 
-	maya::ShaderProgram::uptr program = maya::ShaderProgram::MakeUnique(rc);
-	program->CompileShader(maya::VertexShader, vshader);
-	program->CompileShader(maya::FragmentShader, fshader);
-	program->LinkProgram();
-
-	program->SetUniformMatrix("uProj", maya::OrthogonalProjection(window->GetSize()));
-	program->SetUniform<int>("uTex", 0);
+	maya::ShaderProgram program(rc);
+	program.CompileShader(program.VERTEX, vshader);
+	program.CompileShader(program.FRAGMENT, fshader);
+	program.LinkProgram();
+	program.SetUniformMatrix("uProj", maya::OrthogonalProjection(window->GetSize()));
+	program.SetUniform<int>("uTex", 0);
 	
 	maya::AudioData audio;
 	maya::FontData font;
@@ -88,7 +87,7 @@ int main(int argc, char** argv)
 	while (!window->IsRequestedForClose())
 	{
 		rc.SyncWithThreads(0.005f);
-		rc.Begin();
+		rc.BeginContext();
 		rc.ClearBuffer();
 
 		if (work && importer.IsWorkDone(work2) && importer.IsWorkDone(work)) {
@@ -97,17 +96,17 @@ int main(int argc, char** argv)
 			work = 0;
 		}
 
-		rc.SetInput(vao.get());
-		rc.SetProgram(program.get());
+		rc.SetInput(&vao);
+		rc.SetProgram(&program);
 
 		if (player.GetSource())
 		{
-			maya::stl::string text = std::to_string(player.GetPosition()) + " / " + std::to_string(player.GetDuration());
+			auto text = std::to_string(player.GetPosition()) + " / " + std::to_string(player.GetDuration());
 			int adv = 0;
 			for (char c : text) {
 				auto& glyph = font.Data.at(c);
-				rc.SetTexture(glyph.Texture.get(), 0);
-				program->SetUniformMatrix("uModel",
+				rc.SetTexture(&glyph.Bitmap, 0);
+				program.SetUniformMatrix("uModel",
 					maya::TranslateModel(glyph.Bearing + maya::Fvec2(adv, 0) + maya::Fvec2(glyph.Size.x, -glyph.Size.y) / 2)
 					* maya::ScaleModel(glyph.Size));
 				rc.DrawSetup();

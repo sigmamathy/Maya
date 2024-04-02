@@ -7,17 +7,13 @@ namespace maya
 {
 
 ShaderProgram::ShaderProgram(RenderContext& rc)
-	: RenderResource(rc)
 {
-	MAYA_DEBUG_LOG_INFO("Initializing shader program...");
-
-	programid = glCreateProgram();
-	for (unsigned& i : shaderids) i = 0;
+	Init(rc);
 }
 
 ShaderProgram::~ShaderProgram()
 {
-	Destroy();
+	Free();
 }
 
 ShaderProgram::uptr ShaderProgram::MakeUnique(RenderContext& rc)
@@ -30,13 +26,31 @@ ShaderProgram::sptr ShaderProgram::MakeShared(RenderContext& rc)
 	return sptr(new ShaderProgram(rc));
 }
 
+void ShaderProgram::Init(RenderContext& rc)
+{
+	RenderResource::Init(rc);
+	nativeid = glCreateProgram();
+	for (auto& id : shaderids)
+		id = 0;
+	uniform_location_cache.reserve(20);
+}
+
+void ShaderProgram::Free()
+{
+	if (nativeid) {
+		RenderResource::Free();
+		glDeleteProgram(nativeid);
+		nativeid = 0;
+	}
+}
+
 void ShaderProgram::CompileShader(ShaderType type, char const* source)
 {
 	GLenum gltype = 0;
 	switch (type) {
-		case VertexShader: gltype = GL_VERTEX_SHADER; break;
-		case FragmentShader: gltype = GL_FRAGMENT_SHADER; break;
-		case GeometryShader: gltype = GL_GEOMETRY_SHADER; break;
+		case VERTEX: gltype = GL_VERTEX_SHADER; break;
+		case FRAGMENT: gltype = GL_FRAGMENT_SHADER; break;
+		case GEOMETRY: gltype = GL_GEOMETRY_SHADER; break;
 	}
 
 	auto& shader = shaderids[type];
@@ -54,9 +68,9 @@ void ShaderProgram::CompileShader(ShaderType type, char const* source)
 		glGetShaderInfoLog(shader, 512, NULL, &errmsg[0]);
 
 		switch (type) {
-			case VertexShader: errmsg = "Following error found in vertex shader\n" + errmsg; break;
-			case FragmentShader: errmsg = "Following error found in fragment shader\n" + errmsg; break;
-			case GeometryShader: errmsg = "Following error found in geometry shader\n" + errmsg; break;
+			case VERTEX: errmsg = "Following error found in vertex shader\n" + errmsg; break;
+			case FRAGMENT: errmsg = "Following error found in fragment shader\n" + errmsg; break;
+			case GEOMETRY: errmsg = "Following error found in geometry shader\n" + errmsg; break;
 		}
 
 		auto& cm = *CoreManager::Instance();
@@ -66,13 +80,13 @@ void ShaderProgram::CompileShader(ShaderType type, char const* source)
 		return;
 	}
 
-	glAttachShader(programid, shader);
+	glAttachShader(nativeid, shader);
 }
 
 void ShaderProgram::LinkProgram()
 {
 #if MAYA_DEBUG
-	if (!shaderids[VertexShader] || !shaderids[FragmentShader])
+	if (!shaderids[VERTEX] || !shaderids[FRAGMENT])
 	{
 		auto& cm = *CoreManager::Instance();
 		cm.MakeError(cm.SHADER_LINK_ERROR, "Vertex shader or fragment shader is absent.");
@@ -80,16 +94,16 @@ void ShaderProgram::LinkProgram()
 	}
 #endif
 
-	glLinkProgram(programid);
+	glLinkProgram(nativeid);
 
 	GLint status;
-	glGetProgramiv(programid, GL_LINK_STATUS, &status);
+	glGetProgramiv(nativeid, GL_LINK_STATUS, &status);
 
 	if (!status)
 	{
 		stl::string errmsg;
 		errmsg.resize(512);
-		glGetProgramInfoLog(programid, 512, NULL, &errmsg[0]);
+		glGetProgramInfoLog(nativeid, 512, NULL, &errmsg[0]);
 		auto& cm = *CoreManager::Instance();
 		cm.MakeError(cm.SHADER_LINK_ERROR, "Following error found while linking shaders : " + errmsg);
 	}
@@ -100,34 +114,12 @@ void ShaderProgram::LinkProgram()
 	}
 }
 
-unsigned ShaderProgram::GetNativeId() const
-{
-	return programid;
-}
-
-void ShaderProgram::Destroy()
-{
-	if (programid)
-	{
-		RenderResource::Destroy();
-		glDeleteProgram(programid);
-		programid = 0;
-	}
-}
-
-void RenderContext::SetProgram(ShaderProgram* pg)
-{
-	if (program == pg) return;
-	program = pg;
-	glUseProgram(program ? program->GetNativeId() : 0);
-}
-
 int ShaderProgram::FindUniformLocation(stl::strview name)
 {
 	if (uniform_location_cache.count(name))
 		return uniform_location_cache.at(name);
 	stl::string str(name); // Ensure null terminated string
-	int x = glGetUniformLocation(programid, str.c_str());
+	int x = glGetUniformLocation(nativeid, str.c_str());
 	uniform_location_cache[name] = x;
 #if MAYA_DEBUG
 	if (x == -1)
@@ -138,7 +130,7 @@ int ShaderProgram::FindUniformLocation(stl::strview name)
 
 #define MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(ty, sz, fn)\
 	template<> void ShaderProgram::SetUniformVector(stl::strview name, Vector<ty, sz> const& vec)\
-	{ rc.SetProgram(this); int loc = FindUniformLocation(name); fn(loc, 1, &vec[0]); }
+	{ rc->SetProgram(this); int loc = FindUniformLocation(name); fn(loc, 1, &vec[0]); }
 
 MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(float, 1, glUniform1fv)
 MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(float, 2, glUniform2fv)
@@ -157,7 +149,7 @@ MAYA_DEFINE_UNIFORM_VECTOR_FUNCTION(unsigned, 4, glUniform4uiv)
 
 #define MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(sz, fn)\
 	template<> void ShaderProgram::SetUniformVector(stl::strview name, Vector<bool, sz> const& vec)\
-	{ rc.SetProgram(this); int loc = FindUniformLocation(name); Vector<int, sz> nv = vec; fn(loc, 1, &nv[0]); }
+	{ rc->SetProgram(this); int loc = FindUniformLocation(name); Vector<int, sz> nv = vec; fn(loc, 1, &nv[0]); }
 
 MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(1, glUniform1iv)
 MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(2, glUniform2iv)
@@ -166,7 +158,7 @@ MAYA_DEFINE_UNIFORM_BOOL_VECTOR_FUNCTION(4, glUniform4iv)
 
 #define MAYA_DEFINE_UNIFORM_MATRIX_FUNCTION(rw, cn, fn)\
 	template<> void ShaderProgram::SetUniformMatrix(stl::strview name, Matrix<float, rw, cn> const& mat)\
-	{ rc.SetProgram(this); int loc = FindUniformLocation(name); fn(loc, 1, false, &mat[0][0]); }
+	{ rc->SetProgram(this); int loc = FindUniformLocation(name); fn(loc, 1, false, &mat[0][0]); }
 
 MAYA_DEFINE_UNIFORM_MATRIX_FUNCTION(2, 2, glUniformMatrix2fv)
 MAYA_DEFINE_UNIFORM_MATRIX_FUNCTION(2, 3, glUniformMatrix2x3fv)

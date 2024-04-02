@@ -102,4 +102,9 @@ void CoreManager::SetErrorHandleMode(ErrorHandleMode mode)
 	s_cm_err_mode = mode;
 }
 
+CoreManager::ErrorHandleMode CoreManager::GetErrorHandleMode() const
+{
+	return s_cm_err_mode;
+}
+
 }

@@ -27,8 +27,8 @@ public:
 	constexpr Vector() noexcept = default;
 
 	// Copy constructor.
-	template<class Ty2>
-	constexpr Vector(Vector<Ty2, Dim> const& vec) noexcept
+	template<class Ty2, unsigned Dim2> requires (Dim2 >= Dim)
+	constexpr Vector(Vector<Ty2, Dim2> const& vec) noexcept
 	{
 		for (unsigned i = 0; i < Dim; i++)
 			elems[i] = static_cast<Ty>(vec[i]);
@@ -52,22 +52,14 @@ public:
 	// Access elements.
 	constexpr Ty& operator[](unsigned i)
 	{
-#if MAYA_DEBUG
-		if (i >= Dim) MAYA_UNLIKELY
-			CoreManager::Instance()->MakeError(
-				CoreManager::OUT_OF_BOUNDS_ERROR, "Vector index out of bounds.");
-#endif
+		MAYA_ASSERT(i < Dim);
 		return elems[i];
 	}
 
 	// Access elements const.
 	constexpr Ty const& operator[](unsigned i) const
 	{
-#if MAYA_DEBUG
-		if (i >= Dim) MAYA_UNLIKELY
-			CoreManager::Instance()->MakeError(
-				CoreManager::OUT_OF_BOUNDS_ERROR, "Vector index out of bounds.");
-#endif
+		MAYA_ASSERT(i < Dim);
 		return elems[i];
 	}
 
@@ -124,28 +116,21 @@ public:
 		this->x = static_cast<Ty>(x);
 	}
 
-	template<class Ty2> constexpr Vector(Vector<Ty2, 1> const& vec) noexcept
+	template<class Ty2, unsigned Dim2> requires (Dim2 >= 1)
+	constexpr Vector(Vector<Ty2, Dim2> const& vec) noexcept
 	{
-		x = static_cast<Ty>(vec.x);
+		x = static_cast<Ty>(vec[0]);
 	}
 
 	constexpr Ty& operator[](unsigned i)
 	{
-#if MAYA_DEBUG
-		if (i >= 1) MAYA_UNLIKELY
-			CoreManager::Instance()->MakeError(
-				CoreManager::OUT_OF_BOUNDS_ERROR, "Vector index out of bounds.");
-#endif
+		MAYA_ASSERT(i < 1);
 		return x;
 	}
 
 	constexpr Ty const& operator[](unsigned i) const
 	{
-#if MAYA_DEBUG
-		if (i >= 1) MAYA_UNLIKELY
-			CoreManager::Instance()->MakeError(
-				CoreManager::OUT_OF_BOUNDS_ERROR, "Vector index out of bounds.");
-#endif
+		MAYA_ASSERT(i < 1);
 		return x;
 	}
 
@@ -196,29 +181,22 @@ public:
 		this->y = static_cast<Ty>(y);
 	}
 
-	template<class Ty2> constexpr Vector(Vector<Ty2, 2> const& vec) noexcept
+	template<class Ty2, unsigned Dim2> requires (Dim2 >= 2)
+	constexpr Vector(Vector<Ty2, Dim2> const& vec) noexcept
 	{
-		x = static_cast<Ty>(vec.x);
-		y = static_cast<Ty>(vec.y);
+		x = static_cast<Ty>(vec[0]);
+		y = static_cast<Ty>(vec[1]);
 	}
 
 	constexpr Ty& operator[](unsigned i)
 	{
-#if MAYA_DEBUG
-		if (i >= 2) MAYA_UNLIKELY
-			CoreManager::Instance()->MakeError(
-				CoreManager::OUT_OF_BOUNDS_ERROR, "Vector index out of bounds.");
-#endif
+		MAYA_ASSERT(i < 2);
 		return i ? y : x;
 	}
 
 	constexpr Ty const& operator[](unsigned i) const
 	{
-#if MAYA_DEBUG
-		if (i >= 2) MAYA_UNLIKELY
-			CoreManager::Instance()->MakeError(
-				CoreManager::OUT_OF_BOUNDS_ERROR, "Vector index out of bounds.");
-#endif
+		MAYA_ASSERT(i < 2);
 		return i ? y : x;
 	}
 
@@ -273,30 +251,23 @@ public:
 		this->z = static_cast<Ty>(z);
 	}
 
-	template<class Ty2> constexpr Vector(Vector<Ty2, 3> const& vec) noexcept
+	template<class Ty2, unsigned Dim2> requires (Dim2 >= 3)
+	constexpr Vector(Vector<Ty2, Dim2> const& vec) noexcept
 	{
-		x = static_cast<Ty>(vec.x);
-		y = static_cast<Ty>(vec.y);
-		z = static_cast<Ty>(vec.z);
+		x = static_cast<Ty>(vec[0]);
+		y = static_cast<Ty>(vec[1]);
+		z = static_cast<Ty>(vec[2]);
 	}
 
 	constexpr Ty& operator[](unsigned i)
 	{
-#if MAYA_DEBUG
-		if (i >= 3) MAYA_UNLIKELY
-			CoreManager::Instance()->MakeError(
-				CoreManager::OUT_OF_BOUNDS_ERROR, "Vector index out of bounds.");
-#endif
+		MAYA_ASSERT(i < 3);
 		return i == 2 ? z : (i ? y : x);
 	}
 
 	constexpr Ty const& operator[](unsigned i) const
 	{
-#if MAYA_DEBUG
-		if (i >= 3) MAYA_UNLIKELY
-			CoreManager::Instance()->MakeError(
-				CoreManager::OUT_OF_BOUNDS_ERROR, "Vector index out of bounds.");
-#endif
+		MAYA_ASSERT(i < 3);
 		return i == 2 ? z : (i ? y : x);
 	}
 
@@ -355,31 +326,24 @@ public:
 		this->w = static_cast<Ty>(w);
 	}
 
-	template<class Ty2> constexpr Vector(Vector<Ty2, 4> const& vec) noexcept
+	template<class Ty2, unsigned Dim2> requires (Dim2 >= 4)
+	constexpr Vector(Vector<Ty2, Dim2> const& vec) noexcept
 	{
-		x = static_cast<Ty>(vec.x);
-		y = static_cast<Ty>(vec.y);
-		z = static_cast<Ty>(vec.z);
-		w = static_cast<Ty>(vec.w);
+		x = static_cast<Ty>(vec[0]);
+		y = static_cast<Ty>(vec[1]);
+		z = static_cast<Ty>(vec[2]);
+		w = static_cast<Ty>(vec[3]);
 	}
 
 	constexpr Ty& operator[](unsigned i)
 	{
-#if MAYA_DEBUG
-		if (i >= 4) MAYA_UNLIKELY
-			CoreManager::Instance()->MakeError(
-				CoreManager::OUT_OF_BOUNDS_ERROR, "Vector index out of bounds.");
-#endif
+		MAYA_ASSERT(i < 4);
 		return i == 3 ? w : (i == 2 ? z : (i ? y : x));
 	}
 
 	constexpr Ty const& operator[](unsigned i) const
 	{
-#if MAYA_DEBUG
-		if (i >= 4) MAYA_UNLIKELY
-			CoreManager::Instance()->MakeError(
-				CoreManager::OUT_OF_BOUNDS_ERROR, "Vector index out of bounds.");
-#endif
+		MAYA_ASSERT(i < 4);
 		return i == 3 ? w : (i == 2 ? z : (i ? y : x));
 	}
 
@@ -628,22 +592,14 @@ public:
 	// Access modifiers
 	constexpr Vector<Ty, Rw>& operator[](unsigned i)
 	{
-#if MAYA_DEBUG
-		if (i >= Cn)
-			CoreManager::Instance()->MakeError(
-				CoreManager::OUT_OF_BOUNDS_ERROR, "Matrix index out of bounds.");
-#endif
+		MAYA_ASSERT(i < Cn);
 		return columns[i];
 	}
 
 	// Constant access
 	constexpr Vector<Ty, Rw> const& operator[](unsigned i) const
 	{
-#if MAYA_DEBUG
-		if (i >= Cn)
-			CoreManager::Instance()->MakeError(
-				CoreManager::OUT_OF_BOUNDS_ERROR, "Matrix index out of bounds.");
-#endif
+		MAYA_ASSERT(i < Cn);
 		return columns[i];
 	}
 
